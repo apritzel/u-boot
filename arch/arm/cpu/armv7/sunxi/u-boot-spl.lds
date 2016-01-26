@@ -28,6 +28,9 @@ SECTIONS
 		__start = .;
 		*(.vectors)
 		arch/arm/cpu/armv7/start.o	(.text)
+#ifdef CONFIG_DRAM_SUN50I_H6_LIBDRAM
+		../libdram-h6 (.text)
+#endif
 		*(.text*)
 	} > .sram
 
