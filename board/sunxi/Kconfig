@@ -129,6 +129,15 @@ config ARM_BOOT_HOOK_BOOT0
 	This is required when Allwinner's boot0 blob is used to load U-Boot
 	from an SD card.
 
+config ARM_BOOT_HOOK_RMR
+	bool "AArch64 RMR switch"
+	select ENABLE_ARM_SOC_BOOT0_HOOK
+	---help---
+	Adds to code switch from (32-bit) ARM mode into 64-bit AArch64
+	mode.
+	This is needed when using a 32-bit SPL on a SD card or on SPI
+	NOR flash.
+
 endchoice
 
 
