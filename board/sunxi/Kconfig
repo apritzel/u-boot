@@ -110,6 +110,28 @@ config MACH_SUN8I
 	bool
 	default y if MACH_SUN8I_A23 || MACH_SUN8I_A33 || MACH_SUN8I_H3 || MACH_SUN8I_A83T
 
+choice
+	prompt "U-Boot boot headers"
+	depends on MACH_SUN50I
+	default ARM_BOOT_HOOK_BOOT0
+	optional
+	---help---
+	Some boot methods require certain headers or special code to be
+	inserted just before the actual U-Boot start code. This allows
+	the right option to be selected.
+
+config ARM_BOOT_HOOK_BOOT0
+	bool "boot0"
+	select ENABLE_ARM_SOC_BOOT0_HOOK
+	---help---
+	Prepends the U-Boot image with a header that is accepted by
+	boot0.
+	This is required when Allwinner's boot0 blob is used to load U-Boot
+	from an SD card.
+
+endchoice
+
+
 config DRAM_TYPE
 	int "sunxi dram type"
 	depends on MACH_SUN8I_A83T
