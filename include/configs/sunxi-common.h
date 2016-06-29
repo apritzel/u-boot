@@ -75,7 +75,6 @@
  * since it needs to fit in with the other values. By also #defining it
  * we get warnings if the Kconfig value mismatches. */
 #define CONFIG_SPL_STACK_R_ADDR		0x2fe00000
-#define CONFIG_SPL_BSS_START_ADDR	0x2ff80000
 #else
 #define SDRAM_OFFSET(x) 0x4##x
 #define CONFIG_SYS_SDRAM_BASE		0x40000000
@@ -86,10 +85,7 @@
  * since it needs to fit in with the other values. By also #defining it
  * we get warnings if the Kconfig value mismatches. */
 #define CONFIG_SPL_STACK_R_ADDR		0x4fe00000
-#define CONFIG_SPL_BSS_START_ADDR	0x4ff80000
 #endif
-
-#define CONFIG_SPL_BSS_MAX_SIZE		0x00080000 /* 512 KiB */
 
 #if defined(CONFIG_MACH_SUN9I) || defined(CONFIG_MACH_SUN50I)
 /*
