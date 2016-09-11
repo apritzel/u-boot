@@ -254,6 +254,7 @@ int spl_parse_image_header(struct spl_image_info *spl_image,
 				header_size;
 		}
 		spl_image->os = image_get_os(header);
+		spl_image->arch = image_get_arch(header);
 		spl_image->name = image_get_name(header);
 		debug("spl: payload image: %32s load addr: 0x%lx size: %d\n",
 		      spl_image->name, spl_image->load_addr, spl_image->size);
