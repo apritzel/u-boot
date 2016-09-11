@@ -23,7 +23,6 @@
 
 struct spl_image_info {
 	const char *name;
-	u8 os;
 	uintptr_t load_addr;
 	uintptr_t entry_point;
 #if CONFIG_IS_ENABLED(LOAD_FIT)
@@ -33,6 +32,8 @@ struct spl_image_info {
 	u32 size;
 	u32 flags;
 	void *arg;
+	u8 os;
+	u8 arch;
 };
 
 /*
