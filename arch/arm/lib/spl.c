@@ -73,3 +73,17 @@ void __noreturn jump_to_image_linux(struct spl_image_info *spl_image)
 }
 #endif	/* CONFIG_ARM64 */
 #endif
+
+u8 spl_genimg_get_arch_id(const char *arch_str)
+{
+	if (!arch_str)
+		return IH_ARCH_DEFAULT;
+
+	if (!strcmp(arch_str, "arm"))
+		return IH_ARCH_ARM;
+
+	if (!strcmp(arch_str, "arm64"))
+		return IH_ARCH_ARM64;
+
+	return IH_ARCH_DEFAULT;
+}
