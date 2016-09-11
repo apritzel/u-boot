@@ -497,6 +497,11 @@ __weak bool spl_load_simple_fit_skip_processing(void)
 	return false;
 }
 
+__weak u8 spl_genimg_get_arch_id(const char *arch_str)
+{
+	return IH_ARCH_DEFAULT;
+}
+
 int spl_load_simple_fit(struct spl_image_info *spl_image,
 			struct spl_load_info *info, ulong sector, void *fit)
 {
@@ -509,6 +514,7 @@ int spl_load_simple_fit(struct spl_image_info *spl_image,
 	int base_offset, hsize, align_len = ARCH_DMA_MINALIGN - 1;
 	int index = 0;
 	int firmware_node;
+	const char *arch_str;
 
 	/*
 	 * For FIT with external data, figure out where the external images
@@ -629,6 +635,8 @@ int spl_load_simple_fit(struct spl_image_info *spl_image,
 	else
 		spl_image->os = IH_OS_U_BOOT;
 #endif
+	arch_str = fdt_getprop(fit, node, "arch", NULL);
+	spl_image->arch = spl_genimg_get_arch_id(arch_str);
 
 	/*
 	 * Booting a next-stage U-Boot may require us to append the FDT.

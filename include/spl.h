@@ -138,7 +138,6 @@ static inline enum u_boot_phase spl_phase(void)
 
 struct spl_image_info {
 	const char *name;
-	u8 os;
 	uintptr_t load_addr;
 	uintptr_t entry_point;
 #if CONFIG_IS_ENABLED(LOAD_FIT) || CONFIG_IS_ENABLED(LOAD_FIT_FULL)
@@ -153,6 +152,8 @@ struct spl_image_info {
 	ulong dcrc_length;
 	ulong dcrc;
 #endif
+	u8 os;
+	u8 arch;
 };
 
 /**
