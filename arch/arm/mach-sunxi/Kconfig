@@ -43,10 +43,19 @@ config DRAM_SUN9I
 	  like A80.
 
 config DRAM_SUN50I_H6
-	bool
+	bool "Use normal Allwinner H6 DRAM driver"
+	depends on !DRAM_SUN50I_H6_LIBDRAM
+	default y if MACH_SUN50I_H6
 	help
 	  Select this dram controller driver for some sun50i platforms,
 	  like H6.
+
+config DRAM_SUN50I_H6_LIBDRAM
+	bool "Use Allwinner H6 libdram blob for DRAM initialisation"
+	default n
+	help
+	  Select this to use the Allwinner provided libdram for DRAM support.
+	  This creates a non-redistributable binary.
 
 config SUN6I_P2WI
 	bool "Allwinner sun6i internal P2WI controller"
@@ -151,7 +160,6 @@ config MACH_SUN50I_H6
 	select SUPPORT_SPL
 	select FIT
 	select SPL_LOAD_FIT
-	select DRAM_SUN50I_H6
 
 # TODO: try out A80's 8GiB DRAM space
 config SUNXI_DRAM_MAX_SIZE

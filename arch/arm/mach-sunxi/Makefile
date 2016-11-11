@@ -41,4 +41,5 @@ obj-$(CONFIG_SUNXI_DRAM_DW)	+= dram_timings/
 obj-$(CONFIG_DRAM_SUN50I_H6)	+= dram_sun50i_h6.o
 obj-$(CONFIG_DRAM_SUN50I_H6)	+= dram_timings/
 obj-$(CONFIG_MACH_SUN50I_H6)	+= spl_switch.o
+obj-$(CONFIG_DRAM_SUN50I_H6_LIBDRAM)	+= dram_libdram.o
 endif
