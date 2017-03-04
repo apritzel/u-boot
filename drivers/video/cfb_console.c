@@ -70,6 +70,7 @@
 #include <version.h>
 #include <malloc.h>
 #include <video.h>
+#include <linux/bug.h>
 #include <linux/compiler.h>
 
 #if defined(CONFIG_VIDEO_MXS)
@@ -174,6 +175,8 @@ void console_cursor(int state);
 #define VIDEO_LOGO_WIDTH	0
 #define VIDEO_LOGO_HEIGHT	0
 #endif /* CONFIG_VIDEO_LOGO */
+#define VIDEO_FONT_STRIDE	((VIDEO_FONT_WIDTH + 7) / 8)
+#define VIDEO_FONT_GLYPH_BYTES	(VIDEO_FONT_STRIDE * VIDEO_FONT_HEIGHT)
 
 #define VIDEO_COLS		VIDEO_VISIBLE_COLS
 #define VIDEO_ROWS		VIDEO_VISIBLE_ROWS
@@ -322,6 +325,9 @@ static void video_drawchars(int xx, int yy, unsigned char *s, int count)
 	u8 *cdat, *dest, *dest0;
 	int rows, offset, c;
 
+	BUILD_BUG_ON((VIDEO_FONT_WIDTH) != 4 && (VIDEO_FONT_WIDTH != 8) &&
+		     (VIDEO_FONT_WIDTH != 12));
+
 	offset = yy * VIDEO_LINE_LEN + xx * VIDEO_PIXEL_SIZE;
 	dest0 = video_fb_address + offset;
 
@@ -330,7 +336,7 @@ static void video_drawchars(int xx, int yy, unsigned char *s, int count)
 	case GDF__8BIT_332RGB:
 		while (count--) {
 			c = *s;
-			cdat = video_fontdata + c * VIDEO_FONT_HEIGHT;
+			cdat = video_fontdata + c * VIDEO_FONT_GLYPH_BYTES;
 			for (rows = VIDEO_FONT_HEIGHT, dest = dest0;
 			     rows--; dest += VIDEO_LINE_LEN) {
 				u8 bits = *cdat++;
@@ -345,6 +351,15 @@ static void video_drawchars(int xx, int yy, unsigned char *s, int count)
 				((u32 *) dest)[1] =
 					(video_font_draw_table8[bits & 15] &
 					 eorx) ^ bgx;
+
+				if (VIDEO_FONT_WIDTH == 8)
+					continue;
+
+				bits = *cdat++;
+
+				((u32 *) dest)[2] =
+					(video_font_draw_table8[bits >> 4] &
+					 eorx) ^ bgx;
 			}
 			dest0 += VIDEO_FONT_WIDTH * VIDEO_PIXEL_SIZE;
 			s++;
@@ -354,7 +369,7 @@ static void video_drawchars(int xx, int yy, unsigned char *s, int count)
 	case GDF_15BIT_555RGB:
 		while (count--) {
 			c = *s;
-			cdat = video_fontdata + c * VIDEO_FONT_HEIGHT;
+			cdat = video_fontdata + c * VIDEO_FONT_GLYPH_BYTES;
 			for (rows = VIDEO_FONT_HEIGHT, dest = dest0;
 			     rows--; dest += VIDEO_LINE_LEN) {
 				u8 bits = *cdat++;
@@ -378,6 +393,20 @@ static void video_drawchars(int xx, int yy, unsigned char *s, int count)
 				((u32 *) dest)[3] =
 					SHORTSWAP32((video_font_draw_table15
 						     [bits & 3] & eorx) ^
+						    bgx);
+
+				if (VIDEO_FONT_WIDTH == 8)
+					continue;
+
+				bits = *cdat++;
+
+				((u32 *) dest)[4] =
+					SHORTSWAP32((video_font_draw_table15
+						     [bits >> 6] & eorx) ^
+						    bgx);
+				((u32 *) dest)[5] =
+					SHORTSWAP32((video_font_draw_table15
+						     [bits >> 4 & 3] & eorx) ^
 						    bgx);
 			}
 			dest0 += VIDEO_FONT_WIDTH * VIDEO_PIXEL_SIZE;
@@ -388,7 +417,7 @@ static void video_drawchars(int xx, int yy, unsigned char *s, int count)
 	case GDF_16BIT_565RGB:
 		while (count--) {
 			c = *s;
-			cdat = video_fontdata + c * VIDEO_FONT_HEIGHT;
+			cdat = video_fontdata + c * VIDEO_FONT_GLYPH_BYTES;
 			for (rows = VIDEO_FONT_HEIGHT, dest = dest0;
 			     rows--; dest += VIDEO_LINE_LEN) {
 				u8 bits = *cdat++;
@@ -413,6 +442,20 @@ static void video_drawchars(int xx, int yy, unsigned char *s, int count)
 					SHORTSWAP32((video_font_draw_table16
 						     [bits & 3] & eorx) ^
 						    bgx);
+
+				if (VIDEO_FONT_WIDTH == 4)
+					continue;
+
+				bits = *cdat++;
+
+				((u32 *) dest)[4] =
+					SHORTSWAP32((video_font_draw_table16
+						     [bits >> 6] & eorx) ^
+						    bgx);
+				((u32 *) dest)[5] =
+					SHORTSWAP32((video_font_draw_table16
+						     [bits >> 4 & 3] & eorx) ^
+						    bgx);
 			}
 			dest0 += VIDEO_FONT_WIDTH * VIDEO_PIXEL_SIZE;
 			s++;
@@ -422,7 +465,7 @@ static void video_drawchars(int xx, int yy, unsigned char *s, int count)
 	case GDF_32BIT_X888RGB:
 		while (count--) {
 			c = *s;
-			cdat = video_fontdata + c * VIDEO_FONT_HEIGHT;
+			cdat = video_fontdata + c * VIDEO_FONT_GLYPH_BYTES;
 			for (rows = VIDEO_FONT_HEIGHT, dest = dest0;
 			     rows--; dest += VIDEO_LINE_LEN) {
 				u8 bits = *cdat++;
@@ -456,6 +499,24 @@ static void video_drawchars(int xx, int yy, unsigned char *s, int count)
 				((u32 *) dest)[7] =
 					SWAP32((video_font_draw_table32
 						[bits & 15][3] & eorx) ^ bgx);
+
+				if (VIDEO_FONT_WIDTH == 8)
+					continue;
+
+				bits = *cdat++;
+
+				((u32 *) dest)[8] =
+					SWAP32((video_font_draw_table32
+						[bits >> 4][0] & eorx) ^ bgx);
+				((u32 *) dest)[9] =
+					SWAP32((video_font_draw_table32
+						[bits >> 4][1] & eorx) ^ bgx);
+				((u32 *) dest)[10] =
+					SWAP32((video_font_draw_table32
+						[bits >> 4][2] & eorx) ^ bgx);
+				((u32 *) dest)[11] =
+					SWAP32((video_font_draw_table32
+						[bits >> 4][3] & eorx) ^ bgx);
 			}
 			dest0 += VIDEO_FONT_WIDTH * VIDEO_PIXEL_SIZE;
 			s++;
@@ -465,7 +526,7 @@ static void video_drawchars(int xx, int yy, unsigned char *s, int count)
 	case GDF_24BIT_888RGB:
 		while (count--) {
 			c = *s;
-			cdat = video_fontdata + c * VIDEO_FONT_HEIGHT;
+			cdat = video_fontdata + c * VIDEO_FONT_GLYPH_BYTES;
 			for (rows = VIDEO_FONT_HEIGHT, dest = dest0;
 			     rows--; dest += VIDEO_LINE_LEN) {
 				u8 bits = *cdat++;
@@ -491,6 +552,21 @@ static void video_drawchars(int xx, int yy, unsigned char *s, int count)
 					 & eorx) ^ bgx;
 				((u32 *) dest)[5] =
 					(video_font_draw_table24[bits & 15][2]
+					 & eorx) ^ bgx;
+
+				if (VIDEO_FONT_WIDTH == 8)
+					continue;
+
+				bits = *cdat++;
+
+				((u32 *) dest)[6] =
+					(video_font_draw_table24[bits >> 4][0]
+					 & eorx) ^ bgx;
+				((u32 *) dest)[7] =
+					(video_font_draw_table24[bits >> 4][1]
+					 & eorx) ^ bgx;
+				((u32 *) dest)[8] =
+					(video_font_draw_table24[bits >> 4][2]
 					 & eorx) ^ bgx;
 			}
 			dest0 += VIDEO_FONT_WIDTH * VIDEO_PIXEL_SIZE;
