@@ -10,6 +10,8 @@
 
 #ifdef CONFIG_VIDEO_FONT_4X6
 #include <video_font_4x6.h>
+#elif defined(CONFIG_VIDEO_FONT_SUN12X22)
+#include <video_font_sun12x22.h>
 #else
 #include <video_font_data.h>
 #endif
