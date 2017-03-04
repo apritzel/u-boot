@@ -137,6 +137,10 @@ config NO_FB_CLEAR
 
 source "drivers/video/fonts/Kconfig"
 
+config VIDEO_FONT_4X6
+	bool "Use tiny 4x6 font for framebuffers"
+	default n
+
 config VIDCONSOLE_AS_LCD
 	bool "Use 'vidconsole' when 'lcd' is seen in stdout"
 	depends on DM_VIDEO
