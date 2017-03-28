@@ -179,6 +179,7 @@ config MACH_SUN50I
 	select SUNXI_DRAM_DW_32BIT
 	select FIT
 	select SPL_LOAD_FIT
+	select CMD_POWEROFF
 
 config MACH_SUN50I_H5
 	bool "sun50i (Allwinner H5)"
@@ -187,6 +188,7 @@ config MACH_SUN50I_H5
 	select SUNXI_HIGH_SRAM
 	select FIT
 	select SPL_LOAD_FIT
+	select CMD_POWEROFF
 
 endchoice
 
