@@ -14,6 +14,9 @@
 #include <video_console.h>
 #include <video_font.h>		/* Get font data, width and height */
 
+#define VIDEO_FONT_STRIDE	((VIDEO_FONT_WIDTH + 7) / 8)
+#define VIDEO_FONT_GLYPH_BYTES	(VIDEO_FONT_STRIDE * VIDEO_FONT_HEIGHT)
+
 static int console_normal_set_row(struct udevice *dev, uint row, int clr)
 {
 	struct video_priv *vid_priv = dev_get_uclass_priv(dev->parent);
@@ -85,7 +88,20 @@ static int console_normal_putc_xy(struct udevice *dev, uint x_frac, uint y,
 		return -EAGAIN;
 
 	for (row = 0; row < VIDEO_FONT_HEIGHT; row++) {
-		uchar bits = video_fontdata[ch * VIDEO_FONT_HEIGHT + row];
+		uint32_t bits = video_fontdata[ch * VIDEO_FONT_GLYPH_BYTES +
+					       row * VIDEO_FONT_STRIDE] << 24;
+
+		if (VIDEO_FONT_WIDTH > 8)
+			bits |= video_fontdata[ch * VIDEO_FONT_GLYPH_BYTES +
+					     row * VIDEO_FONT_STRIDE + 1] << 16;
+
+		if (VIDEO_FONT_WIDTH > 16)
+			bits |= video_fontdata[ch * VIDEO_FONT_GLYPH_BYTES +
+					     row * VIDEO_FONT_STRIDE + 2] << 8;
+
+		if (VIDEO_FONT_WIDTH > 24)
+			bits |= video_fontdata[ch * VIDEO_FONT_GLYPH_BYTES +
+					     row * VIDEO_FONT_STRIDE + 3];
 
 		switch (vid_priv->bpix) {
 #ifdef CONFIG_VIDEO_BPP8
@@ -93,7 +109,7 @@ static int console_normal_putc_xy(struct udevice *dev, uint x_frac, uint y,
 			uint8_t *dst = line;
 
 			for (i = 0; i < VIDEO_FONT_WIDTH; i++) {
-				*dst++ = (bits & 0x80) ? vid_priv->colour_fg
+				*dst++ = (bits & BIT(31)) ? vid_priv->colour_fg
 					: vid_priv->colour_bg;
 				bits <<= 1;
 			}
@@ -105,7 +121,7 @@ static int console_normal_putc_xy(struct udevice *dev, uint x_frac, uint y,
 			uint16_t *dst = line;
 
 			for (i = 0; i < VIDEO_FONT_WIDTH; i++) {
-				*dst++ = (bits & 0x80) ? vid_priv->colour_fg
+				*dst++ = (bits & BIT(31)) ? vid_priv->colour_fg
 					: vid_priv->colour_bg;
 				bits <<= 1;
 			}
@@ -117,7 +133,7 @@ static int console_normal_putc_xy(struct udevice *dev, uint x_frac, uint y,
 			uint32_t *dst = line;
 
 			for (i = 0; i < VIDEO_FONT_WIDTH; i++) {
-				*dst++ = (bits & 0x80) ? vid_priv->colour_fg
+				*dst++ = (bits & BIT(31)) ? vid_priv->colour_fg
 					: vid_priv->colour_bg;
 				bits <<= 1;
 			}
