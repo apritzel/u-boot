@@ -12,6 +12,12 @@ config DM_RESET
 	  although driving such reset isgnals using GPIOs may be more
 	  appropriate in this case.
 
+config GENERIC_RESET
+        bool "Generic Reset controller driver"
+        depends on DM_RESET
+        help
+          Support Generic reset controller.
+
 config SANDBOX_RESET
 	bool "Enable the sandbox reset test driver"
 	depends on DM_MAILBOX && SANDBOX
