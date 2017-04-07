@@ -10,8 +10,26 @@
 DECLARE_GLOBAL_DATA_PTR;
 
 #define NEXELL_PLLSETREG0	0xc0010008UL
+#define NEXELL_CLKDIVREG1	0xc0010024UL
+#define IP_RESET1		0xc0012004UL
 
 #define OSC_FREQ 24000000
+
+int arch_cpu_init(void)
+{
+	u32 val;
+
+	/*
+	 * Reset timer block #4.
+	 * Ideally this should be done through the reset driver, but
+	 * unfortunately our timer driver is not DM driven.
+	 */
+	val = readl(IP_RESET1);
+	val |= BIT(4);
+	writel(val, IP_RESET1);
+
+	return 0;
+}
 
 /* TODO: dummy implementation for now, add proper reset code */
 void reset_cpu(ulong addr)
@@ -33,11 +51,6 @@ int dram_init(void)
 	gd->ram_size = 0x40000000;
 
 	return 0;
-}
-
-ulong get_tbclk(void)
-{
-	return CONFIG_SYS_HZ;
 }
 
 static unsigned long get_pll_freq(int pll_index)
@@ -83,6 +96,20 @@ unsigned long get_uart_clk(int dev_index)
 		return 0;
 
 	return get_level1_clk_freq(clock_ofs[dev_index]);
+}
+
+/* This is reading the PCLK frequency, which drives the PWM timer. */
+unsigned long get_pwm_clk(void)
+{
+	uint32_t reg;
+	unsigned int pll_index, div;
+
+	reg = readl(NEXELL_CLKDIVREG1);
+	pll_index = reg & 0x7;
+	div = ((reg >> 3) & 0x3f) + 1;		/* BCLK divider */
+	div *= ((reg >> 9) & 0x3f) + 1;		/* PCLK divider */
+
+	return get_pll_freq(pll_index) / div;
 }
 
 int board_init(void)
