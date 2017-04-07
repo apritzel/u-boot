@@ -91,6 +91,14 @@ config MMC_DW_K3
 	  Synopsys DesignWare Memory Card Interface driver. Select this option
 	  for platforms based on Hisilicon K3 SoC's.
 
+config MMC_DW_NEXELL
+        bool "NEXELL SD/MMC controller support"
+        depends on ARCH_NEXELL && DM_MMC && OF_CONTROL
+        depends on MMC_DW
+        help
+          This enables support for the Nexell SD/MMM controller, which is
+          based on Designware IP.
+
 config MMC_DW_ROCKCHIP
 	bool "Rockchip SD/MMC controller support"
 	depends on DM_MMC && OF_CONTROL
