@@ -428,6 +428,12 @@ config PIC32_SERIAL
 	help
 	  Support for the UART found on Microchip PIC32 SoC's.
 
+config SAMSUNG_UART
+	bool "Samsung S5P/Nexell UART support"
+	help
+	  Support for the UART found on various Samsung SoCs, for instance
+	  in the Exynos series or the S5P chips.
+
 config SYS_NS16550
 	bool "NS16550 UART or compatible"
 	help

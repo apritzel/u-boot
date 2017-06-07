@@ -557,6 +557,7 @@ config ARCH_EXYNOS
 	select DM_I2C
 	select DM_SPI_FLASH
 	select DM_SERIAL
+	select SAMSUNG_UART
 	select DM_SPI
 	select DM_GPIO
 	select DM_KEYBOARD
