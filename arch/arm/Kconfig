@@ -660,6 +660,12 @@ config ARCH_NEXELL
 	select DM
 	select DM_SERIAL
 	select SAMSUNG_UART
+	select DM_RESET
+	select GENERIC_RESET
+	select DM_MMC
+	select DM_MMC_OPS
+	select MMC_DW
+	select MMC_DW_NEXELL
 
 config ARCH_QEMU
 	bool "QEMU Virtual Platform"

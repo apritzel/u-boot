@@ -30,4 +30,6 @@
 
 #define CONFIG_SYS_TIMER_COUNTER	0xc0017040	/* TCNTO4 */
 
+#define CONFIG_BOUNCE_BUFFER
+
 #endif	/* __CONFIG_H */

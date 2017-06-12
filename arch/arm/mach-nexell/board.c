@@ -112,6 +112,16 @@ unsigned long get_pwm_clk(void)
 	return get_pll_freq(pll_index) / div;
 }
 
+unsigned long get_mmc_clk(int dev_index)
+{
+	uintptr_t clock_ofs[3] = {0xc00c5000, 0xc00cc000, 0xc00cd000};
+
+	if (dev_index < 0 || dev_index >= 3)
+		return 0;
+
+	return get_level1_clk_freq(clock_ofs[dev_index]);
+}
+
 int board_init(void)
 {
 	return 0;

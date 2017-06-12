@@ -1,0 +1,30 @@
+/dts-v1/;
+
+#include "s5p6818.dtsi"
+
+/ {
+	model = "Nano Pi M3";
+	compatible = "FriendlyARM,NanoPi-M3";
+
+	chosen {
+		stdout-path = "serial0:115200";
+		bootargs = "console=ttySAC0,115200n8 earlycon=s5pv210,0xc00a1000";
+	};
+
+	aliases {
+		mmc0 = &mmc_0;
+		serial0 = &serial_0;
+	};
+
+	memory {
+		reg = <0x40000000 0x40000000>;
+	};
+};
+
+&serial_0 {
+	status = "okay";
+};
+
+&mmc_0 {
+	status = "okay";
+};

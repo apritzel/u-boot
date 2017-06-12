@@ -9,6 +9,7 @@
 #define __ASM_ARCH_CLK_H_
 
 unsigned long get_uart_clk(int dev_index);
+unsigned long get_mmc_clk(int dev_index);
 unsigned long get_pwm_clk(void);
 
 #endif
