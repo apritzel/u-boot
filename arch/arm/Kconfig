@@ -655,6 +655,7 @@ config ARCH_MX5
 config ARCH_NEXELL
 	bool "Nexell S5P support"
 	select ARM64
+	select ENABLE_ARM_SOC_BOOT0_HOOK
 
 config ARCH_QEMU
 	bool "QEMU Virtual Platform"
