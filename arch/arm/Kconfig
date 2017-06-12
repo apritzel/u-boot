@@ -656,6 +656,9 @@ config ARCH_NEXELL
 	bool "Nexell S5P support"
 	select ARM64
 	select ENABLE_ARM_SOC_BOOT0_HOOK
+	select DM
+	select DM_SERIAL
+	select SAMSUNG_UART
 
 config ARCH_QEMU
 	bool "QEMU Virtual Platform"
