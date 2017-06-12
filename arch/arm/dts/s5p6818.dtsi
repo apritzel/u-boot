@@ -1,0 +1,196 @@
+/*
+ * Copyright (c) 2017 ARM Ltd.
+ *
+ * This file is dual-licensed: you can use it either under the terms
+ * of the GPL or the X11 license, at your option. Note that this dual
+ * licensing only applies to this file, and not this project as a
+ * whole.
+ *
+ *  a) This library is free software; you can redistribute it and/or
+ *     modify it under the terms of the GNU General Public License as
+ *     published by the Free Software Foundation; either version 2 of the
+ *     License, or (at your option) any later version.
+ *
+ *     This library is distributed in the hope that it will be useful,
+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *     GNU General Public License for more details.
+ *
+ * Or, alternatively,
+ *
+ *  b) Permission is hereby granted, free of charge, to any person
+ *     obtaining a copy of this software and associated documentation
+ *     files (the "Software"), to deal in the Software without
+ *     restriction, including without limitation the rights to use,
+ *     copy, modify, merge, publish, distribute, sublicense, and/or
+ *     sell copies of the Software, and to permit persons to whom the
+ *     Software is furnished to do so, subject to the following
+ *     conditions:
+ *
+ *     The above copyright notice and this permission notice shall be
+ *     included in all copies or substantial portions of the Software.
+ *
+ *     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ *     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ *     OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ *     NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ *     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ *     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ *     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ *     OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/ {
+	#address-cells = <1>;
+	#size-cells = <1>;
+
+	interrupt-parent = <&gic>;
+
+	memory {
+		device_type = "memory";
+		reg = <0x40000000 0x80000000>;
+	};
+
+	cpus {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		cpu0: cpu@0 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a53", "arm,armv8";
+			reg = <0x0>;
+		};
+	};
+
+	gic: interrupt-controller@c0090000 {
+		compatible = "arm,gic-400";
+		#interrupt-cells = <3>;
+		#address-cells = <0>;
+		interrupt-controller;
+		reg =   <0xc0090000 0x1000>,
+			<0xc00a0000 0x2000>;
+	};
+
+	reset: reset@c0012000 {
+		reg = <0xc0012000 0x0c>;
+		compatible = "nexell,s5p6818-reset", "generic-reset";
+		#reset-cells = <1>;
+		num-resets = <68>;
+	};
+
+	clocks {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		osc24M: osc24M_clk {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-frequency = <24000000>;
+			clock-output-names = "osc24M";
+		};
+
+		osc32k: osc32k_clk {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-frequency = <32768>;
+			clock-output-names = "osc32k";
+		};
+
+		pll0: pll0_clk {
+			#clock-cells = <0>;
+			compatible = "fixed-factor-clock";
+			clocks = <&osc24M>;
+			clock-mult = <200>;
+			clock-div = <6>;
+			clock-output-names = "pll_periph";
+		};
+
+		pll1: pll1_clk {
+			compatible = "fixed-factor-clock";
+			#clock-cells = <0>;
+			clocks = <&osc24M>;
+			clock-mult = <200>;
+			clock-div = <6>;
+			clock-output-names = "pll_cpu";
+		};
+
+		pll2: pll2_clk {
+			compatible = "fixed-factor-clock";
+			#clock-cells = <0>;
+			clocks = <&osc24M>;
+			clock-mult = <102>;
+			clock-div = <4>;
+			clock-output-names = "pll_spare";
+		};
+
+		pll3: pll3_clk {
+			#clock-cells = <0>;
+			compatible = "fixed-factor-clock";
+			clocks = <&osc24M>;
+			clock-mult = <200>;
+			clock-div = <6>;
+			clock-output-names = "pll_dram";
+		};
+
+		bclk: bus_clk {
+			#clock-cells = <0>;
+			compatible = "fixed-factor-clock";
+			clock-mult = <1>;
+			clock-div = <2>;
+			clock-output-names = "bclk";
+			clocks = <&pll0>;
+		};
+
+		pclk: apb_clk {
+			#clock-cells = <0>;
+			compatible = "fixed-factor-clock";
+			clock-mult = <1>;
+			clock-div = <2>;
+			clock-output-names = "pclk";
+			clocks = <&bclk>;
+		};
+
+		uart0_clk: uart0_clk@c00a9000 {
+			compatible = "nexell,clkgen-level1";
+			#clock-cells = <1>;
+			reg = <0xc00a9000 8>;
+			clocks = <&bclk>, <&pll0>, <&pll1>, <&pll2>;
+			clock-output-names = "uart0_bclk", "uart0_clock";
+
+			assigned-clocks = <&uart0_clk 1>;
+			assigned-clock-parents = <&pll0>;
+		};
+	};
+
+	soc {
+		compatible = "simple-bus";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		serial_0: serial@c00a1000 {
+			compatible = "nexell,s5p6818-uart",
+				     "samsung,exynos4210-uart";
+			reg = <0xc00a1000 0x1000>;
+			interrupts = <0 7 0>;
+			clocks = <&uart0_clk 0>, <&uart0_clk 1>;
+			clock-names = "uart", "clk_uart_baud0";
+			status = "disabled";
+		};
+
+		mmc_0: mmc@c0062000 {
+			compatible = "nexell,s5p6818-dw-mshc";
+			reg = <0xc0062000 0x2000>;
+			interrupts = <0 43 0>;
+			bus-width = <4>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			fifo-depth = <32>;
+			resets = <&reset 39>;
+			reset-names = "mmc";
+			status = "disabled";
+		};
+	};
+};
