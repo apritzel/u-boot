@@ -61,6 +61,7 @@ machine-$(CONFIG_ARCH_KEYSTONE)		+= keystone
 machine-$(CONFIG_KIRKWOOD)		+= kirkwood
 machine-$(CONFIG_ARCH_MESON)		+= meson
 machine-$(CONFIG_ARCH_MVEBU)		+= mvebu
+machine-$(CONFIG_ARCH_NEXELL)		+= nexell
 # TODO: rename CONFIG_TEGRA -> CONFIG_ARCH_TEGRA
 # TODO: rename CONFIG_ORION5X -> CONFIG_ARCH_ORION5X
 machine-$(CONFIG_ORION5X)		+= orion5x

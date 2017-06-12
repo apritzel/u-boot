@@ -1,0 +1,9 @@
+if ARCH_NEXELL
+
+config SYS_SOC
+    default "nexell"
+
+config SYS_CONFIG_NAME
+    default "s5p6818"
+
+endif

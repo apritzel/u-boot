@@ -652,6 +652,10 @@ config ARCH_MX5
 	select CPU_V7
 	select BOARD_EARLY_INIT_F
 
+config ARCH_NEXELL
+	bool "Nexell S5P support"
+	select ARM64
+
 config ARCH_QEMU
 	bool "QEMU Virtual Platform"
 	select CPU_V7
@@ -1196,6 +1200,8 @@ source "arch/arm/mach-imx/mx7/Kconfig"
 source "arch/arm/mach-imx/mx6/Kconfig"
 
 source "arch/arm/mach-imx/mx5/Kconfig"
+
+source "arch/arm/mach-nexell/Kconfig"
 
 source "arch/arm/mach-omap2/Kconfig"
 
