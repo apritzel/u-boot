@@ -17,7 +17,6 @@
 
 /* SoC Configuration */
 #define CONFIG_ARCH_CPU_INIT
-#define CONFIG_SYS_ARCH_TIMER
 #ifndef CONFIG_SYS_TEXT_BASE
 #define CONFIG_SYS_TEXT_BASE		0x0c000000
 #endif
