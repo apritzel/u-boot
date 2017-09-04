@@ -5,3 +5,4 @@
 #
 
 obj-y	:= board.o
+obj-$(CONFIG_ARM64)     += mmu-arm64.o
