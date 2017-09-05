@@ -1,0 +1,49 @@
+Booting
+-------
+
+U-Boot can be build as either a 32-bit binary (capable of loading 32-bit
+ARM OS kernels) or as a 64-bit binary, to launch 64-bit AArch64 kernels.
+The only difference in U-Boot is the selection of either CONFIG_ARM64
+or CONFIG_CPU_V7 in the ARCH_NEXELL Kconfig stanza in arch/arm/Kconfig.
+
+At the moment the U-Boot port does not support an SPL, so we need to rely
+on external loaders to initialize the DRAM and load U-Boot proper.
+
+Quick start
+-----------
+
+Download a GPLed version of the boot loader and compile it:
+$ git clone https://github.com/rafaello7/bl1-nanopi-m3.git
+$ cd bl1-nanopi-m3
+(edit config.mak to set OPMODE to "aarch32")
+$ make
+Make sure you have a 32-bit ARM (cross-)compiler installed, change the
+triplet name in config.mak if necessary.
+
+Then copy the resulting binary to an SD card, starting at the second sector:
+$ sudo dd if=out/bl1-nanopi.bin of=/dev/sdX bs=512 seek=1
+
+Now configure and build U-Boot, then copy the binary to sector 64:
+$ make nanopi_m3_defconfig
+$ make
+$ sudo dd if=u-boot.bin of=/dev/sdX bs=512 seek=64
+
+This will build a 32-bit AArch64 version of both the bootloader and U-Boot.
+
+To load 64-bit kernels, change config.mak in the bl1-nanopi-m3 repository
+to set the variable OPMODE back to "aarch64", then re-compile with an Aarch64
+cross compiler. To build a 64-bit version of U-Boot, revert the patch that
+switches the Nexell port to 32-bit. That selects CONFIG_ARM64 instead
+of CONFIG_CPU_V7. Then rebuild as "dd" to the SD card as described above.
+
+"secondboot"
+------------
+There is an official, but proprietary loader ("secondboot"), provided by
+Nexell. It can be found in "official" images, starting from sector 2
+(behind the MBR) and ranging until at most 32KB, though most versions seem
+to be shorter. This loader only supports 32-bit payloads. Also the boot
+protocol differs slightly, as the NSIH header (the first 512 byte of the
+U-Boot image) is cut off and the actual payload is loaded to the load address.
+This breaks U-Boot's assumption about its start address and will fail to boot.
+Interested people might add 512 to the the launch and load address in boot0.h
+to be able to use that boot loader.
