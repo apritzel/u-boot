@@ -15,11 +15,33 @@
 #include <linux/compiler.h>
 #include <asm/io.h>
 #include <asm/arch/clk.h>
-#include <asm/arch/uart.h>
 #include <serial.h>
 #include <clk.h>
 
 DECLARE_GLOBAL_DATA_PTR;
+
+/* baudrate rest value */
+union br_rest {
+	unsigned short	slot;		/* udivslot */
+	unsigned char	value;		/* ufracval */
+};
+
+struct s5p_uart {
+	unsigned int	ulcon;
+	unsigned int	ucon;
+	unsigned int	ufcon;
+	unsigned int	umcon;
+	unsigned int	utrstat;
+	unsigned int	uerstat;
+	unsigned int	ufstat;
+	unsigned int	umstat;
+	unsigned char	utxh;
+	unsigned char	res1[3];
+	unsigned char	urxh;
+	unsigned char	res2[3];
+	unsigned int	ubrdiv;
+	union br_rest	rest;
+};
 
 #define RX_FIFO_COUNT_SHIFT	0
 #define RX_FIFO_COUNT_MASK	(0xff << RX_FIFO_COUNT_SHIFT)
@@ -28,10 +50,13 @@ DECLARE_GLOBAL_DATA_PTR;
 #define TX_FIFO_COUNT_MASK	(0xff << TX_FIFO_COUNT_SHIFT)
 #define TX_FIFO_FULL		(1 << 24)
 
+#define UART_HAS_DIVSLOT	1
+
 /* Information about a serial port */
 struct s5p_serial_platdata {
 	struct s5p_uart *reg;  /* address of registers in physical memory */
 	u8 port_id;     /* uart port number */
+	bool has_divslot;
 };
 
 /*
@@ -72,7 +97,7 @@ static void __maybe_unused s5p_serial_init(struct s5p_uart *uart)
 }
 
 static void __maybe_unused s5p_serial_baud(struct s5p_uart *uart, uint uclk,
-					   int baudrate)
+					   int baudrate, bool has_divslot)
 {
 	u32 val;
 
@@ -80,7 +105,7 @@ static void __maybe_unused s5p_serial_baud(struct s5p_uart *uart, uint uclk,
 
 	writel(val / 16 - 1, &uart->ubrdiv);
 
-	if (s5p_uart_divslot())
+	if (has_divslot)
 		writew(udivslot[val % 16], &uart->rest.slot);
 	else
 		writeb(val % 16, &uart->rest.value);
@@ -105,7 +130,7 @@ int s5p_serial_setbrg(struct udevice *dev, int baudrate)
 	uclk = get_uart_clk(plat->port_id);
 #endif
 
-	s5p_serial_baud(uart, uclk, baudrate);
+	s5p_serial_baud(uart, uclk, baudrate, plat->has_divslot);
 
 	return 0;
 }
@@ -180,6 +205,7 @@ static int s5p_serial_pending(struct udevice *dev, bool input)
 static int s5p_serial_ofdata_to_platdata(struct udevice *dev)
 {
 	struct s5p_serial_platdata *plat = dev->platdata;
+	unsigned long driver_data;
 	fdt_addr_t addr;
 
 	addr = devfdt_get_addr(dev);
@@ -189,6 +215,10 @@ static int s5p_serial_ofdata_to_platdata(struct udevice *dev)
 	plat->reg = (struct s5p_uart *)addr;
 	plat->port_id = fdtdec_get_int(gd->fdt_blob, dev_of_offset(dev),
 					"id", dev->seq);
+
+	driver_data = dev_get_driver_data(dev);
+	plat->has_divslot = driver_data & UART_HAS_DIVSLOT;
+
 	return 0;
 }
 
@@ -200,7 +230,12 @@ static const struct dm_serial_ops s5p_serial_ops = {
 };
 
 static const struct udevice_id s5p_serial_ids[] = {
-	{ .compatible = "samsung,exynos4210-uart" },
+	{ .compatible = "samsung,s3c2412-uart", .data = UART_HAS_DIVSLOT },
+	{ .compatible = "samsung,s3c2440-uart", .data = UART_HAS_DIVSLOT },
+	{ .compatible = "samsung,s3c6400-uart", .data = UART_HAS_DIVSLOT },
+	{ .compatible = "samsung,s5pv210-uart", .data = UART_HAS_DIVSLOT },
+	{ .compatible = "samsung,exynos4210-uart", .data = 0 },
+	{ .compatible = "samsung,exynos5433-uart", .data = 0 },
 	{ }
 };
 

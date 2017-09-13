@@ -27,7 +27,7 @@
 	};
 
 	serial@ec000000 {
-		compatible = "samsung,exynos4210-uart";
+		compatible = "samsung,s5pv210-uart";
 		reg = <0xec000000 0x100>;
 		interrupts = <0 51 0>;
 		id = <0>;
