@@ -180,6 +180,7 @@ config MACH_SUN50I
 	select FIT
 	select SPL_LOAD_FIT
 	select CMD_POWEROFF
+	select SYS_FSL_ERRATUM_A008585
 
 config MACH_SUN50I_H5
 	bool "sun50i (Allwinner H5)"
