@@ -180,6 +180,7 @@ void lcd_sync(void);
 # define CONSOLE_COLOR_MAGENTA	5
 # define CONSOLE_COLOR_CYAN	6
 # define CONSOLE_COLOR_GREY	14
+# define CONSOLE_COLOR_BRIGHT	14
 # define CONSOLE_COLOR_WHITE	15		/* Must remain last / highest */
 #elif LCD_BPP == LCD_COLOR32
 #define CONSOLE_COLOR_RED	0x00ff0000
@@ -190,6 +191,7 @@ void lcd_sync(void);
 #define CONSOLE_COLOR_CYAN	0x0000ffff
 #define CONSOLE_COLOR_GREY	0x00aaaaaa
 #define CONSOLE_COLOR_BLACK	0x00000000
+#define CONSOLE_COLOR_BRIGHT	0x00bfbfbf
 #define CONSOLE_COLOR_WHITE	0x00ffffff	/* Must remain last / highest */
 #define NBYTES(bit_code)	(NBITS(bit_code) >> 3)
 #else /* 16bpp color definitions */
@@ -201,6 +203,7 @@ void lcd_sync(void);
 # define CONSOLE_COLOR_MAGENTA	0xF81F
 # define CONSOLE_COLOR_CYAN	0x07FF
 # define CONSOLE_COLOR_GREY	0xC618
+# define CONSOLE_COLOR_BRIGHT	0xBDF7
 # define CONSOLE_COLOR_WHITE	0xffff		/* Must remain last / highest */
 #endif /* color definitions */
 

@@ -190,10 +190,10 @@ void lcd_clear(void)
 
 #ifndef CONFIG_SYS_WHITE_ON_BLACK
 	lcd_setfgcolor(CONSOLE_COLOR_BLACK);
-	lcd_setbgcolor(CONSOLE_COLOR_WHITE);
-	bg_color = CONSOLE_COLOR_WHITE;
+	lcd_setbgcolor(CONSOLE_COLOR_BRIGHT);
+	bg_color = CONSOLE_COLOR_BRIGHT;
 #else
-	lcd_setfgcolor(CONSOLE_COLOR_WHITE);
+	lcd_setfgcolor(CONSOLE_COLOR_BRIGHT);
 	lcd_setbgcolor(CONSOLE_COLOR_BLACK);
 	bg_color = CONSOLE_COLOR_BLACK;
 #endif	/* CONFIG_SYS_WHITE_ON_BLACK */

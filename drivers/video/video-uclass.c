@@ -193,9 +193,9 @@ static int video_post_probe(struct udevice *dev)
 
 	/* Set up colours - we could in future support other colours */
 #ifdef CONFIG_SYS_WHITE_ON_BLACK
-	priv->colour_fg = 0xffffff;
+	priv->colour_fg = 0xbfbfbf;
 #else
-	priv->colour_bg = 0xffffff;
+	priv->colour_bg = 0xbfbfbf;
 #endif
 
 	if (!CONFIG_IS_ENABLED(NO_FB_CLEAR))
