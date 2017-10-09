@@ -30,15 +30,19 @@ unsigned long timer_read_counter(void)
 #ifdef CONFIG_SYS_FSL_ERRATUM_A008585
 	/* This erratum number needs to be confirmed to match ARM document */
 	unsigned long temp;
+	int retries = 200;
 #endif
 	isb();
 	asm volatile("mrs %0, cntpct_el0" : "=r" (cntpct));
 #ifdef CONFIG_SYS_FSL_ERRATUM_A008585
 	asm volatile("mrs %0, cntpct_el0" : "=r" (temp));
-	while (temp != cntpct) {
+	while (temp < cntpct && retries) {
 		asm volatile("mrs %0, cntpct_el0" : "=r" (cntpct));
 		asm volatile("mrs %0, cntpct_el0" : "=r" (temp));
+		retries--;
 	}
+	if (!retries)
+		printf("timer_read_counter() took more than 200 retries!\n");
 #endif
 	return cntpct;
 }
