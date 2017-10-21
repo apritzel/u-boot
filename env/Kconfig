@@ -152,7 +152,7 @@ config ENV_IS_IN_MMC
 	bool "Environment in an MMC device"
 	depends on !CHAIN_OF_TRUST
 	depends on MMC
-	default y if ARCH_SUNXI
+	default y if ARCH_SUNXI && !ARM64
 	default y if ARCH_EXYNOS4
 	default y if MX6SX || MX7D
 	default y if TEGRA30 || TEGRA124
@@ -443,7 +443,8 @@ config ENV_OFFSET
 	hex "Environment Offset"
 	depends on !ENV_IS_IN_UBI
 	depends on !ENV_IS_NOWHERE
-	default 0x88000 if ARCH_SUNXI
+	default 0x88000 if ARCH_SUNXI && !ARM64
+	default 0xe0000 if ARCH_SUNXI && ARM64
 	help
 	  Offset from the start of the device (or partition)
 
