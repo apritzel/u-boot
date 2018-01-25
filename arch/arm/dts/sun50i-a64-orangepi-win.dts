@@ -67,7 +67,7 @@
 };
 
 &ehci1 {
-       status = "okay";
+	status = "okay";
 };
 
 &mmc0 {
@@ -80,7 +80,7 @@
 };
 
 &ohci1 {
-       status = "okay";
+	status = "okay";
 };
 
 &uart0 {
@@ -90,5 +90,6 @@
 };
 
 &usbphy {
-       status = "okay";
+	status = "okay";
 };
+
