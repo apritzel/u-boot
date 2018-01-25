@@ -147,6 +147,20 @@ config MACH_SUN50I_H5
 	select FIT
 	select SPL_LOAD_FIT
 
+config MACH_SUN50I
+	bool
+	select SUNXI_GEN_SUN6I
+	select SUPPORT_SPL
+	select SUNXI_HIGH_SRAM
+	select DM_I2C
+	select PHY_SUN4I_USB
+	select SUNXI_DE2
+	select SUNXI_DRAM_DW
+	select SUNXI_DRAM_DW_32BIT
+	select FIT
+	select SPL_LOAD_FIT
+	select SUNXI_A64_TIMER_ERRATUM
+
 # TODO: try out A80's 8GiB DRAM space
 config SUNXI_DRAM_MAX_SIZE
 	hex
@@ -280,19 +294,15 @@ config MACH_SUN9I
 	select SUN8I_RSB
 	select SUPPORT_SPL
 
-config MACH_SUN50I
+config MACH_SUN50I_64
 	bool "sun50i (Allwinner A64)"
+	select MACH_SUN50I
 	select ARM64
-	select DM_I2C
-	select PHY_SUN4I_USB
-	select SUNXI_DE2
-	select SUNXI_GEN_SUN6I
-	select SUPPORT_SPL
-	select SUNXI_DRAM_DW
-	select SUNXI_DRAM_DW_32BIT
-	select FIT
-	select SPL_LOAD_FIT
-	select SUNXI_A64_TIMER_ERRATUM
+
+config MACH_SUN50I_32
+	bool "sun50i (Allwinner A64) SPL-32bit"
+	select MACH_SUN50I
+	select CPU_V7A
 
 config MACH_SUN50I_H5_64
 	bool "sun50i (Allwinner H5)"
