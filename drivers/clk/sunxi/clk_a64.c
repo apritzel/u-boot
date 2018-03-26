@@ -79,10 +79,20 @@ static ulong a64_clk_get_rate(struct clk *clk)
 
 static ulong a64_clk_set_rate(struct clk *clk, ulong rate)
 {
-	debug("%s(#%ld, rate: %lu)\n", __FUNCTION__, clk->id, rate);
+	struct a64_clk_priv *priv = dev_get_priv(clk->dev);
+	void *clk_base;
 
-	debug("  unhandled\n");
-	return -EINVAL;
+	debug("%s(#%ld, rate: %lu)\n", __func__, clk->id, rate);
+	switch(clk->id) {
+	case CLK_MMC0:
+	case CLK_MMC1:
+	case CLK_MMC2:
+		clk_base = priv->base + 0x88 + (clk->id - CLK_MMC0) * 4;
+		return sunxi_mmc_set_mod_clk(clk_base, rate, false);
+	default:
+		debug("  unhandled\n");
+		return -ENODEV;
+	}
 }
 
 static int a64_clk_enable(struct clk *clk)
@@ -99,6 +109,18 @@ static int a64_clk_enable(struct clk *clk)
 	case CLK_BUS_UART4:
 		setbits_le32(priv->base + 0x6c,
 			     BIT(16 + (clk->id - CLK_BUS_UART0)));
+		return 0;
+	case CLK_BUS_MMC0:
+	case CLK_BUS_MMC1:
+	case CLK_BUS_MMC2:
+		setbits_le32(priv->base + 0x60,
+			     BIT(8 + (clk->id - CLK_BUS_MMC0)));
+		return 0;
+	case CLK_MMC0:
+	case CLK_MMC1:
+	case CLK_MMC2:
+		clk_base = priv->base + 0x88 + (clk->id - CLK_MMC0) * 4;
+		setbits_le32(clk_base, BIT(31));
 		return 0;
 	default:
 		debug("  unhandled\n");
