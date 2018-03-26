@@ -9,6 +9,7 @@
  */
 
 #include <common.h>
+#include <clk.h>
 #include <dm.h>
 #include <errno.h>
 #include <malloc.h>
@@ -27,12 +28,17 @@ struct sunxi_mmc_plat {
 
 struct sunxi_mmc_priv {
 	unsigned mmc_no;
-	uint32_t *mclkreg;
 	unsigned fatal_err;
 	struct gpio_desc cd_gpio;	/* Change Detect GPIO */
 	int cd_inverted;		/* Inverted Card Detect */
 	struct sunxi_mmc *reg;
 	struct mmc_config cfg;
+#if CONFIG_IS_ENABLED(DM_MMC) && CONFIG_IS_ENABLED(CLK)
+	struct clk mmc_clk;
+	struct clk bus_clk;
+#else
+	uint32_t *mclkreg;
+#endif
 };
 
 #if !CONFIG_IS_ENABLED(DM_MMC)
@@ -182,6 +188,10 @@ int sunxi_mmc_set_mod_clk(void *reg_base, unsigned int hz, bool has_new_mode)
 
 static int mmc_set_mod_clk(struct sunxi_mmc_priv *priv, unsigned int hz)
 {
+#if CONFIG_IS_ENABLED(DM_MMC) && CONFIG_IS_ENABLED(CLK)
+	clk_set_rate(&priv->mmc_clk, hz);
+	return clk_enable(&priv->mmc_clk);
+#else
 	bool new_mode = false;
 
 	if (IS_ENABLED(CONFIG_MMC_SUNXI_HAS_NEW_MODE) && (priv->mmc_no == 2))
@@ -191,6 +201,7 @@ static int mmc_set_mod_clk(struct sunxi_mmc_priv *priv, unsigned int hz)
 		setbits_le32(&priv->reg->ntsr, SUNXI_MMC_NTSR_MODE_SEL_NEW);
 
 	return sunxi_mmc_set_mod_clk(priv->mclkreg, hz, new_mode);
+#endif
 }
 
 static int mmc_update_clk(struct sunxi_mmc_priv *priv)
@@ -525,6 +536,7 @@ struct mmc *sunxi_mmc_init(int sdc_no)
 	writel(SUNXI_MMC_COMMON_CLK_GATE | SUNXI_MMC_COMMON_RESET,
 	       SUNXI_MMC_COMMON_BASE + 4 * sdc_no);
 #endif
+
 	ret = mmc_set_mod_clk(priv, 24000000);
 	if (ret)
 		return NULL;
@@ -595,6 +607,20 @@ static int sunxi_mmc_probe(struct udevice *dev)
 
 	priv->reg = (void *)dev_read_addr(dev);
 
+#if CONFIG_IS_ENABLED(CLK)
+	ret = clk_get_by_name(dev, "mmc", &priv->mmc_clk);
+	if (ret) {
+		debug("could not get MMC clk driver\n");
+		return ret;
+	}
+
+	ret = clk_get_by_name(dev, "ahb", &priv->bus_clk);
+	if (ret) {
+		debug("could not get MMC bus clk driver\n");
+		return ret;
+	}
+	clk_enable(&priv->bus_clk);
+#else
 	/* We don't have a sunxi clock driver so find the clock address here */
 	ret = dev_read_phandle_with_args(dev, "clocks", "#clock-cells", 0,
 					  1, &args);
@@ -609,6 +635,7 @@ static int sunxi_mmc_probe(struct udevice *dev)
 	gate_reg = (u32 *)ofnode_get_addr(args.node);
 	setbits_le32(gate_reg, 1 << args.args[0]);
 	priv->mmc_no = args.args[0] - 8;
+#endif
 
 	ret = mmc_set_mod_clk(priv, 24000000);
 	if (ret)
