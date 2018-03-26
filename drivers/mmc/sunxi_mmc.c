@@ -94,20 +94,18 @@ static int mmc_resource_init(int sdc_no)
 }
 #endif
 
-static int mmc_set_mod_clk(struct sunxi_mmc_priv *priv, unsigned int hz)
+int sunxi_mmc_set_mod_clk(void *reg_base, unsigned int hz, bool has_new_mode)
 {
 	unsigned int pll, pll_hz, div, n, oclk_dly, sclk_dly;
-	bool new_mode = false;
 	u32 val = 0;
 
-	if (IS_ENABLED(CONFIG_MMC_SUNXI_HAS_NEW_MODE) && (priv->mmc_no == 2))
-		new_mode = true;
-
+	debug("sunxi_mmc_set_mod_clk(%p, hz=%u, new_mode=%d);\n",
+	      reg_base, hz, has_new_mode);
 	/*
 	 * The MMC clock has an extra /2 post-divider when operating in the new
 	 * mode.
 	 */
-	if (new_mode)
+	if (has_new_mode)
 		hz = hz * 2;
 
 	if (hz <= 24000000) {
@@ -134,8 +132,7 @@ static int mmc_set_mod_clk(struct sunxi_mmc_priv *priv, unsigned int hz)
 	}
 
 	if (n > 3) {
-		printf("mmc %u error cannot set clock to %u\n", priv->mmc_no,
-		       hz);
+		printf("mmc error: cannot set clock to %u\n", hz);
 		return -1;
 	}
 
@@ -165,10 +162,9 @@ static int mmc_set_mod_clk(struct sunxi_mmc_priv *priv, unsigned int hz)
 #endif
 	}
 
-	if (new_mode) {
-#ifdef CONFIG_MMC_SUNXI_HAS_NEW_MODE
+	if (has_new_mode) {
+#if IS_ENABLED(CONFIG_MMC_SUNXI_HAS_NEW_MODE)
 		val = CCM_MMC_CTRL_MODE_SEL_NEW;
-		setbits_le32(&priv->reg->ntsr, SUNXI_MMC_NTSR_MODE_SEL_NEW);
 #endif
 	} else {
 		val = CCM_MMC_CTRL_OCLK_DLY(oclk_dly) |
@@ -176,12 +172,25 @@ static int mmc_set_mod_clk(struct sunxi_mmc_priv *priv, unsigned int hz)
 	}
 
 	writel(CCM_MMC_CTRL_ENABLE| pll | CCM_MMC_CTRL_N(n) |
-	       CCM_MMC_CTRL_M(div) | val, priv->mclkreg);
+	       CCM_MMC_CTRL_M(div) | val, reg_base);
 
-	debug("mmc %u set mod-clk req %u parent %u n %u m %u rate %u\n",
-	      priv->mmc_no, hz, pll_hz, 1u << n, div, pll_hz / (1u << n) / div);
+	debug("mmc set mod-clk req %u parent %u n %u m %u rate %u\n",
+	      hz, pll_hz, 1u << n, div, pll_hz / (1u << n) / div);
 
 	return 0;
+}
+
+static int mmc_set_mod_clk(struct sunxi_mmc_priv *priv, unsigned int hz)
+{
+	bool new_mode = false;
+
+	if (IS_ENABLED(CONFIG_MMC_SUNXI_HAS_NEW_MODE) && (priv->mmc_no == 2))
+		new_mode = true;
+
+	if (new_mode)
+		setbits_le32(&priv->reg->ntsr, SUNXI_MMC_NTSR_MODE_SEL_NEW);
+
+	return sunxi_mmc_set_mod_clk(priv->mclkreg, hz, new_mode);
 }
 
 static int mmc_update_clk(struct sunxi_mmc_priv *priv)

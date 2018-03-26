@@ -33,6 +33,9 @@ void clock_set_de_mod_clock(u32 *clk_cfg, unsigned int hz);
 void clock_init_safe(void);
 void clock_init_sec(void);
 void clock_init_uart(void);
+
+int sunxi_mmc_set_mod_clk(void *reg_base, unsigned int hz, bool has_new_mode);
+
 #endif
 
 #endif /* _SUNXI_CLOCK_H */
