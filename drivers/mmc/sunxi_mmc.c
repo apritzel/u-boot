@@ -589,6 +589,7 @@ static int sunxi_mmc_probe(struct udevice *dev)
 	struct ofnode_phandle_args args;
 	u32 *gate_reg;
 	int bus_width, ret;
+	struct sunxi_ccm_reg *ccm = (struct sunxi_ccm_reg *)SUNXI_CCM_BASE;
 
 	cfg->name = dev->name;
 	bus_width = dev_read_u32_default(dev, "bus-width", 1);
@@ -620,6 +621,8 @@ static int sunxi_mmc_probe(struct udevice *dev)
 		return ret;
 	}
 	clk_enable(&priv->bus_clk);
+
+	setbits_le32(&ccm->ahb_reset0_cfg, 1U << AHB_RESET_OFFSET_MMC(0));
 #else
 	/* We don't have a sunxi clock driver so find the clock address here */
 	ret = dev_read_phandle_with_args(dev, "clocks", "#clock-cells", 0,
