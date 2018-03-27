@@ -720,8 +720,10 @@ config ARCH_SUNXI
 	select DM_ETH
 	select DM_GPIO
 	select DM_KEYBOARD
+	select DM_MMC
 	select DM_SERIAL
 	select DM_USB if DISTRO_DEFAULTS
+	select CLK
 	select OF_BOARD_SETUP
 	select OF_CONTROL
 	select OF_SEPARATE
