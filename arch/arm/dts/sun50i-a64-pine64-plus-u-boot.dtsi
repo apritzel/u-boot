@@ -46,6 +46,7 @@
 		pins = "PD10", "PD11", "PD13", "PD14", "PD17",
 		       "PD18", "PD19", "PD20", "PD22", "PD23";
 		function = "emac";
+		pinmux = <4>;
 		drive-strength = <40>;
 	};
 
@@ -54,6 +55,7 @@
 		       "PD13", "PD15", "PD16", "PD17", "PD18",
 		       "PD19", "PD20", "PD21", "PD22", "PD23";
 		function = "emac";
+		pinmux = <4>;
 		drive-strength = <40>;
 	};
 };

@@ -259,6 +259,7 @@ config MACH_SUN50I
 	select SUPPORT_SPL
 	select SUNXI_DRAM_DW
 	select SUNXI_DRAM_DW_32BIT
+	select PINCTRL
 	select FIT
 	select SPL_LOAD_FIT
 

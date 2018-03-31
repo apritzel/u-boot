@@ -276,12 +276,14 @@
 			i2c1_pins: i2c1_pins {
 				pins = "PH2", "PH3";
 				function = "i2c1";
+				pinmux = <2>;
 			};
 
 			mmc0_pins: mmc0-pins {
 				pins = "PF0", "PF1", "PF2", "PF3",
 				       "PF4", "PF5";
 				function = "mmc0";
+				pinmux = <2>;
 				drive-strength = <30>;
 				bias-pull-up;
 			};
@@ -290,6 +292,7 @@
 				pins = "PG0", "PG1", "PG2", "PG3",
 				       "PG4", "PG5";
 				function = "mmc1";
+				pinmux = <2>;
 				drive-strength = <30>;
 				bias-pull-up;
 			};
@@ -299,6 +302,7 @@
 				       "PC10","PC11", "PC12", "PC13",
 				       "PC14", "PC15", "PC16";
 				function = "mmc2";
+				pinmux = <3>;
 				drive-strength = <30>;
 				bias-pull-up;
 			};
@@ -306,16 +310,19 @@
 			uart0_pins_a: uart0@0 {
 				pins = "PB8", "PB9";
 				function = "uart0";
+				pinmux = <4>;
 			};
 
 			uart1_pins: uart1_pins {
 				pins = "PG6", "PG7";
 				function = "uart1";
+				pinmux = <2>;
 			};
 
 			uart1_rts_cts_pins: uart1_rts_cts_pins {
 				pins = "PG8", "PG9";
 				function = "uart1";
+				pinmux = <2>;
 			};
 		};
 

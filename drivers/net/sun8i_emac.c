@@ -454,6 +454,7 @@ static int _sun8i_emac_eth_init(struct emac_eth_dev *priv, u8 *enetaddr)
 
 static int parse_phy_pins(struct udevice *dev)
 {
+#if !CONFIG_IS_ENABLED(PINCTRL)
 	int offset;
 	const char *pin_name;
 	int drive, pull = SUN4I_PINCTRL_NO_PULL, i;
@@ -506,7 +507,7 @@ static int parse_phy_pins(struct udevice *dev)
 		printf("WARNING: emac: cannot find pins property\n");
 		return -2;
 	}
-
+#endif
 	return 0;
 }
 
