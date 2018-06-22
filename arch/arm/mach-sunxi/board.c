@@ -67,90 +67,140 @@ static struct mm_region sunxi_mem_map[] = {
 struct mm_region *mem_map = sunxi_mem_map;
 #endif
 
+static int is_sun8i(unsigned int socid)
+{
+	switch (socid) {
+	case SOCID_A23: case SOCID_A33: case SOCID_A83T: case SOCID_H3:
+	case SOCID_R40: case SOCID_V3S:
+		return 1;
+	}
+
+	return 0;
+}
+
 static int gpio_uart_init(void)
 {
 	__maybe_unused uint val;
 	int rx_pin = -1, tx_pin = -1;
 	uint8_t mux = 7;
+	uint socid = sunxi_get_socid();
 
-#if CONFIG_CONS_INDEX == 1 && defined(CONFIG_UART0_PORT_F)
-#if defined(CONFIG_MACH_SUN4I) || \
-    defined(CONFIG_MACH_SUN7I) || \
-    defined(CONFIG_MACH_SUN8I_R40)
-	/* disable GPB22,23 as uart0 tx,rx to avoid conflict */
-	sunxi_gpio_set_cfgpin(SUNXI_GPB(22), SUNXI_GPIO_INPUT);
-	sunxi_gpio_set_cfgpin(SUNXI_GPB(23), SUNXI_GPIO_INPUT);
-#endif
-#if defined(CONFIG_MACH_SUN8I) && !defined(CONFIG_MACH_SUN8I_R40)
-	sunxi_gpio_set_cfgpin(SUNXI_GPF(2), SUN8I_GPF_UART0);
-	sunxi_gpio_set_cfgpin(SUNXI_GPF(4), SUN8I_GPF_UART0);
-#elif defined(CONFIG_MACH_SUN50I_H6)
-	sunxi_gpio_set_cfgpin(SUNXI_GPF(2), SUN8I_GPF_UART0);
-	sunxi_gpio_set_cfgpin(SUNXI_GPF(4), SUN8I_GPF_UART0);
-#else
-	sunxi_gpio_set_cfgpin(SUNXI_GPF(2), SUNXI_GPF_UART0);
-	sunxi_gpio_set_cfgpin(SUNXI_GPF(4), SUNXI_GPF_UART0);
-#endif
+#ifdef CONFIG_UART0_PORT_F
+	if (socid == SOCID_A10 || socid == SOCID_A20 || socid == SOCID_R40) {
+		/* disable GPB22,23 as uart0 tx,rx to avoid conflict */
+		sunxi_gpio_set_cfgpin(SUNXI_GPB(22), SUNXI_GPIO_INPUT);
+		sunxi_gpio_set_cfgpin(SUNXI_GPB(23), SUNXI_GPIO_INPUT);
+		break;
+	}
+	if (is_sun8i(socid) && socid != SOCID_R40) {
+		sunxi_gpio_set_cfgpin(SUNXI_GPF(2), SUN8I_GPF_UART0);
+		sunxi_gpio_set_cfgpin(SUNXI_GPF(4), SUN8I_GPF_UART0);
+	} else if (socid == SOCID_H6) {
+		sunxi_gpio_set_cfgpin(SUNXI_GPF(2), SUN8I_GPF_UART0);
+		sunxi_gpio_set_cfgpin(SUNXI_GPF(4), SUN8I_GPF_UART0);
+	} else {
+		sunxi_gpio_set_cfgpin(SUNXI_GPF(2), SUNXI_GPF_UART0);
+		sunxi_gpio_set_cfgpin(SUNXI_GPF(4), SUNXI_GPF_UART0);
+	}
+
 	sunxi_gpio_set_pull(SUNXI_GPF(4), 1);
 
 	return 0;
-#elif CONFIG_CONS_INDEX == 1 && (defined(CONFIG_MACH_SUN4I) || \
-				 defined(CONFIG_MACH_SUN7I) || \
-				 defined(CONFIG_MACH_SUN8I_R40))
-	mux = SUN4I_GPB_UART0;
-	tx_pin = SUNXI_GPB(22);
-	rx_pin = SUNXI_GPB(23);
-#elif CONFIG_CONS_INDEX == 1 && defined(CONFIG_MACH_SUN5I)
-	mux = SUN5I_GPB_UART0;
-	tx_pin = SUNXI_GPB(19);
-	rx_pin = SUNXI_GPB(20);
-#elif CONFIG_CONS_INDEX == 1 && defined(CONFIG_MACH_SUN6I)
-	mux = SUN6I_GPH_UART0;
-	tx_pin = SUNXI_GPH(20);
-	rx_pin = SUNXI_GPH(21);
-#elif CONFIG_CONS_INDEX == 1 && defined(CONFIG_MACH_SUN8I_A33)
-	mux = SUN8I_A33_GPB_UART0;
-	tx_pin = SUNXI_GPB(0);
-	rx_pin = SUNXI_GPB(1);
-#elif CONFIG_CONS_INDEX == 1 && defined(CONFIG_MACH_SUNXI_H3_H5)
-	mux = SUN8I_H3_GPA_UART0;
-	tx_pin = SUNXI_GPA(4);
-	rx_pin = SUNXI_GPA(5);
-#elif CONFIG_CONS_INDEX == 1 && defined(CONFIG_MACH_SUN50I)
-	mux = SUN50I_GPB_UART0;
-	tx_pin = SUNXI_GPB(8);
-	rx_pin = SUNXI_GPB(9);
-#elif CONFIG_CONS_INDEX == 1 && defined(CONFIG_MACH_SUN50I_H6)
-	mux = SUN50I_H6_GPH_UART0;
-	tx_pin = SUNXI_GPH(0);
-	rx_pin = SUNXI_GPH(1);
-#elif CONFIG_CONS_INDEX == 1 && defined(CONFIG_MACH_SUN8I_A83T)
-	mux = SUN8I_A83T_GPB_UART0;
-	tx_pin = SUNXI_GPB(9);
-	rx_pin = SUNXI_GPB(10);
-#elif CONFIG_CONS_INDEX == 1 && defined(CONFIG_MACH_SUN8I_V3S)
-	mux = SUN8I_V3S_GPB_UART0;
-	tx_pin = SUNXI_GPB(8);
-	rx_pin = SUNXI_GPB(9);
-#elif CONFIG_CONS_INDEX == 1 && defined(CONFIG_MACH_SUN9I)
-	mux = SUN9I_GPH_UART0;
-	tx_pin = SUNXI_GPH(12);
-	rx_pin = SUNXI_GPH(13);
-#elif CONFIG_CONS_INDEX == 2 && defined(CONFIG_MACH_SUN5I)
-	mux = SUN5I_GPG_UART1;
-	tx_pin = SUNXI_GPG(3);
-	rx_pin = SUNXI_GPG(4);
-#elif CONFIG_CONS_INDEX == 3 && defined(CONFIG_MACH_SUN8I)
-	mux = SUN8I_GPB_UART2;
-	tx_pin = SUNXI_GPB(0);
-	rx_pin = SUNXI_GPB(1);
-#elif CONFIG_CONS_INDEX == 5 && defined(CONFIG_MACH_SUN8I)
-	mux = SUN8I_GPL_R_UART;
-	tx_pin = SUNXI_GPL(2);
-	rx_pin = SUNXI_GPL(3);
-#else
-#error Unsupported console port number. Please fix pin mux settings in board.c
 #endif
+
+	if (CONFIG_CONS_INDEX > 1) {
+		switch (CONFIG_CONS_INDEX) {
+		case 2:
+			if (socid != SOCID_A13)
+				return 0;
+			mux = SUN5I_GPG_UART1;
+			tx_pin = SUNXI_GPG(3);
+			rx_pin = SUNXI_GPG(4);
+			break;
+		case 3:
+			if (!is_sun8i(socid))
+				return 0;
+			mux = SUN8I_GPB_UART2;
+			tx_pin = SUNXI_GPB(0);
+			rx_pin = SUNXI_GPB(1);
+			break;
+		case 5:
+			if (!is_sun8i(socid))
+				return 0;
+			mux = SUN8I_GPL_R_UART;
+			tx_pin = SUNXI_GPL(2);
+			rx_pin = SUNXI_GPL(3);
+		}
+
+		sunxi_gpio_set_cfgpin(tx_pin, mux);
+		sunxi_gpio_set_cfgpin(rx_pin, mux);
+		sunxi_gpio_set_pull(rx_pin, SUNXI_GPIO_PULL_UP);
+
+		return 0;
+	}
+
+	switch (socid) {
+	case SOCID_A10:
+	case SOCID_A20:
+	case SOCID_R40:
+		mux = SUN4I_GPB_UART0;
+		tx_pin = SUNXI_GPB(22);
+		rx_pin = SUNXI_GPB(23);
+		break;
+	case SOCID_A13:			// sun5i
+		mux = SUN5I_GPB_UART0;
+		tx_pin = SUNXI_GPB(19);
+		rx_pin = SUNXI_GPB(20);
+		break;
+	case SOCID_A31:
+		mux = SUN6I_GPH_UART0;
+		tx_pin = SUNXI_GPH(20);
+		rx_pin = SUNXI_GPH(21);
+		break;
+	case SOCID_A80:
+		mux = SUN9I_GPH_UART0;
+		tx_pin = SUNXI_GPH(12);
+		rx_pin = SUNXI_GPH(13);
+		break;
+	case SOCID_A33:
+		mux = SUN8I_A33_GPB_UART0;
+		tx_pin = SUNXI_GPB(0);
+		rx_pin = SUNXI_GPB(1);
+		break;
+	case SOCID_H3:
+	case SOCID_H5:
+		mux = SUN8I_H3_GPA_UART0;
+		tx_pin = SUNXI_GPA(4);
+		rx_pin = SUNXI_GPA(5);
+		break;
+	case SOCID_A83T:
+		mux = SUN8I_A83T_GPB_UART0;
+		tx_pin = SUNXI_GPB(9);
+		rx_pin = SUNXI_GPB(10);
+		break;
+	case SOCID_A64:
+		mux = SUN50I_GPB_UART0;
+		tx_pin = SUNXI_GPB(8);
+		rx_pin = SUNXI_GPB(9);
+		break;
+	case SOCID_H6:
+		mux = SUN50I_H6_GPH_UART0;
+		tx_pin = SUNXI_GPH(0);
+		rx_pin = SUNXI_GPH(1);
+		break;
+	case SOCID_V3S:
+		mux = SUN8I_V3S_GPB_UART0;
+		tx_pin = SUNXI_GPB(8);
+		rx_pin = SUNXI_GPB(9);
+		break;
+	default:
+	/*
+	 * Unsupported console port number.
+	 * Please fix pin mux settings in board.c
+	 */
+		break;
+	}
+
 	if (tx_pin >= 0)
 		sunxi_gpio_set_cfgpin(tx_pin, mux);
 	if (rx_pin >= 0) {
