@@ -13,12 +13,13 @@
 #include <axp_pmic.h>
 #include <errno.h>
 
-#ifdef CONFIG_MACH_SUN6I
 int sunxi_get_ss_bonding_id(void)
 {
+	static int bonding_id = -1;
+
+#ifdef CONFIG_MACH_SUN6I
 	struct sunxi_ccm_reg * const ccm =
 		(struct sunxi_ccm_reg *)SUNXI_CCM_BASE;
-	static int bonding_id = -1;
 
 	if (bonding_id != -1)
 		return bonding_id;
@@ -33,13 +34,12 @@ int sunxi_get_ss_bonding_id(void)
 	/* Disable Security System again */
 	clrbits_le32(&ccm->ahb_gate0, 1 << AHB_GATE_OFFSET_SS);
 	clrbits_le32(&ccm->ahb_reset0_cfg, 1 << AHB_RESET_OFFSET_SS);
+#endif
 
 	return bonding_id;
 }
-#endif
 
-#ifdef CONFIG_MACH_SUN8I
-uint sunxi_get_sram_id(void)
+unsigned int sunxi_read_socid(void)
 {
 	uint id;
 
@@ -50,7 +50,6 @@ uint sunxi_get_sram_id(void)
 
 	return id;
 }
-#endif
 
 #ifdef CONFIG_DISPLAY_CPUINFO
 int print_cpuinfo(void)
@@ -80,17 +79,17 @@ int print_cpuinfo(void)
 #elif defined CONFIG_MACH_SUN7I
 	puts("CPU:   Allwinner A20 (SUN7I)\n");
 #elif defined CONFIG_MACH_SUN8I_A23
-	printf("CPU:   Allwinner A23 (SUN8I %04x)\n", sunxi_get_sram_id());
+	printf("CPU:   Allwinner A23 (SUN8I %04x)\n", sunxi_read_socid());
 #elif defined CONFIG_MACH_SUN8I_A33
-	printf("CPU:   Allwinner A33 (SUN8I %04x)\n", sunxi_get_sram_id());
+	printf("CPU:   Allwinner A33 (SUN8I %04x)\n", sunxi_read_socid());
 #elif defined CONFIG_MACH_SUN8I_A83T
-	printf("CPU:   Allwinner A83T (SUN8I %04x)\n", sunxi_get_sram_id());
+	printf("CPU:   Allwinner A83T (SUN8I %04x)\n", sunxi_read_socid());
 #elif defined CONFIG_MACH_SUN8I_H3
-	printf("CPU:   Allwinner H3 (SUN8I %04x)\n", sunxi_get_sram_id());
+	printf("CPU:   Allwinner H3 (SUN8I %04x)\n", sunxi_read_socid());
 #elif defined CONFIG_MACH_SUN8I_R40
-	printf("CPU:   Allwinner R40 (SUN8I %04x)\n", sunxi_get_sram_id());
+	printf("CPU:   Allwinner R40 (SUN8I %04x)\n", sunxi_read_socid());
 #elif defined CONFIG_MACH_SUN8I_V3S
-	printf("CPU:   Allwinner V3s (SUN8I %04x)\n", sunxi_get_sram_id());
+	printf("CPU:   Allwinner V3s (SUN8I %04x)\n", sunxi_read_socid());
 #elif defined CONFIG_MACH_SUN9I
 	puts("CPU:   Allwinner A80 (SUN9I)\n");
 #elif defined CONFIG_MACH_SUN50I

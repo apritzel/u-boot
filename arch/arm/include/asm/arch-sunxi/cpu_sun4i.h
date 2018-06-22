@@ -213,6 +213,7 @@ defined(CONFIG_MACH_SUN50I)
 #ifndef __ASSEMBLY__
 void sunxi_board_init(void);
 void sunxi_reset(void);
+unsigned int sunxi_read_socid(void);
 int sunxi_get_ss_bonding_id(void);
 int sunxi_get_sid(unsigned int *sid);
 #endif /* __ASSEMBLY__ */
