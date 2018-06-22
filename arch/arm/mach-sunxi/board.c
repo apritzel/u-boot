@@ -67,9 +67,12 @@ static struct mm_region sunxi_mem_map[] = {
 struct mm_region *mem_map = sunxi_mem_map;
 #endif
 
-static int gpio_init(void)
+static int gpio_uart_init(void)
 {
 	__maybe_unused uint val;
+	int rx_pin = -1, tx_pin = -1;
+	uint8_t mux = 7;
+
 #if CONFIG_CONS_INDEX == 1 && defined(CONFIG_UART0_PORT_F)
 #if defined(CONFIG_MACH_SUN4I) || \
     defined(CONFIG_MACH_SUN7I) || \
@@ -89,63 +92,71 @@ static int gpio_init(void)
 	sunxi_gpio_set_cfgpin(SUNXI_GPF(4), SUNXI_GPF_UART0);
 #endif
 	sunxi_gpio_set_pull(SUNXI_GPF(4), 1);
+
+	return 0;
 #elif CONFIG_CONS_INDEX == 1 && (defined(CONFIG_MACH_SUN4I) || \
 				 defined(CONFIG_MACH_SUN7I) || \
 				 defined(CONFIG_MACH_SUN8I_R40))
-	sunxi_gpio_set_cfgpin(SUNXI_GPB(22), SUN4I_GPB_UART0);
-	sunxi_gpio_set_cfgpin(SUNXI_GPB(23), SUN4I_GPB_UART0);
-	sunxi_gpio_set_pull(SUNXI_GPB(23), SUNXI_GPIO_PULL_UP);
+	mux = SUN4I_GPB_UART0;
+	tx_pin = SUNXI_GPB(22);
+	rx_pin = SUNXI_GPB(23);
 #elif CONFIG_CONS_INDEX == 1 && defined(CONFIG_MACH_SUN5I)
-	sunxi_gpio_set_cfgpin(SUNXI_GPB(19), SUN5I_GPB_UART0);
-	sunxi_gpio_set_cfgpin(SUNXI_GPB(20), SUN5I_GPB_UART0);
-	sunxi_gpio_set_pull(SUNXI_GPB(20), SUNXI_GPIO_PULL_UP);
+	mux = SUN5I_GPB_UART0;
+	tx_pin = SUNXI_GPB(19);
+	rx_pin = SUNXI_GPB(20);
 #elif CONFIG_CONS_INDEX == 1 && defined(CONFIG_MACH_SUN6I)
-	sunxi_gpio_set_cfgpin(SUNXI_GPH(20), SUN6I_GPH_UART0);
-	sunxi_gpio_set_cfgpin(SUNXI_GPH(21), SUN6I_GPH_UART0);
-	sunxi_gpio_set_pull(SUNXI_GPH(21), SUNXI_GPIO_PULL_UP);
+	mux = SUN6I_GPH_UART0;
+	tx_pin = SUNXI_GPH(20);
+	rx_pin = SUNXI_GPH(21);
 #elif CONFIG_CONS_INDEX == 1 && defined(CONFIG_MACH_SUN8I_A33)
-	sunxi_gpio_set_cfgpin(SUNXI_GPB(0), SUN8I_A33_GPB_UART0);
-	sunxi_gpio_set_cfgpin(SUNXI_GPB(1), SUN8I_A33_GPB_UART0);
-	sunxi_gpio_set_pull(SUNXI_GPB(1), SUNXI_GPIO_PULL_UP);
+	mux = SUN8I_A33_GPB_UART0;
+	tx_pin = SUNXI_GPB(0);
+	rx_pin = SUNXI_GPB(1);
 #elif CONFIG_CONS_INDEX == 1 && defined(CONFIG_MACH_SUNXI_H3_H5)
-	sunxi_gpio_set_cfgpin(SUNXI_GPA(4), SUN8I_H3_GPA_UART0);
-	sunxi_gpio_set_cfgpin(SUNXI_GPA(5), SUN8I_H3_GPA_UART0);
-	sunxi_gpio_set_pull(SUNXI_GPA(5), SUNXI_GPIO_PULL_UP);
+	mux = SUN8I_H3_GPA_UART0;
+	tx_pin = SUNXI_GPA(4);
+	rx_pin = SUNXI_GPA(5);
 #elif CONFIG_CONS_INDEX == 1 && defined(CONFIG_MACH_SUN50I)
-	sunxi_gpio_set_cfgpin(SUNXI_GPB(8), SUN50I_GPB_UART0);
-	sunxi_gpio_set_cfgpin(SUNXI_GPB(9), SUN50I_GPB_UART0);
-	sunxi_gpio_set_pull(SUNXI_GPB(9), SUNXI_GPIO_PULL_UP);
+	mux = SUN50I_GPB_UART0;
+	tx_pin = SUNXI_GPB(8);
+	rx_pin = SUNXI_GPB(9);
 #elif CONFIG_CONS_INDEX == 1 && defined(CONFIG_MACH_SUN50I_H6)
-	sunxi_gpio_set_cfgpin(SUNXI_GPH(0), SUN50I_H6_GPH_UART0);
-	sunxi_gpio_set_cfgpin(SUNXI_GPH(1), SUN50I_H6_GPH_UART0);
-	sunxi_gpio_set_pull(SUNXI_GPH(1), SUNXI_GPIO_PULL_UP);
+	mux = SUN50I_H6_GPH_UART0;
+	tx_pin = SUNXI_GPH(0);
+	rx_pin = SUNXI_GPH(1);
 #elif CONFIG_CONS_INDEX == 1 && defined(CONFIG_MACH_SUN8I_A83T)
-	sunxi_gpio_set_cfgpin(SUNXI_GPB(9), SUN8I_A83T_GPB_UART0);
-	sunxi_gpio_set_cfgpin(SUNXI_GPB(10), SUN8I_A83T_GPB_UART0);
-	sunxi_gpio_set_pull(SUNXI_GPB(10), SUNXI_GPIO_PULL_UP);
+	mux = SUN8I_A83T_GPB_UART0;
+	tx_pin = SUNXI_GPB(9);
+	rx_pin = SUNXI_GPB(10);
 #elif CONFIG_CONS_INDEX == 1 && defined(CONFIG_MACH_SUN8I_V3S)
-	sunxi_gpio_set_cfgpin(SUNXI_GPB(8), SUN8I_V3S_GPB_UART0);
-	sunxi_gpio_set_cfgpin(SUNXI_GPB(9), SUN8I_V3S_GPB_UART0);
-	sunxi_gpio_set_pull(SUNXI_GPB(9), SUNXI_GPIO_PULL_UP);
+	mux = SUN8I_V3S_GPB_UART0;
+	tx_pin = SUNXI_GPB(8);
+	rx_pin = SUNXI_GPB(9);
 #elif CONFIG_CONS_INDEX == 1 && defined(CONFIG_MACH_SUN9I)
-	sunxi_gpio_set_cfgpin(SUNXI_GPH(12), SUN9I_GPH_UART0);
-	sunxi_gpio_set_cfgpin(SUNXI_GPH(13), SUN9I_GPH_UART0);
-	sunxi_gpio_set_pull(SUNXI_GPH(13), SUNXI_GPIO_PULL_UP);
+	mux = SUN9I_GPH_UART0;
+	tx_pin = SUNXI_GPH(12);
+	rx_pin = SUNXI_GPH(13);
 #elif CONFIG_CONS_INDEX == 2 && defined(CONFIG_MACH_SUN5I)
-	sunxi_gpio_set_cfgpin(SUNXI_GPG(3), SUN5I_GPG_UART1);
-	sunxi_gpio_set_cfgpin(SUNXI_GPG(4), SUN5I_GPG_UART1);
-	sunxi_gpio_set_pull(SUNXI_GPG(4), SUNXI_GPIO_PULL_UP);
+	mux = SUN5I_GPG_UART1;
+	tx_pin = SUNXI_GPG(3);
+	rx_pin = SUNXI_GPG(4);
 #elif CONFIG_CONS_INDEX == 3 && defined(CONFIG_MACH_SUN8I)
-	sunxi_gpio_set_cfgpin(SUNXI_GPB(0), SUN8I_GPB_UART2);
-	sunxi_gpio_set_cfgpin(SUNXI_GPB(1), SUN8I_GPB_UART2);
-	sunxi_gpio_set_pull(SUNXI_GPB(1), SUNXI_GPIO_PULL_UP);
+	mux = SUN8I_GPB_UART2;
+	tx_pin = SUNXI_GPB(0);
+	rx_pin = SUNXI_GPB(1);
 #elif CONFIG_CONS_INDEX == 5 && defined(CONFIG_MACH_SUN8I)
-	sunxi_gpio_set_cfgpin(SUNXI_GPL(2), SUN8I_GPL_R_UART);
-	sunxi_gpio_set_cfgpin(SUNXI_GPL(3), SUN8I_GPL_R_UART);
-	sunxi_gpio_set_pull(SUNXI_GPL(3), SUNXI_GPIO_PULL_UP);
+	mux = SUN8I_GPL_R_UART;
+	tx_pin = SUNXI_GPL(2);
+	rx_pin = SUNXI_GPL(3);
 #else
 #error Unsupported console port number. Please fix pin mux settings in board.c
 #endif
+	if (tx_pin >= 0)
+		sunxi_gpio_set_cfgpin(tx_pin, mux);
+	if (rx_pin >= 0) {
+		sunxi_gpio_set_cfgpin(rx_pin, mux);
+		sunxi_gpio_set_pull(rx_pin, SUNXI_GPIO_PULL_UP);
+	}
 
 #ifdef CONFIG_MACH_SUN50I_H6
 	/* Update PIO power bias configuration by copy hardware detected value */
@@ -220,7 +231,7 @@ void s_init(void)
 
 	clock_init();
 	timer_init();
-	gpio_init();
+	gpio_uart_init();
 #ifndef CONFIG_DM_I2C
 	i2c_init_board();
 #endif
