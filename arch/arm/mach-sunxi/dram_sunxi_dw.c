@@ -857,27 +857,35 @@ static unsigned int init_dram_para(uint16_t socid, struct dram_para *para)
 	para->odt_en = true;
 #endif
 
-#if defined(CONFIG_MACH_SUN8I_H3)
-	para->dx_read_delays  = sun8i_h3_dx_read_delays;
-	para->dx_write_delays = sun8i_h3_dx_write_delays;
-	para->ac_delays	 = sun8i_h3_ac_delays;
-#elif defined(CONFIG_MACH_SUN8I_V3S)
-	para->dx_read_delays  = sun8i_v3s_dx_read_delays;
-	para->dx_write_delays = sun8i_v3s_dx_write_delays;
-	para->ac_delays	 = sun8i_v3s_ac_delays;
-#elif defined(CONFIG_MACH_SUN8I_R40)
-	para->dx_read_delays  = sun8i_r40_dx_read_delays;
-	para->dx_write_delays = sun8i_r40_dx_write_delays;
-	para->ac_delays	 = sun8i_r40_ac_delays;
-#elif defined(CONFIG_MACH_SUN50I)
-	para->dx_read_delays  = sun50i_a64_dx_read_delays;
-	para->dx_write_delays = sun50i_a64_dx_write_delays;
-	para->ac_delays	 = sun50i_a64_ac_delays;
-#elif defined(CONFIG_MACH_SUN50I_H5)
-	para->dx_read_delays  = sun8i_h5_dx_read_delays;
-	para->dx_write_delays = sun8i_h5_dx_write_delays;
-	para->ac_delays	 = sun8i_h5_ac_delays;
-#endif
+	switch (socid) {
+	case SOCID_V3S:
+		para->dx_read_delays	= sun8i_v3s_dx_read_delays;
+		para->dx_write_delays	= sun8i_v3s_dx_write_delays;
+		para->ac_delays		= sun8i_v3s_ac_delays;
+		break;
+	case SOCID_H3:
+		para->dx_read_delays	= sun8i_h3_dx_read_delays;
+		para->dx_write_delays	= sun8i_h3_dx_write_delays;
+		para->ac_delays		= sun8i_h3_ac_delays;
+		break;
+	case SOCID_R40:
+		para->dx_read_delays	= sun8i_r40_dx_read_delays;
+		para->dx_write_delays	= sun8i_r40_dx_write_delays;
+		para->ac_delays		= sun8i_r40_ac_delays;
+		/* Currently we cannot support R40 with dual rank memory */
+		para->dual_rank		= 0;
+		break;
+	case SOCID_A64:
+		para->dx_read_delays	= sun50i_a64_dx_read_delays;
+		para->dx_write_delays	= sun50i_a64_dx_write_delays;
+		para->ac_delays		= sun50i_a64_ac_delays;
+		break;
+	case SOCID_H5:
+		para->dx_read_delays	= sun8i_h5_dx_read_delays;
+		para->dx_write_delays	= sun8i_h5_dx_write_delays;
+		para->ac_delays		= sun8i_h5_ac_delays;
+		break;
+	}
 
 	return clkrate;
 }
@@ -890,25 +898,9 @@ unsigned long sunxi_dram_init(void)
 			(struct sunxi_mctl_ctl_reg *)SUNXI_DRAM_CTL0_BASE;
 	struct dram_para para;
 	unsigned int clkrate;
-/*
- * Let the compiler optimize alternatives away by passing this value into
- * the static functions. This saves us #ifdefs, but still keeps the binary
- * small.
- */
-#if defined(CONFIG_MACH_SUN8I_H3)
-	uint16_t socid = SOCID_H3;
-#elif defined(CONFIG_MACH_SUN8I_R40)
-	uint16_t socid = SOCID_R40;
-	/* Currently we cannot support R40 with dual rank memory */
-	para.dual_rank = 0;
-#elif defined(CONFIG_MACH_SUN8I_V3S)
-	uint16_t socid = SOCID_V3S;
-#elif defined(CONFIG_MACH_SUN50I)
-	uint16_t socid = SOCID_A64;
-#elif defined(CONFIG_MACH_SUN50I_H5)
-	uint16_t socid = SOCID_H5;
-#endif
+	unsigned int socid = sunxi_get_socid();
 
+	/* Set initial DRAM type to try. */
 #if defined CONFIG_SUNXI_DRAM_DDR3
 	para.dram_type = 3;
 #elif defined CONFIG_SUNXI_DRAM_LPDDR3
