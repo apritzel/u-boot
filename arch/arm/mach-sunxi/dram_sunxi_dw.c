@@ -428,7 +428,7 @@ static void mctl_set_cr(uint16_t socid, struct dram_para *para)
 	}
 }
 
-static void mctl_sys_init(uint16_t socid, struct dram_para *para)
+static void mctl_sys_init(uint16_t socid)
 {
 	struct sunxi_ccm_reg * const ccm =
 			(struct sunxi_ccm_reg *)SUNXI_CCM_BASE;
@@ -858,7 +858,7 @@ unsigned long sunxi_dram_init(void)
 	uint16_t socid = SOCID_H5;
 #endif
 
-	mctl_sys_init(socid, &para);
+	mctl_sys_init(socid);
 	if (mctl_channel_init(socid, &para))
 		return 0;
 
