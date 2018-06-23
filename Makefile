@@ -1350,7 +1350,7 @@ u-boot-x86-16bit.bin: u-boot FORCE
 endif
 
 ifneq ($(CONFIG_ARCH_SUNXI),)
-ifeq ($(CONFIG_ARM64),)
+ifeq ($(CONFIG_SPL_FIT_SOURCE)$(CONFIG_SPL_FIT_GENERATOR),)
 u-boot-sunxi-with-spl.bin: spl/sunxi-spl.bin u-boot.img u-boot.dtb FORCE
 	$(call if_changed,binman)
 else
