@@ -221,9 +221,9 @@ struct dram_para {
 	u8 dual_rank;
 	u8 row_bits;
 	u8 bank_bits;
-	const u8 dx_read_delays[NR_OF_BYTE_LANES][LINES_PER_BYTE_LANE];
-	const u8 dx_write_delays[NR_OF_BYTE_LANES][LINES_PER_BYTE_LANE];
-	const u8 ac_delays[31];
+	const u8 *dx_read_delays;
+	const u8 *dx_write_delays;
+	const u8 *ac_delays;
 };
 
 static inline int ns_to_t(int nanoseconds)

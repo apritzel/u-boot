@@ -32,13 +32,15 @@ static void mctl_set_bit_delays(struct dram_para *para)
 	struct sunxi_mctl_ctl_reg * const mctl_ctl =
 			(struct sunxi_mctl_ctl_reg *)SUNXI_DRAM_CTL0_BASE;
 	int i, j;
+	const u8 *wdelay = para->dx_write_delays;
+	const u8 *rdelay = para->dx_read_delays;
 
 	clrbits_le32(&mctl_ctl->pgcr[0], 1 << 26);
 
 	for (i = 0; i < NR_OF_BYTE_LANES; i++)
 		for (j = 0; j < LINES_PER_BYTE_LANE; j++)
-			writel(DXBDLR_WRITE_DELAY(para->dx_write_delays[i][j]) |
-			       DXBDLR_READ_DELAY(para->dx_read_delays[i][j]),
+			writel(DXBDLR_WRITE_DELAY(*wdelay++) |
+			       DXBDLR_READ_DELAY(*rdelay++),
 			       &mctl_ctl->dx[i].bdlr[j]);
 
 	for (i = 0; i < 31; i++)
@@ -695,93 +697,111 @@ static void mctl_auto_detect_dram_size(uint16_t socid, struct dram_para *para)
  * in the hope that they are reasonable for most (all?) boards.
  */
 #ifndef __aarch64__
-#define SUN8I_H3_DX_READ_DELAYS					\
-	{{ 18, 18, 18, 18, 18, 18, 18, 18, 18,  0,  0 },	\
-	 { 14, 14, 14, 14, 14, 14, 14, 14, 14,  0,  0 },	\
-	 { 18, 18, 18, 18, 18, 18, 18, 18, 18,  0,  0 },	\
-	 { 14, 14, 14, 14, 14, 14, 14, 14, 14,  0,  0 }}
-#define SUN8I_H3_DX_WRITE_DELAYS				\
-	{{  0,  0,  0,  0,  0,  0,  0,  0,  0, 10, 10 },	\
-	 {  0,  0,  0,  0,  0,  0,  0,  0,  0, 10, 10 },	\
-	 {  0,  0,  0,  0,  0,  0,  0,  0,  0, 10, 10 },	\
-	 {  0,  0,  0,  0,  0,  0,  0,  0,  0,  6,  6 }}
-#define SUN8I_H3_AC_DELAYS					\
-	{  0,  0,  0,  0,  0,  0,  0,  0,			\
-	   0,  0,  0,  0,  0,  0,  0,  0,			\
-	   0,  0,  0,  0,  0,  0,  0,  0,			\
-	   0,  0,  0,  0,  0,  0,  0      }
+const u8 sun8i_h3_dx_read_delays[] = {
+	18, 18, 18, 18, 18, 18, 18, 18, 18,  0,  0,
+	14, 14, 14, 14, 14, 14, 14, 14, 14,  0,  0,
+	18, 18, 18, 18, 18, 18, 18, 18, 18,  0,  0,
+	14, 14, 14, 14, 14, 14, 14, 14, 14,  0,  0
+};
+const u8 sun8i_h3_dx_write_delays[] = {
+	0,  0,  0,  0,  0,  0,  0,  0,  0, 10, 10,
+	0,  0,  0,  0,  0,  0,  0,  0,  0, 10, 10,
+	0,  0,  0,  0,  0,  0,  0,  0,  0, 10, 10,
+	0,  0,  0,  0,  0,  0,  0,  0,  0,  6,  6
+};
+const u8 sun8i_h3_ac_delays[] = {
+	0,  0,  0,  0,  0,  0,  0,  0,
+	0,  0,  0,  0,  0,  0,  0,  0,
+	0,  0,  0,  0,  0,  0,  0,  0,
+	0,  0,  0,  0,  0,  0,  0
+};
 
-#define SUN8I_V3S_DX_READ_DELAYS					\
-	{{  8,  8,  8,  8,  8,  8,  8,  8,  8,  0,  0 },	\
-	 {  7,  7,  7,  7,  7,  7,  7,  7,  7,  0,  0 },	\
-	 {  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0 },	\
-	 {  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0 }}
-#define SUN8I_V3S_DX_WRITE_DELAYS				\
-	{{  0,  0,  0,  0,  0,  0,  0,  0,  0,  4,  4 },	\
-	 {  0,  0,  0,  0,  0,  0,  0,  0,  0,  2,  2 },	\
-	 {  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0 },	\
-	 {  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0 }}
-#define SUN8I_V3S_AC_DELAYS					\
-	{  0,  0,  0,  0,  0,  0,  0,  0,			\
-	   0,  0,  0,  0,  0,  0,  0,  0,			\
-	   0,  0,  0,  0,  0,  0,  0,  0,			\
-	   0,  0,  0,  0,  0,  0,  0      }
+const u8 sun8i_v3s_dx_read_delays[] = {
+	8,  8,  8,  8,  8,  8,  8,  8,  8,  0,  0,
+	7,  7,  7,  7,  7,  7,  7,  7,  7,  0,  0,
+	0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+	0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+};
+const u8 sun8i_v3s_dx_write_delays[] = {
+	0,  0,  0,  0,  0,  0,  0,  0,  0,  4,  4,
+	0,  0,  0,  0,  0,  0,  0,  0,  0,  2,  2,
+	0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+	0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+};
+const u8 sun8i_v3s_ac_delays[] = {
+	0,  0,  0,  0,  0,  0,  0,  0,
+	0,  0,  0,  0,  0,  0,  0,  0,
+	0,  0,  0,  0,  0,  0,  0,  0,
+	0,  0,  0,  0,  0,  0,  0
+};
 
-#define SUN8I_R40_DX_READ_DELAYS				\
-	{{ 14, 14, 14, 14, 14, 14, 14, 14, 14,  0,  0 },	\
-	 { 14, 14, 14, 14, 14, 14, 14, 14, 14,  0,  0 },	\
-	 { 14, 14, 14, 14, 14, 14, 14, 14, 14,  0,  0 },	\
-	 { 14, 14, 14, 14, 14, 14, 14, 14, 14,  0,  0 } }
-#define SUN8I_R40_DX_WRITE_DELAYS				\
-	{{  0,  0,  0,  0,  0,  0,  0,  0,  0,  6,  0 },	\
-	 {  0,  0,  0,  0,  0,  0,  0,  0,  0,  6,  0 },	\
-	 {  0,  0,  0,  0,  0,  0,  0,  0,  0,  6,  0 },	\
-	 {  0,  0,  0,  0,  0,  0,  0,  0,  0,  6,  0 } }
-#define SUN8I_R40_AC_DELAYS					\
-	{  0,  0,  3,  0,  0,  0,  0,  0,			\
-	   0,  0,  0,  0,  0,  0,  0,  0,			\
-	   0,  0,  0,  0,  0,  0,  0,  0,			\
-	   0,  0,  0,  0,  0,  0,  0      }
+const u8 sun8i_r40_dx_read_delays[] = {
+	14, 14, 14, 14, 14, 14, 14, 14, 14,  0,  0,
+	14, 14, 14, 14, 14, 14, 14, 14, 14,  0,  0,
+	14, 14, 14, 14, 14, 14, 14, 14, 14,  0,  0,
+	14, 14, 14, 14, 14, 14, 14, 14, 14,  0,  0
+};
+const u8 sun8i_r40_dx_write_delays[] = {
+	0,  0,  0,  0,  0,  0,  0,  0,  0,  6,  0,
+	0,  0,  0,  0,  0,  0,  0,  0,  0,  6,  0,
+	0,  0,  0,  0,  0,  0,  0,  0,  0,  6,  0,
+	0,  0,  0,  0,  0,  0,  0,  0,  0,  6,  0
+};
+const u8 sun8i_r40_ac_delays[] = {
+	0,  0,  3,  0,  0,  0,  0,  0,
+	0,  0,  0,  0,  0,  0,  0,  0,
+	0,  0,  0,  0,  0,  0,  0,  0,
+	0,  0,  0,  0,  0,  0,  0
+};
 #else
-#define SUN8I_H3_DX_READ_DELAYS {}
-#define SUN8I_H3_DX_WRITE_DELAYS {}
-#define SUN8I_H3_AC_DELAYS {}
-#define SUN8I_R40_DX_READ_DELAYS {}
-#define SUN8I_R40_DX_WRITE_DELAYS {}
-#define SUN8I_R40_AC_DELAYS {}
+const u8 sun8i_h3_dx_read_delays[] = {};
+const u8 sun8i_h3_dx_write_delays[] = {};
+const u8 sun8i_h3_ac_delays[] = {};
+const u8 sun8i_v3s_dx_read_delays[] = {};
+const u8 sun8i_v3s_dx_write_delays[] = {};
+const u8 sun8i_v3s_ac_delays[] = {};
+const u8 sun8i_r40_dx_read_delays[] = {};
+const u8 sun8i_r40_dx_write_delays[] = {};
+const u8 sun8i_r40_ac_delays[] = {};
 #endif
 
-#define SUN50I_A64_DX_READ_DELAYS				\
-	{{ 16, 16, 16, 16, 17, 16, 16, 17, 16,  1,  0 },	\
-	 { 17, 17, 17, 17, 17, 17, 17, 17, 17,  1,  0 },	\
-	 { 16, 17, 17, 16, 16, 16, 16, 16, 16,  0,  0 },	\
-	 { 17, 17, 17, 17, 17, 17, 17, 17, 17,  1,  0 }}
-#define SUN50I_A64_DX_WRITE_DELAYS				\
-	{{  0,  0,  0,  0,  0,  0,  0,  0,  0, 15, 15 },	\
-	 {  0,  0,  0,  0,  1,  1,  1,  1,  0, 10, 10 },	\
-	 {  1,  0,  1,  1,  1,  1,  1,  1,  0, 11, 11 },	\
-	 {  1,  0,  0,  1,  1,  1,  1,  1,  0, 12, 12 }}
-#define SUN50I_A64_AC_DELAYS					\
-	{  5,  5, 13, 10,  2,  5,  3,  3,			\
-	   0,  3,  3,  3,  1,  0,  0,  0,			\
-	   3,  4,  0,  3,  4,  1,  4,  0,			\
-	   1,  1,  0,  1, 13,  5,  4      }
+const u8 sun50i_a64_dx_read_delays[] = {
+	16, 16, 16, 16, 17, 16, 16, 17, 16,  1,  0,
+	17, 17, 17, 17, 17, 17, 17, 17, 17,  1,  0,
+	16, 17, 17, 16, 16, 16, 16, 16, 16,  0,  0,
+	17, 17, 17, 17, 17, 17, 17, 17, 17,  1,  0
+};
+const u8 sun50i_a64_dx_write_delays[] = {
+	0,  0,  0,  0,  0,  0,  0,  0,  0, 15, 15,
+	0,  0,  0,  0,  1,  1,  1,  1,  0, 10, 10,
+	1,  0,  1,  1,  1,  1,  1,  1,  0, 11, 11,
+	1,  0,  0,  1,  1,  1,  1,  1,  0, 12, 12
+};
+const u8 sun50i_a64_ac_delays[] = {
+	5,  5, 13, 10,  2,  5,  3,  3,
+	0,  3,  3,  3,  1,  0,  0,  0,
+	3,  4,  0,  3,  4,  1,  4,  0,
+	1,  1,  0,  1, 13,  5,  4
+};
 
-#define SUN8I_H5_DX_READ_DELAYS					\
-	{{ 14, 15, 17, 17, 17, 17, 17, 18, 17,  3,  3 },	\
-	 { 21, 21, 12, 22, 21, 21, 21, 21, 21,  3,  3 },	\
-	 { 16, 19, 19, 17, 22, 22, 21, 22, 19,  3,  3 },	\
-	 { 21, 21, 22, 22, 20, 21, 19, 19, 19,  3,  3 } }
-#define SUN8I_H5_DX_WRITE_DELAYS				\
-	{{  1,  2,  3,  4,  3,  4,  4,  4,  6,  6,  6 },	\
-	 {  6,  6,  6,  5,  5,  5,  5,  5,  6,  6,  6 },	\
-	 {  0,  2,  4,  2,  6,  5,  5,  5,  6,  6,  6 },	\
-	 {  3,  3,  3,  2,  2,  1,  1,  1,  4,  4,  4 } }
-#define SUN8I_H5_AC_DELAYS					\
-	{  0,  0,  5,  5,  0,  0,  0,  0,			\
-	   0,  0,  0,  0,  3,  3,  3,  3,			\
-	   3,  3,  3,  3,  3,  3,  3,  3,			\
-	   3,  3,  3,  3,  2,  0,  0      }
+const u8 sun8i_h5_dx_read_delays[] = {
+	14, 15, 17, 17, 17, 17, 17, 18, 17,  3,  3,
+	21, 21, 12, 22, 21, 21, 21, 21, 21,  3,  3,
+	16, 19, 19, 17, 22, 22, 21, 22, 19,  3,  3,
+	21, 21, 22, 22, 20, 21, 19, 19, 19,  3,  3
+};
+const u8 sun8i_h5_dx_write_delays[] = {
+	1,  2,  3,  4,  3,  4,  4,  4,  6,  6,  6,
+	6,  6,  6,  5,  5,  5,  5,  5,  6,  6,  6,
+	0,  2,  4,  2,  6,  5,  5,  5,  6,  6,  6,
+	3,  3,  3,  2,  2,  1,  1,  1,  4,  4,  4
+};
+const u8 sun8i_h5_ac_delays[] = {
+	0,  0,  5,  5,  0,  0,  0,  0,
+	0,  0,  0,  0,  3,  3,  3,  3,
+	3,  3,  3,  3,  3,  3,  3,  3,
+	3,  3,  3,  3,  2,  0,  0
+};
 
 unsigned long sunxi_dram_init(void)
 {
@@ -798,25 +818,25 @@ unsigned long sunxi_dram_init(void)
 		.page_size = 4096,
 
 #if defined(CONFIG_MACH_SUN8I_H3)
-		.dx_read_delays  = SUN8I_H3_DX_READ_DELAYS,
-		.dx_write_delays = SUN8I_H3_DX_WRITE_DELAYS,
-		.ac_delays	 = SUN8I_H3_AC_DELAYS,
+		.dx_read_delays  = sun8i_h3_dx_read_delays,
+		.dx_write_delays = sun8i_h3_dx_write_delays,
+		.ac_delays	 = sun8i_h3_ac_delays,
 #elif defined(CONFIG_MACH_SUN8I_V3S)
-		.dx_read_delays  = SUN8I_V3S_DX_READ_DELAYS,
-		.dx_write_delays = SUN8I_V3S_DX_WRITE_DELAYS,
-		.ac_delays	 = SUN8I_V3S_AC_DELAYS,
+		.dx_read_delays  = sun8i_v3s_dx_read_delays,
+		.dx_write_delays = sun8i_v3s_dx_write_delays,
+		.ac_delays	 = sun8i_v3s_ac_delays,
 #elif defined(CONFIG_MACH_SUN8I_R40)
-		.dx_read_delays  = SUN8I_R40_DX_READ_DELAYS,
-		.dx_write_delays = SUN8I_R40_DX_WRITE_DELAYS,
-		.ac_delays	 = SUN8I_R40_AC_DELAYS,
+		.dx_read_delays  = sun8i_r40_dx_read_delays,
+		.dx_write_delays = sun8i_r40_dx_write_delays,
+		.ac_delays	 = sun8i_r40_ac_delays,
 #elif defined(CONFIG_MACH_SUN50I)
-		.dx_read_delays  = SUN50I_A64_DX_READ_DELAYS,
-		.dx_write_delays = SUN50I_A64_DX_WRITE_DELAYS,
-		.ac_delays	 = SUN50I_A64_AC_DELAYS,
+		.dx_read_delays  = sun50i_a64_dx_read_delays,
+		.dx_write_delays = sun50i_a64_dx_write_delays,
+		.ac_delays	 = sun50i_a64_ac_delays,
 #elif defined(CONFIG_MACH_SUN50I_H5)
-		.dx_read_delays  = SUN8I_H5_DX_READ_DELAYS,
-		.dx_write_delays = SUN8I_H5_DX_WRITE_DELAYS,
-		.ac_delays	 = SUN8I_H5_AC_DELAYS,
+		.dx_read_delays  = sun8i_h5_dx_read_delays,
+		.dx_write_delays = sun8i_h5_dx_write_delays,
+		.ac_delays	 = sun8i_h5_ac_delays,
 #endif
 	};
 /*
