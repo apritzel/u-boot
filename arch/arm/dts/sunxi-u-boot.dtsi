@@ -27,7 +27,7 @@
 			filename = "spl/sunxi-spl.bin";
 		};
 
-#ifdef CONFIG_ARM64
+#ifdef CONFIG_SPL_LOAD_FIT
 		fit {
 			description = "Configuration to load ATF before U-Boot";
 			#address-cells = <1>;
