@@ -2,7 +2,7 @@
 #include <asm/arch/dram.h>
 #include <asm/arch/cpu.h>
 
-void mctl_set_timing_params(uint16_t socid, unsigned int clock_freq)
+void mctl_set_timing_params_lpddr3(uint16_t socid, unsigned int clock_freq)
 {
 	struct sunxi_mctl_ctl_reg * const mctl_ctl =
 			(struct sunxi_mctl_ctl_reg *)SUNXI_DRAM_CTL0_BASE;

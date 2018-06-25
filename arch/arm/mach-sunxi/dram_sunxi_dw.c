@@ -18,6 +18,19 @@
 #include <linux/delay.h>
 #include <linux/kconfig.h>
 
+static void mctl_set_timing_params(uint16_t socid, u8 dram_type,
+				   unsigned int clkrate)
+{
+	switch (dram_type) {
+#ifdef CONFIG_SUNXI_DRAM_DDR3_1333
+	case 3: mctl_set_timing_params_ddr3(socid, clkrate); break;
+#endif
+#ifdef CONFIG_SUNXI_DRAM_LPDDR3_STOCK
+	case 7: mctl_set_timing_params_lpddr3(socid, clkrate); break;
+#endif
+	}
+}
+
 static void mctl_phy_init(u32 val)
 {
 	struct sunxi_mctl_ctl_reg * const mctl_ctl =
@@ -494,7 +507,7 @@ static int mctl_channel_init(uint16_t socid, struct dram_para *para,
 	unsigned int i;
 
 	mctl_set_cr(socid, para);
-	mctl_set_timing_params(socid, clkrate);
+	mctl_set_timing_params(socid, para->dram_type, clkrate);
 	mctl_set_master_priority(socid);
 
 	/* setting VTC, default disable all VT */
@@ -900,8 +913,13 @@ unsigned long sunxi_dram_init(void)
 
 	clkrate = init_dram_para(socid, &para);
 	mctl_sys_init(socid, clkrate);
-	if (mctl_channel_init(socid, &para, clkrate))
-		return 0;
+	if (mctl_channel_init(socid, &para, clkrate)) {
+		para.dram_type = 7;
+		clkrate = init_dram_para(socid, &para);
+		mctl_sys_init(socid, clkrate);
+		if (mctl_channel_init(socid, &para, clkrate))
+			return 0;
+	}
 
 	if (para.dual_rank)
 		writel(0x00000303, &mctl_ctl->odtmap);
@@ -927,6 +945,8 @@ unsigned long sunxi_dram_init(void)
 
 	mctl_auto_detect_dram_size(socid, &para);
 	mctl_set_cr(socid, &para);
+
+	printf(" %sDDR3", para.dram_type == 7 ? "LP" : "");
 
 	return (1UL << (para.row_bits + para.bank_bits)) * para.page_size *
 	       (para.dual_rank ? 2 : 1);

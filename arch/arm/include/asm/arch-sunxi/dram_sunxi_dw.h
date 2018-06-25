@@ -233,6 +233,7 @@ static inline int ns_to_t(int nanoseconds, unsigned int clock_freq)
 	return DIV_ROUND_UP((clock_freq / 2) * nanoseconds, 1000);
 }
 
-void mctl_set_timing_params(uint16_t socid, unsigned int clock_freq);
+void mctl_set_timing_params_ddr3(uint16_t socid, unsigned int clock_freq);
+void mctl_set_timing_params_lpddr3(uint16_t socid, unsigned int clock_freq);
 
 #endif /* _SUNXI_DRAM_SUN8I_H3_H */
