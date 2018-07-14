@@ -402,22 +402,22 @@ static void mctl_set_cr(uint16_t socid, struct dram_para *para)
 {
 	struct sunxi_mctl_com_reg * const mctl_com =
 			(struct sunxi_mctl_com_reg *)SUNXI_DRAM_COM_BASE;
+	uint32_t cr_value;
 
-	writel(MCTL_CR_BL8 | MCTL_CR_INTERLEAVED |
-#if defined CONFIG_SUNXI_DRAM_DDR3
-	       MCTL_CR_DDR3 | MCTL_CR_2T |
-#elif defined CONFIG_SUNXI_DRAM_DDR2
-	       MCTL_CR_DDR2 | MCTL_CR_2T |
-#elif defined CONFIG_SUNXI_DRAM_LPDDR3
-	       MCTL_CR_LPDDR3 | MCTL_CR_1T |
-#else
-#error Unsupported DRAM type!
-#endif
-	       (para->bank_bits == 3 ? MCTL_CR_EIGHT_BANKS : MCTL_CR_FOUR_BANKS) |
+	cr_value = MCTL_CR_BL8 | MCTL_CR_INTERLEAVED;
+	switch(para->dram_type) {
+	case 3: cr_value |= MCTL_CR_DDR3 | MCTL_CR_2T; break;
+	case 2: cr_value |= MCTL_CR_DDR2 | MCTL_CR_2T; break;
+	case 7: cr_value |= MCTL_CR_LPDDR3 | MCTL_CR_1T; break;
+	default:
+		printf("unsupported DRAM type %d\n", para->dram_type);
+	}
+	cr_value |= (para->bank_bits == 3 ? MCTL_CR_EIGHT_BANKS : MCTL_CR_FOUR_BANKS) |
 	       MCTL_CR_BUS_FULL_WIDTH(para->bus_full_width) |
 	       (para->dual_rank ? MCTL_CR_DUAL_RANK : MCTL_CR_SINGLE_RANK) |
 	       MCTL_CR_PAGE_SIZE(para->page_size) |
-	       MCTL_CR_ROW_BITS(para->row_bits), &mctl_com->cr);
+	       MCTL_CR_ROW_BITS(para->row_bits);
+	writel(cr_value, &mctl_com->cr);
 
 	if (socid == SOCID_R40) {
 		if (para->dual_rank)
@@ -863,6 +863,16 @@ unsigned long sunxi_dram_init(void)
 	uint16_t socid = SOCID_A64;
 #elif defined(CONFIG_MACH_SUN50I_H5)
 	uint16_t socid = SOCID_H5;
+#endif
+
+#if defined CONFIG_SUNXI_DRAM_DDR3
+	para.dram_type = 3;
+#elif defined CONFIG_SUNXI_DRAM_LPDDR3
+	para.dram_type = 7;
+#elif defined CONFIG_SUNXI_DRAM_DDR2
+	para.dram_type = 2;
+#else
+#error unsupported DRAM type!
 #endif
 
 	init_dram_para(socid, &para);

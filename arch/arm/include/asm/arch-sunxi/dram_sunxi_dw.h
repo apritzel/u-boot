@@ -221,6 +221,7 @@ struct dram_para {
 	u8 dual_rank;
 	u8 row_bits;
 	u8 bank_bits;
+	u8 dram_type;
 	const u8 *dx_read_delays;
 	const u8 *dx_write_delays;
 	const u8 *ac_delays;
