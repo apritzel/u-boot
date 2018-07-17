@@ -22,24 +22,26 @@ void clock_init_safe(void)
 {
 	struct sunxi_ccm_reg * const ccm =
 		(struct sunxi_ccm_reg *)SUNXI_CCM_BASE;
+	uint16_t socid = sunxi_get_socid();
 
-#if !defined(CONFIG_MACH_SUNXI_H3_H5) && !defined(CONFIG_MACH_SUN50I)
-	struct sunxi_prcm_reg * const prcm =
-		(struct sunxi_prcm_reg *)SUNXI_PRCM_BASE;
+	if (socid != SOCID_H3 && socid != SOCID_H5 && socid != SOCID_A64) {
+		struct sunxi_prcm_reg * const prcm =
+			(struct sunxi_prcm_reg *)SUNXI_PRCM_BASE;
 
-	/* Set PLL ldo voltage without this PLL6 does not work properly */
-	clrsetbits_le32(&prcm->pll_ctrl1, PRCM_PLL_CTRL_LDO_KEY_MASK,
-			PRCM_PLL_CTRL_LDO_KEY);
-	clrsetbits_le32(&prcm->pll_ctrl1, ~PRCM_PLL_CTRL_LDO_KEY_MASK,
-		PRCM_PLL_CTRL_LDO_DIGITAL_EN | PRCM_PLL_CTRL_LDO_ANALOG_EN |
-		PRCM_PLL_CTRL_EXT_OSC_EN | PRCM_PLL_CTRL_LDO_OUT_L(1140));
-	clrbits_le32(&prcm->pll_ctrl1, PRCM_PLL_CTRL_LDO_KEY_MASK);
-#endif
+		/* Set PLL ldo voltage without this PLL6 doesn't work properly*/
+		clrsetbits_le32(&prcm->pll_ctrl1, PRCM_PLL_CTRL_LDO_KEY_MASK,
+				PRCM_PLL_CTRL_LDO_KEY);
+		clrsetbits_le32(&prcm->pll_ctrl1, ~PRCM_PLL_CTRL_LDO_KEY_MASK,
+			PRCM_PLL_CTRL_LDO_DIGITAL_EN |
+			PRCM_PLL_CTRL_LDO_ANALOG_EN |
+			PRCM_PLL_CTRL_EXT_OSC_EN |
+			PRCM_PLL_CTRL_LDO_OUT_L(1140));
+		clrbits_le32(&prcm->pll_ctrl1, PRCM_PLL_CTRL_LDO_KEY_MASK);
+	}
 
-#if defined(CONFIG_MACH_SUN8I_R40) || defined(CONFIG_MACH_SUN50I)
 	/* Set PLL lock enable bits and switch to old lock mode */
-	writel(GENMASK(12, 0), &ccm->pll_lock_ctrl);
-#endif
+	if (socid == SOCID_R40 || socid == SOCID_A64)
+		writel(GENMASK(12, 0), &ccm->pll_lock_ctrl);
 
 	clock_set_pll1(408000000);
 
@@ -54,21 +56,26 @@ void clock_init_safe(void)
 		writel(MBUS_CLK_DEFAULT, &ccm->mbus1_clk_cfg);
 
 #if defined(CONFIG_MACH_SUN8I_R40) && defined(CONFIG_SUNXI_AHCI)
-	setbits_le32(&ccm->sata_pll_cfg, CCM_SATA_PLL_DEFAULT);
-	setbits_le32(&ccm->ahb_reset0_cfg, 0x1 << AHB_GATE_OFFSET_SATA);
-	setbits_le32(&ccm->ahb_gate0, 0x1 << AHB_GATE_OFFSET_SATA);
-	setbits_le32(&ccm->sata_clk_cfg, CCM_SATA_CTRL_ENABLE);
+	if (socid == SOCID_R40 && IS_ENABLED(CONFIG_SUNXI_AHCI)) {
+		setbits_le32(&ccm->sata_pll_cfg, CCM_SATA_PLL_DEFAULT);
+		setbits_le32(&ccm->ahb_reset0_cfg, 0x1 << AHB_GATE_OFFSET_SATA);
+		setbits_le32(&ccm->ahb_gate0, 0x1 << AHB_GATE_OFFSET_SATA);
+		setbits_le32(&ccm->sata_clk_cfg, CCM_SATA_CTRL_ENABLE);
+	}
 #endif
 }
 #endif
 
 void clock_init_sec(void)
 {
-#ifdef CONFIG_MACH_SUNXI_H3_H5
 	struct sunxi_ccm_reg * const ccm =
 		(struct sunxi_ccm_reg *)SUNXI_CCM_BASE;
 	struct sunxi_prcm_reg * const prcm =
 		(struct sunxi_prcm_reg *)SUNXI_PRCM_BASE;
+	uint16_t socid = sunxi_get_socid();
+
+	if (socid != SOCID_H3 && socid != SOCID_H5)
+		return;
 
 	setbits_le32(&ccm->ccu_sec_switch,
 		     CCM_SEC_SWITCH_MBUS_NONSEC |
@@ -78,7 +85,6 @@ void clock_init_sec(void)
 		     PRCM_SEC_SWITCH_APB0_CLK_NONSEC |
 		     PRCM_SEC_SWITCH_PLL_CFG_NONSEC |
 		     PRCM_SEC_SWITCH_PWR_GATE_NONSEC);
-#endif
 }
 
 void clock_init_uart(void)
@@ -190,12 +196,15 @@ void clock_set_pll5(unsigned int clk, bool sigma_delta_enable)
 		(struct sunxi_ccm_reg *)SUNXI_CCM_BASE;
 	const int max_n = 32;
 	int k = 1, m = 2;
+	uint16_t socid = sunxi_get_socid();
 
-#ifdef CONFIG_MACH_SUNXI_H3_H5
-	clrsetbits_le32(&ccm->pll5_tuning_cfg, CCM_PLL5_TUN_LOCK_TIME_MASK |
-			CCM_PLL5_TUN_INIT_FREQ_MASK,
-			CCM_PLL5_TUN_LOCK_TIME(2) | CCM_PLL5_TUN_INIT_FREQ(16));
-#endif
+	if (socid == SOCID_H3 || socid == SOCID_H5)
+		clrsetbits_le32(&ccm->pll5_tuning_cfg,
+				CCM_PLL5_TUN_LOCK_TIME_MASK |
+				CCM_PLL5_TUN_INIT_FREQ_MASK,
+				CCM_PLL5_TUN_LOCK_TIME(2) |
+				CCM_PLL5_TUN_INIT_FREQ(16));
+
 
 	if (sigma_delta_enable)
 		writel(CCM_PLL5_PATTERN, &ccm->pll5_pattern_cfg);
@@ -278,9 +287,7 @@ void clock_set_pll10(unsigned int clk)
 }
 #endif
 
-#if defined(CONFIG_MACH_SUN8I_A33) || \
-    defined(CONFIG_MACH_SUN8I_R40) || \
-    defined(CONFIG_MACH_SUN50I)
+#if defined(CONFIG_SUNXI_DRAM_DW) || defined(CONFIG_DRAM_SUN8I_A33)
 void clock_set_pll11(unsigned int clk, bool sigma_delta_enable)
 {
 	struct sunxi_ccm_reg * const ccm =
