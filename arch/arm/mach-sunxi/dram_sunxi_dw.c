@@ -111,8 +111,13 @@ static inline void mbus_configure_port(u8 port,
 	mbus_configure_port(MBUS_PORT_ ## port, bwlimit, false, \
 			    MBUS_QOS_ ## qos, 0, acs, bwl0, bwl1, bwl2)
 
+/*
+ * Aarch64 code will never run on a H3, so don't bother compiling it.
+ * This will save precious bytes for the chronically tight AArch64 SPL.
+ */
 static void mctl_set_master_priority_h3(void)
 {
+#ifndef __aarch64__
 	struct sunxi_mctl_com_reg * const mctl_com =
 			(struct sunxi_mctl_com_reg *)SUNXI_DRAM_COM_BASE;
 
@@ -134,6 +139,7 @@ static void mctl_set_master_priority_h3(void)
 	MBUS_CONF(    DI,  true,    HIGH, 0, 1024,  256,   64);
 	MBUS_CONF(    DE,  true, HIGHEST, 3, 8192, 6120, 1024);
 	MBUS_CONF(DE_CFD,  true,    HIGH, 0, 1024,  288,   64);
+#endif
 }
 
 static void mctl_set_master_priority_v3s(void)
@@ -214,8 +220,13 @@ static void mctl_set_master_priority_h5(void)
 	MBUS_CONF(DE_CFD, true, HIGHEST, 0,  600,  400,  200);
 }
 
+/*
+ * Aarch64 code will never run on a R40, so don't bother compiling it.
+ * This will save precious bytes for the chronically tight AArch64 SPL.
+ */
 static void mctl_set_master_priority_r40(void)
 {
+#ifndef __aarch64__
 	struct sunxi_mctl_com_reg * const mctl_com =
 			(struct sunxi_mctl_com_reg *)SUNXI_DRAM_COM_BASE;
 
@@ -248,6 +259,7 @@ static void mctl_set_master_priority_r40(void)
 	MBUS_CONF(UNKNOWN1, true, HIGHEST, 0,  512,  384,  256);
 	MBUS_CONF(UNKNOWN2, true, HIGHEST, 2, 8192, 6144, 1024);
 	MBUS_CONF(UNKNOWN3, true,    HIGH, 0, 1280,  144,   64);
+#endif
 }
 
 static void mctl_set_master_priority(uint16_t socid)
@@ -682,6 +694,7 @@ static void mctl_auto_detect_dram_size(uint16_t socid, struct dram_para *para)
  * some Allwinner reference design, so we go with those generic values for now
  * in the hope that they are reasonable for most (all?) boards.
  */
+#ifndef __aarch64__
 #define SUN8I_H3_DX_READ_DELAYS					\
 	{{ 18, 18, 18, 18, 18, 18, 18, 18, 18,  0,  0 },	\
 	 { 14, 14, 14, 14, 14, 14, 14, 14, 14,  0,  0 },	\
@@ -729,6 +742,14 @@ static void mctl_auto_detect_dram_size(uint16_t socid, struct dram_para *para)
 	   0,  0,  0,  0,  0,  0,  0,  0,			\
 	   0,  0,  0,  0,  0,  0,  0,  0,			\
 	   0,  0,  0,  0,  0,  0,  0      }
+#else
+#define SUN8I_H3_DX_READ_DELAYS {}
+#define SUN8I_H3_DX_WRITE_DELAYS {}
+#define SUN8I_H3_AC_DELAYS {}
+#define SUN8I_R40_DX_READ_DELAYS {}
+#define SUN8I_R40_DX_WRITE_DELAYS {}
+#define SUN8I_R40_AC_DELAYS {}
+#endif
 
 #define SUN50I_A64_DX_READ_DELAYS				\
 	{{ 16, 16, 16, 16, 17, 16, 16, 17, 16,  1,  0 },	\
