@@ -216,6 +216,7 @@ struct sunxi_mctl_ctl_reg {
 /* The eight data lines (DQn) plus DM, DQS and DQSN */
 #define LINES_PER_BYTE_LANE	(BITS_PER_BYTE + 3)
 struct dram_para {
+	u32 dram_zq;
 	u16 page_size;
 	u8 bus_full_width;
 	u8 dual_rank;

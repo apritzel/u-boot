@@ -326,7 +326,7 @@ static void mctl_h3_zq_calibration_quirk(struct dram_para *para)
 		u32 reg_val;
 
 		clrsetbits_le32(&mctl_ctl->zqcr, 0xffff,
-				CONFIG_DRAM_ZQ & 0xffff);
+				para->dram_zq & 0xffff);
 
 		writel(PIR_CLRSR, &mctl_ctl->pir);
 		mctl_phy_init(PIR_ZCAL);
@@ -349,7 +349,7 @@ static void mctl_h3_zq_calibration_quirk(struct dram_para *para)
 		writel(0x0a0a0a0a, &mctl_ctl->zqdr[2]);
 
 		for (i = 0; i < zq_count; i++) {
-			u8 zq = (CONFIG_DRAM_ZQ >> (i * 4)) & 0xf;
+			u8 zq = (para->dram_zq >> (i * 4)) & 0xf;
 
 			writel((zq << 20) | (zq << 16) | (zq << 12) |
 					(zq << 8) | (zq << 4) | (zq << 0),
@@ -589,13 +589,13 @@ static int mctl_channel_init(uint16_t socid, struct dram_para *para,
 		mctl_phy_init(PIR_PLLINIT | PIR_DCAL | PIR_PHYRST |
 			      PIR_DRAMRST | PIR_DRAMINIT | PIR_QSGATE);
 	} else if (socid == SOCID_A64 || socid == SOCID_H5) {
-		clrsetbits_le32(&mctl_ctl->zqcr, 0xffffff, CONFIG_DRAM_ZQ);
+		clrsetbits_le32(&mctl_ctl->zqcr, 0xffffff, para->dram_zq);
 
 		mctl_phy_init(PIR_ZCAL | PIR_PLLINIT | PIR_DCAL | PIR_PHYRST |
 			      PIR_DRAMRST | PIR_DRAMINIT | PIR_QSGATE);
 		/* no PIR_QSGATE for H5 ???? */
 	} else if (socid == SOCID_R40) {
-		clrsetbits_le32(&mctl_ctl->zqcr, 0xffffff, CONFIG_DRAM_ZQ);
+		clrsetbits_le32(&mctl_ctl->zqcr, 0xffffff, para->dram_zq);
 
 		mctl_phy_init(PIR_ZCAL | PIR_PLLINIT | PIR_DCAL | PIR_PHYRST |
 			      PIR_DRAMRST | PIR_DRAMINIT);
@@ -813,6 +813,7 @@ static unsigned int init_dram_para(uint16_t socid, struct dram_para *para)
 	para->row_bits = 15;
 	para->bank_bits = 3;
 	para->page_size = 4096;
+	para->dram_zq = CONFIG_DRAM_ZQ;
 
 #if defined(CONFIG_MACH_SUN8I_H3)
 	para->dx_read_delays  = sun8i_h3_dx_read_delays;
