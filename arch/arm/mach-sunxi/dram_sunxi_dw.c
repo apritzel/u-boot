@@ -428,7 +428,7 @@ static void mctl_set_cr(uint16_t socid, struct dram_para *para)
 	}
 }
 
-static void mctl_sys_init(uint16_t socid)
+static void mctl_sys_init(uint16_t socid, unsigned int clockrate)
 {
 	struct sunxi_ccm_reg * const ccm =
 			(struct sunxi_ccm_reg *)SUNXI_CCM_BASE;
@@ -448,7 +448,7 @@ static void mctl_sys_init(uint16_t socid)
 	udelay(1000);
 
 	if (socid == SOCID_A64 || socid == SOCID_R40) {
-		clock_set_pll11(CONFIG_DRAM_CLK * 2 * 1000000, false);
+		clock_set_pll11(clockrate * 2 * 1000000, false);
 		clrsetbits_le32(&ccm->dram_clk_cfg,
 				CCM_DRAMCLK_CFG_DIV_MASK |
 				CCM_DRAMCLK_CFG_SRC_MASK,
@@ -456,7 +456,7 @@ static void mctl_sys_init(uint16_t socid)
 				CCM_DRAMCLK_CFG_SRC_PLL11 |
 				CCM_DRAMCLK_CFG_UPD);
 	} else if (socid == SOCID_H3 || socid == SOCID_H5 || socid == SOCID_V3S) {
-		clock_set_pll5(CONFIG_DRAM_CLK * 2 * 1000000, false);
+		clock_set_pll5(clockrate * 2 * 1000000, false);
 		clrsetbits_le32(&ccm->dram_clk_cfg,
 				CCM_DRAMCLK_CFG_DIV_MASK |
 				CCM_DRAMCLK_CFG_SRC_MASK,
@@ -847,6 +847,7 @@ unsigned long sunxi_dram_init(void)
 	struct sunxi_mctl_ctl_reg * const mctl_ctl =
 			(struct sunxi_mctl_ctl_reg *)SUNXI_DRAM_CTL0_BASE;
 	struct dram_para para;
+	unsigned int clkrate;
 /*
  * Let the compiler optimize alternatives away by passing this value into
  * the static functions. This saves us #ifdefs, but still keeps the binary
@@ -876,9 +877,9 @@ unsigned long sunxi_dram_init(void)
 #error unsupported DRAM type!
 #endif
 
-	init_dram_para(socid, &para);
-	mctl_sys_init(socid);
-	if (mctl_channel_init(socid, &para, CONFIG_DRAM_CLK))
+	clkrate = init_dram_para(socid, &para);
+	mctl_sys_init(socid, clkrate);
+	if (mctl_channel_init(socid, &para, clkrate))
 		return 0;
 
 	if (para.dual_rank)
