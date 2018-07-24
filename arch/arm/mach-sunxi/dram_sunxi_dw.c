@@ -528,8 +528,7 @@ static int mctl_channel_init(uint16_t socid, struct dram_para *para,
 	for (i = 0; i < 4; i++) {
 		u32 clearmask = (0x3 << 4) | (0x1 << 1) | (0x3 << 2) |
 				(0x3 << 12) | (0x3 << 14);
-		u32 setmask = IS_ENABLED(CONFIG_DRAM_ODT_EN) ?
-				DX_GCR_ODT_DYNAMIC : DX_GCR_ODT_OFF;
+		u32 setmask = para->odt_en ? DX_GCR_ODT_DYNAMIC : DX_GCR_ODT_OFF;
 
 		if (socid == SOCID_H5) {
 			clearmask |= 0x2 << 8;
@@ -835,10 +834,12 @@ static unsigned int init_dram_para(uint16_t socid, struct dram_para *para)
 			clkrate		= 672;
 			para->dram_zq	= 0x3b3bbb;
 		}
+		para->odt_en = true;
 		break;
 	case SOCID_H5:
 		clkrate			= 672;
 		para->dram_zq		= 0x3b3bf9;
+		para->odt_en = false;
 		break;
 	default:
 		clkrate			= CONFIG_DRAM_CLK;
@@ -851,6 +852,9 @@ static unsigned int init_dram_para(uint16_t socid, struct dram_para *para)
 #endif
 #if defined(CONFIG_DRAM_ZQ) && (CONFIG_DRAM_ZQ > 0)
 	para->dram_zq = CONFIG_DRAM_ZQ;
+#endif
+#if defined(CONFIG_DRAM_ODT_EN)
+	para->odt_en = true;
 #endif
 
 #if defined(CONFIG_MACH_SUN8I_H3)

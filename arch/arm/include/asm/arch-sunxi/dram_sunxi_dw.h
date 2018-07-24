@@ -223,6 +223,7 @@ struct dram_para {
 	u8 row_bits;
 	u8 bank_bits;
 	u8 dram_type;
+	u8 odt_en;
 	const u8 *dx_read_delays;
 	const u8 *dx_write_delays;
 	const u8 *ac_delays;
