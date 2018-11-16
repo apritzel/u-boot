@@ -195,6 +195,12 @@ M:	Chen-Yu Tsai <wens@csie.org>
 S:	Maintained
 F:	configs/Cubietruck_plus_defconfig
 
+EACHLINK H6 MINI
+M:	Andre Przywara <andre.przywara@arm.com>
+S:	Maintained
+F:	configs/eachlink_h6_mini_defconfig
+F:	arch/arm/dts/sun50i-h6-eachlink-h6-mini.dts
+
 EMLID NEUTIS N5 DEV BOARD
 M:	Aleksandr Aleksandrov <aleksandr.aleksandrov@emlid.com>
 S:	Maintained
