@@ -587,16 +587,27 @@ unsigned long mctl_calc_size(struct dram_para *para)
 	return (1ULL << (para->cols + para->rows + 3)) * 4 * para->ranks;
 }
 
-#define SUN50I_H6_DX_WRITE_DELAYS				\
+#define SUN50I_H6_LPDDR3_DX_WRITE_DELAYS				\
 	{{  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0 },	\
 	 {  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0 },	\
 	 {  0,  0,  0,  0,  0,  0,  0,  0,  0,  4,  4,  0 },	\
 	 {  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0 }}
-#define SUN50I_H6_DX_READ_DELAYS					\
+#define SUN50I_H6_LPDDR3_DX_READ_DELAYS					\
 	{{  4,  4,  4,  4,  4,  4,  4,  4,  4,  0,  0,  0,  0,  0 },	\
 	 {  4,  4,  4,  4,  4,  4,  4,  4,  4,  0,  0,  0,  0,  0 },	\
 	 {  4,  4,  4,  4,  4,  4,  4,  4,  4,  0,  0,  0,  0,  0 },	\
 	 {  4,  4,  4,  4,  4,  4,  4,  4,  4,  0,  0,  0,  0,  0 }}
+
+#define SUN50I_H6_DDR3_DX_WRITE_DELAYS				\
+	{{ 11,  9, 12, 12, 14, 12, 10, 12,  1,  0,  0,  0 },	\
+	 {  6,  4,  7, 12,  8, 10, 11,  9,  2,  0,  0,  0 },	\
+	 { 12, 12,  8,  8, 10, 13, 11,  8,  1,  0,  0,  0 },	\
+	 { 11, 11, 13, 14, 12, 11, 12,  9,  1,  0,  0,  0 }}
+#define SUN50I_H6_DDR3_DX_READ_DELAYS					\
+	{{  7,  5, 11, 15,  8,  6,  4,  7,  4,  0,  0,  0,  4,  4 },	\
+	 {  7,  9,  9,  8,  8, 11,  9,  4,  4,  0,  0,  0,  2,  2 },	\
+	 {  7,  7,  7,  8,  3,  4,  6,  4,  1,  0,  0,  0,  4,  4 },	\
+	 {  7,  7,  7,  8,  3,  4,  6,  4,  1,  0,  0,  0,  2,  2 }}
 
 unsigned long sunxi_dram_init(void)
 {
@@ -609,12 +620,12 @@ unsigned long sunxi_dram_init(void)
 		.rows = 14,
 #ifdef CONFIG_SUNXI_DRAM_H6_LPDDR3
 		.type = SUNXI_DRAM_TYPE_LPDDR3,
-		.dx_read_delays  = SUN50I_H6_DX_READ_DELAYS,
-		.dx_write_delays = SUN50I_H6_DX_WRITE_DELAYS,
+		.dx_read_delays  = SUN50I_H6_LPDDR3_DX_READ_DELAYS,
+		.dx_write_delays = SUN50I_H6_LPDDR3_DX_WRITE_DELAYS,
 #elif CONFIG_SUNXI_DRAM_H6_DDR3
 		.type = SUNXI_DRAM_TYPE_DDR3,
-		.dx_read_delays  = SUN50I_H6_DX_READ_DELAYS,
-		.dx_write_delays = SUN50I_H6_DX_WRITE_DELAYS,
+		.dx_read_delays  = SUN50I_H6_DDR3_DX_READ_DELAYS,
+		.dx_write_delays = SUN50I_H6_DDR3_DX_WRITE_DELAYS,
 #endif
 	};
 
