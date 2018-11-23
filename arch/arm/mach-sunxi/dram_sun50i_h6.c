@@ -388,6 +388,9 @@ static void mctl_bit_delay_set(struct dram_para *para)
 	setbits_le32(&mctl_phy->pgcr[0], BIT(26));
 	udelay(1);
 
+	if (para->type != SUNXI_DRAM_TYPE_LPDDR3)
+		return;
+
 	for (i = 1; i < 14; i++) {
 		val = readl(&mctl_phy->acbdlr[i]);
 		val += 0x0a0a0a0a;
