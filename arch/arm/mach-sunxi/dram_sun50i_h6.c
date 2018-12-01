@@ -316,7 +316,7 @@ static void mctl_com_init(struct dram_para *para)
 		reg_val = DCR_LPDDR3 | DCR_DDR8BANK;
 	if (para->type == SUNXI_DRAM_TYPE_DDR3)
 		reg_val = DCR_DDR3 | DCR_DDR8BANK;
-	writel(reg_val | 0x400, &mctl_phy->dcr);
+	writel(reg_val | 0x80000400U, &mctl_phy->dcr);
 
 	if (para->ranks == 2)
 		writel(0x0303, &mctl_ctl->odtmap);
@@ -330,7 +330,7 @@ static void mctl_com_init(struct dram_para *para)
 		reg_val |= (tmp + 7) << 24;
 		reg_val |= (((para->clk < 400) ? 3 : 4) - tmp) << 16;
 	} else if (para->type == SUNXI_DRAM_TYPE_DDR3) {
-		reg_val = 0x06000603;	/* TODO: Use CL - CWL value in [7:0] */
+		reg_val = 0x06000400;	/* TODO: Use CL - CWL value in [7:0] */
 	} else if (para->type == SUNXI_DRAM_TYPE_DDR4) {
 		panic("DDR4 not yet supported\n");
 	}
@@ -417,7 +417,7 @@ static void mctl_channel_init(struct dram_para *para)
 	setbits_le32(&mctl_ctl->unk_0x00c, BIT(8));
 	clrsetbits_le32(&mctl_phy->pgcr[1], 0x180, 0xc0);
 	/* TODO: non-LPDDR3 types */
-	clrsetbits_le32(&mctl_phy->pgcr[2], GENMASK(17, 0), ns_to_t(7800));
+	clrsetbits_le32(&mctl_phy->pgcr[2], GENMASK(17, 0), ns_to_t(15600));
 	clrbits_le32(&mctl_phy->pgcr[6], BIT(0));
 	clrsetbits_le32(&mctl_phy->dxccr, 0xee0, 0x220);
 	/* TODO: VT compensation */
@@ -540,7 +540,7 @@ static void mctl_channel_init(struct dram_para *para)
 		panic("Error while initializing DRAM PHY!\n");
 	}
 
-	clrsetbits_le32(&mctl_phy->dsgcr, 0xc0, 0x40);
+	clrsetbits_le32(&mctl_phy->dsgcr, 0xc0, 0x00);
 	clrbits_le32(&mctl_phy->pgcr[1], 0x40);
 	clrbits_le32(&mctl_ctl->dfimisc, BIT(0));
 	writel(1, &mctl_ctl->swctl);
