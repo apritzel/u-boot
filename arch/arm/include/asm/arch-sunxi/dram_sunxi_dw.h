@@ -226,11 +226,9 @@ struct dram_para {
 	const u8 *ac_delays;
 };
 
-static inline int ns_to_t(int nanoseconds)
+static inline int ns_to_t(int nanoseconds, unsigned int clock_freq)
 {
-	const unsigned int ctrl_freq = CONFIG_DRAM_CLK / 2;
-
-	return DIV_ROUND_UP(ctrl_freq * nanoseconds, 1000);
+	return DIV_ROUND_UP((clock_freq / 2) * nanoseconds, 1000);
 }
 
 void mctl_set_timing_params(uint16_t socid, unsigned int clock_freq);

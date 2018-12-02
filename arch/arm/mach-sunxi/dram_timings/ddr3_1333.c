@@ -8,18 +8,18 @@ void mctl_set_timing_params(uint16_t socid, unsigned int clock_freq)
 			(struct sunxi_mctl_ctl_reg *)SUNXI_DRAM_CTL0_BASE;
 
 	u8 tccd		= 2;
-	u8 tfaw		= ns_to_t(50);
-	u8 trrd		= max(ns_to_t(10), 4);
-	u8 trcd		= ns_to_t(15);
-	u8 trc		= ns_to_t(53);
-	u8 txp		= max(ns_to_t(8), 3);
-	u8 twtr		= max(ns_to_t(8), 4);
-	u8 trtp		= max(ns_to_t(8), 4);
-	u8 twr		= max(ns_to_t(15), 3);
-	u8 trp		= ns_to_t(15);
-	u8 tras		= ns_to_t(38);
-	u16 trefi	= ns_to_t(7800) / 32;
-	u16 trfc	= ns_to_t(350);
+	u8 tfaw		= ns_to_t(50, clock_freq);
+	u8 trrd		= max(ns_to_t(10, clock_freq), 4);
+	u8 trcd		= ns_to_t(15, clock_freq);
+	u8 trc		= ns_to_t(53, clock_freq);
+	u8 txp		= max(ns_to_t(8, clock_freq), 3);
+	u8 twtr		= max(ns_to_t(8, clock_freq), 4);
+	u8 trtp		= max(ns_to_t(8, clock_freq), 4);
+	u8 twr		= max(ns_to_t(15, clock_freq), 3);
+	u8 trp		= ns_to_t(15, clock_freq);
+	u8 tras		= ns_to_t(38, clock_freq);
+	u16 trefi	= ns_to_t(7800, clock_freq) / 32;
+	u16 trfc	= ns_to_t(350, clock_freq);
 
 	u8 tmrw		= 0;
 	u8 tmrd		= 4;
