@@ -90,6 +90,12 @@ config SUNXI_SRAM_ADDRESS
 	Some newer SoCs map the boot ROM at address 0 instead and move the
 	SRAM to a different address.
 
+config SUNXI_RVBAR_ADDRESS
+	hex
+	depends on ARM64
+	default 0x017000a0 if MACH_SUN50I || MACH_SUN50I_H5
+	default 0x09010040 if MACH_SUN50I_H6
+
 config SUNXI_A64_TIMER_ERRATUM
 	bool
 
