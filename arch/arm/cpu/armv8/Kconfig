@@ -3,6 +3,7 @@ if ARM64
 config ARMV8_SPL_EXCEPTION_VECTORS
 	bool "Install crash dump exception vectors"
 	depends on SPL
+	default n if MACH_SUN50I_H6
 	default y
 	help
 	  The default exception vector table is only used for the crash
