@@ -836,6 +836,10 @@ static unsigned int init_dram_para(uint16_t socid, struct dram_para *para)
 			para->dram_zq	= 0x3b3bbb;
 		}
 		break;
+	case SOCID_H5:
+		clkrate			= 672;
+		para->dram_zq		= 0x3b3bf9;
+		break;
 	default:
 		clkrate			= CONFIG_DRAM_CLK;
 		para->dram_zq		= CONFIG_DRAM_ZQ;
