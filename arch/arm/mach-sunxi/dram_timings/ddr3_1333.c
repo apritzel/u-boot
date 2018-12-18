@@ -2,7 +2,7 @@
 #include <asm/arch/dram.h>
 #include <asm/arch/cpu.h>
 
-void mctl_set_timing_params(uint16_t socid, struct dram_para *para)
+void mctl_set_timing_params(uint16_t socid, unsigned int clock_freq)
 {
 	struct sunxi_mctl_ctl_reg * const mctl_ctl =
 			(struct sunxi_mctl_ctl_reg *)SUNXI_DRAM_CTL0_BASE;
@@ -35,10 +35,10 @@ void mctl_set_timing_params(uint16_t socid, struct dram_para *para)
 	u8 t_rdata_en	= 4;
 	u8 wr_latency	= 2;
 
-	u32 tdinit0	= (500 * CONFIG_DRAM_CLK) + 1;		/* 500us */
-	u32 tdinit1	= (360 * CONFIG_DRAM_CLK) / 1000 + 1;	/* 360ns */
-	u32 tdinit2	= (200 * CONFIG_DRAM_CLK) + 1;		/* 200us */
-	u32 tdinit3	= (1 * CONFIG_DRAM_CLK) + 1;		/* 1us */
+	u32 tdinit0	= (500 * clock_freq) + 1;		/* 500us */
+	u32 tdinit1	= (360 * clock_freq) / 1000 + 1;	/* 360ns */
+	u32 tdinit2	= (200 * clock_freq) + 1;		/* 200us */
+	u32 tdinit3	= (1 * clock_freq) + 1;		/* 1us */
 
 	u8 twtp		= tcwl + 2 + twr;	/* WL + BL / 2 + tWR */
 	u8 twr2rd	= tcwl + 2 + twtr;	/* WL + BL / 2 + tWTR */

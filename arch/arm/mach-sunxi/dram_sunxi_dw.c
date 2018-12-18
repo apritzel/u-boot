@@ -483,7 +483,8 @@ static void mctl_sys_init(uint16_t socid)
 #define DX_GCR_ODT_ALWAYS_ON	(0x1 << 4)
 #define DX_GCR_ODT_OFF		(0x2 << 4)
 
-static int mctl_channel_init(uint16_t socid, struct dram_para *para)
+static int mctl_channel_init(uint16_t socid, struct dram_para *para,
+			     unsigned int clkrate)
 {
 	struct sunxi_mctl_com_reg * const mctl_com =
 			(struct sunxi_mctl_com_reg *)SUNXI_DRAM_COM_BASE;
@@ -493,7 +494,7 @@ static int mctl_channel_init(uint16_t socid, struct dram_para *para)
 	unsigned int i;
 
 	mctl_set_cr(socid, para);
-	mctl_set_timing_params(socid, para);
+	mctl_set_timing_params(socid, clkrate);
 	mctl_set_master_priority(socid);
 
 	/* setting VTC, default disable all VT */
@@ -859,7 +860,7 @@ unsigned long sunxi_dram_init(void)
 #endif
 
 	mctl_sys_init(socid);
-	if (mctl_channel_init(socid, &para))
+	if (mctl_channel_init(socid, &para, CONFIG_DRAM_CLK))
 		return 0;
 
 	if (para.dual_rank)
