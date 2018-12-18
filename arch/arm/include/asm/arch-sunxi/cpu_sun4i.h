@@ -8,6 +8,8 @@
 #ifndef _SUNXI_CPU_SUN4I_H
 #define _SUNXI_CPU_SUN4I_H
 
+#include <asm/arch/cpu.h>
+
 #define SUNXI_SRAM_A1_BASE		0x00000000
 #define SUNXI_SRAM_A1_SIZE		(16 * 1024)	/* 16 kiB */
 
@@ -216,6 +218,44 @@ void sunxi_reset(void);
 unsigned int sunxi_read_socid(void);
 int sunxi_get_ss_bonding_id(void);
 int sunxi_get_sid(unsigned int *sid);
+
+static inline unsigned int sunxi_get_socid(void)
+{
+#ifdef CONFIG_SUNXI_MULTI_SOC
+	return sunxi_read_socid();
+#elif defined CONFIG_MACH_SUN4I
+	return SOCID_A10;
+#elif defined CONFIG_MACH_SUN5I
+	return SOCID_A13;
+#elif defined CONFIG_MACH_SUN6I
+	return SOCID_A31;
+#elif defined CONFIG_MACH_SUN9I
+	return SOCID_A80;
+#elif defined CONFIG_MACH_SUN8I_A23
+	return SOCID_A23;
+#elif defined CONFIG_MACH_SUN7I
+	return SOCID_A20;
+#elif defined CONFIG_MACH_SUN8I_A33
+	return SOCID_A33;
+#elif defined CONFIG_MACH_SUN8I_A83T
+	return SOCID_A83T;
+#elif defined CONFIG_MACH_SUN8I_H3
+	return SOCID_H3;
+#elif defined CONFIG_MACH_SUN8I_V3S
+	return SOCID_V3S;
+#elif defined CONFIG_MACH_SUN8I_R40
+	return SOCID_R40;
+#elif defined CONFIG_MACH_SUN50I
+	return SOCID_A64;
+#elif defined CONFIG_MACH_SUN50I_H5
+	return SOCID_H5;
+#elif defined CONFIG_MACH_SUN50I_H6
+	return SOCID_H6;
+#else
+#error Please specify the SoC ID for your choosen chip.
+#endif
+}
+
 #endif /* __ASSEMBLY__ */
 
 #endif /* _SUNXI_CPU_SUN4I_H */

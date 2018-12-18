@@ -150,6 +150,16 @@ config SUNXI_ARMV8_32BIT_BUILD
 	bool "Build 32-bit binaries for ARMv8 SoCs"
 	default n
 
+config SUNXI_MULTI_SOC
+	bool "SoC runtime detection"
+	depends on MACH_SUN50I || MACH_SUN50I_H5
+	default n
+	help
+	  Build in support for multiple Allwinner SoCs, and choose the right
+	  one at runtime using the SID SoC ID.
+	  This only covers the A64 and H5 so far. It typically increases the
+	  SPL size, possibly beyond the limit (with the usual feature set).
+
 choice
 	prompt "Sunxi SoC Variant"
 	optional
