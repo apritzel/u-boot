@@ -806,14 +806,35 @@ const u8 sun8i_h5_ac_delays[] = {
 
 static unsigned int init_dram_para(uint16_t socid, struct dram_para *para)
 {
-	unsigned int clkrate = CONFIG_DRAM_CLK;
+	unsigned int clkrate = ~0;
 
 	para->dual_rank = 1;
 	para->bus_full_width = 1;
 	para->row_bits = 15;
 	para->bank_bits = 3;
 	para->page_size = 4096;
+	switch (socid) {
+	case SOCID_A64:
+		if (para->dram_type == 7) {
+			clkrate		= 552;
+			para->dram_zq	= 0x3b3bdd;
+		} else {
+			clkrate		= 672;
+			para->dram_zq	= 0x3b3bbb;
+		}
+		break;
+	default:
+		clkrate			= CONFIG_DRAM_CLK;
+		para->dram_zq		= CONFIG_DRAM_ZQ;
+		break;
+	}
+	/* Overwrite the default values if explicitly specified in the config */
+#if defined(CONFIG_DRAM_CLK) && (CONFIG_DRAM_CLK > 0)
+	clkrate = CONFIG_DRAM_CLK;
+#endif
+#if defined(CONFIG_DRAM_ZQ) && (CONFIG_DRAM_ZQ > 0)
 	para->dram_zq = CONFIG_DRAM_ZQ;
+#endif
 
 #if defined(CONFIG_MACH_SUN8I_H3)
 	para->dx_read_delays  = sun8i_h3_dx_read_delays;
