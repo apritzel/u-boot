@@ -804,42 +804,48 @@ const u8 sun8i_h5_ac_delays[] = {
 	3,  3,  3,  3,  2,  0,  0
 };
 
+static unsigned int init_dram_para(uint16_t socid, struct dram_para *para)
+{
+	unsigned int clkrate = CONFIG_DRAM_CLK;
+
+	para->dual_rank = 1;
+	para->bus_full_width = 1;
+	para->row_bits = 15;
+	para->bank_bits = 3;
+	para->page_size = 4096;
+
+#if defined(CONFIG_MACH_SUN8I_H3)
+	para->dx_read_delays  = sun8i_h3_dx_read_delays;
+	para->dx_write_delays = sun8i_h3_dx_write_delays;
+	para->ac_delays	 = sun8i_h3_ac_delays;
+#elif defined(CONFIG_MACH_SUN8I_V3S)
+	para->dx_read_delays  = sun8i_v3s_dx_read_delays;
+	para->dx_write_delays = sun8i_v3s_dx_write_delays;
+	para->ac_delays	 = sun8i_v3s_ac_delays;
+#elif defined(CONFIG_MACH_SUN8I_R40)
+	para->dx_read_delays  = sun8i_r40_dx_read_delays;
+	para->dx_write_delays = sun8i_r40_dx_write_delays;
+	para->ac_delays	 = sun8i_r40_ac_delays;
+#elif defined(CONFIG_MACH_SUN50I)
+	para->dx_read_delays  = sun50i_a64_dx_read_delays;
+	para->dx_write_delays = sun50i_a64_dx_write_delays;
+	para->ac_delays	 = sun50i_a64_ac_delays;
+#elif defined(CONFIG_MACH_SUN50I_H5)
+	para->dx_read_delays  = sun8i_h5_dx_read_delays;
+	para->dx_write_delays = sun8i_h5_dx_write_delays;
+	para->ac_delays	 = sun8i_h5_ac_delays;
+#endif
+
+	return clkrate;
+}
+
 unsigned long sunxi_dram_init(void)
 {
 	struct sunxi_mctl_com_reg * const mctl_com =
 			(struct sunxi_mctl_com_reg *)SUNXI_DRAM_COM_BASE;
 	struct sunxi_mctl_ctl_reg * const mctl_ctl =
 			(struct sunxi_mctl_ctl_reg *)SUNXI_DRAM_CTL0_BASE;
-
-	struct dram_para para = {
-		.dual_rank = 1,
-		.bus_full_width = 1,
-		.row_bits = 15,
-		.bank_bits = 3,
-		.page_size = 4096,
-
-#if defined(CONFIG_MACH_SUN8I_H3)
-		.dx_read_delays  = sun8i_h3_dx_read_delays,
-		.dx_write_delays = sun8i_h3_dx_write_delays,
-		.ac_delays	 = sun8i_h3_ac_delays,
-#elif defined(CONFIG_MACH_SUN8I_V3S)
-		.dx_read_delays  = sun8i_v3s_dx_read_delays,
-		.dx_write_delays = sun8i_v3s_dx_write_delays,
-		.ac_delays	 = sun8i_v3s_ac_delays,
-#elif defined(CONFIG_MACH_SUN8I_R40)
-		.dx_read_delays  = sun8i_r40_dx_read_delays,
-		.dx_write_delays = sun8i_r40_dx_write_delays,
-		.ac_delays	 = sun8i_r40_ac_delays,
-#elif defined(CONFIG_MACH_SUN50I)
-		.dx_read_delays  = sun50i_a64_dx_read_delays,
-		.dx_write_delays = sun50i_a64_dx_write_delays,
-		.ac_delays	 = sun50i_a64_ac_delays,
-#elif defined(CONFIG_MACH_SUN50I_H5)
-		.dx_read_delays  = sun8i_h5_dx_read_delays,
-		.dx_write_delays = sun8i_h5_dx_write_delays,
-		.ac_delays	 = sun8i_h5_ac_delays,
-#endif
-	};
+	struct dram_para para;
 /*
  * Let the compiler optimize alternatives away by passing this value into
  * the static functions. This saves us #ifdefs, but still keeps the binary
@@ -859,6 +865,7 @@ unsigned long sunxi_dram_init(void)
 	uint16_t socid = SOCID_H5;
 #endif
 
+	init_dram_para(socid, &para);
 	mctl_sys_init(socid);
 	if (mctl_channel_init(socid, &para, CONFIG_DRAM_CLK))
 		return 0;
