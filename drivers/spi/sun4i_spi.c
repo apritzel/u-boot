@@ -19,7 +19,9 @@
  */
 
 #include <common.h>
+#include <clk.h>
 #include <dm.h>
+#include <reset.h>
 #include <spi.h>
 #include <errno.h>
 #include <fdt_support.h>
@@ -114,6 +116,9 @@ struct sun4i_spi_platdata {
 
 struct sun4i_spi_priv {
 	struct sun4i_spi_regs *regs;
+	struct clk ahb_clk;
+	struct clk mod_clk;
+	struct reset_ctl rst_ctl;
 	u32 freq;
 	u32 mode;
 
@@ -239,23 +244,48 @@ static int sun4i_spi_parse_pins(struct udevice *dev)
 	return 0;
 }
 
-static void sun4i_spi_enable_clock(void)
+static int sun4i_spi_enable_clock(struct udevice *dev)
 {
-	struct sunxi_ccm_reg *const ccm =
-		(struct sunxi_ccm_reg *const)SUNXI_CCM_BASE;
+	struct sun4i_spi_priv *priv = dev_get_priv(dev);
+	int ret;
 
-	setbits_le32(&ccm->ahb_gate0, (1 << AHB_GATE_OFFSET_SPI0));
-	writel((1 << 31), &ccm->spi0_clk_cfg);
+	ret = clk_enable(&priv->ahb_clk);
+	if (ret) {
+		dev_err(dev, "failed to enable ahb clock (ret=%d)\n", ret);
+		return ret;
+	}
+
+	ret = clk_enable(&priv->mod_clk);
+	if (ret) {
+		dev_err(dev, "failed to enable mod clock (ret=%d)\n", ret);
+		goto err_ahb;
+	}
+
+	if (reset_valid(&priv->rst_ctl))
+		ret = reset_deassert(&priv->rst_ctl);
+	if (ret) {
+		dev_err(dev, "failed to deassert reset gate (ret=%d)\n", ret);
+		goto err_mod;
+	}
+
+	return 0;
+
+err_mod:
+	clk_disable(&priv->mod_clk);
+err_ahb:
+	clk_disable(&priv->ahb_clk);
+
+	return ret;
 }
 
-static void sun4i_spi_disable_clock(void)
+static void sun4i_spi_disable_clock(struct udevice *dev)
 {
-	struct sunxi_ccm_reg *const ccm =
-		(struct sunxi_ccm_reg *const)SUNXI_CCM_BASE;
+	struct sun4i_spi_priv *priv = dev_get_priv(dev);
 
-	writel(0, &ccm->spi0_clk_cfg);
-	clrbits_le32(&ccm->ahb_gate0, (1 << AHB_GATE_OFFSET_SPI0));
-
+	clk_disable(&priv->ahb_clk);
+	clk_disable(&priv->mod_clk);
+	if (reset_valid(&priv->rst_ctl))
+		reset_assert(&priv->rst_ctl);
 }
 
 static int sun4i_spi_ofdata_to_platdata(struct udevice *bus)
@@ -274,12 +304,31 @@ static int sun4i_spi_ofdata_to_platdata(struct udevice *bus)
 	return 0;
 }
 
-static int sun4i_spi_probe(struct udevice *bus)
+static int sun4i_spi_probe(struct udevice *dev)
 {
-	struct sun4i_spi_platdata *plat = dev_get_platdata(bus);
-	struct sun4i_spi_priv *priv = dev_get_priv(bus);
+	struct sun4i_spi_platdata *plat = dev_get_platdata(dev);
+	struct sun4i_spi_priv *priv = dev_get_priv(dev);
+	int ret;
 
-	sun4i_spi_parse_pins(bus);
+	ret = clk_get_by_name(dev, "ahb", &priv->ahb_clk);
+	if (ret) {
+		dev_err(dev, "failed to get ahb clock\n");
+		return ret;
+	}
+
+	ret = clk_get_by_name(dev, "mod", &priv->mod_clk);
+	if (ret) {
+		dev_err(dev, "failed to get mod clock\n");
+		return ret;
+	}
+
+	ret = reset_get_by_index(dev, 0, &priv->rst_ctl);
+	if (ret && ret != -ENOENT) {
+		dev_err(dev, "failed to get reset gate\n");
+		return ret;
+	}
+
+	sun4i_spi_parse_pins(dev);
 
 	priv->regs = (struct sun4i_spi_regs *)(uintptr_t)plat->base_addr;
 	priv->freq = plat->max_hz;
@@ -291,7 +340,7 @@ static int sun4i_spi_claim_bus(struct udevice *dev)
 {
 	struct sun4i_spi_priv *priv = dev_get_priv(dev->parent);
 
-	sun4i_spi_enable_clock();
+	sun4i_spi_enable_clock(dev->parent);
 
 	writel(SUN4I_CTL_ENABLE | SUN4I_CTL_MASTER | SUN4I_CTL_TP |
 	       SUN4I_CTL_CS_MANUAL | SUN4I_CTL_CS_ACTIVE_LOW,
@@ -309,7 +358,7 @@ static int sun4i_spi_release_bus(struct udevice *dev)
 	reg &= ~SUN4I_CTL_ENABLE;
 	writel(reg, &priv->regs->ctl);
 
-	sun4i_spi_disable_clock();
+	sun4i_spi_disable_clock(dev->parent);
 
 	return 0;
 }
