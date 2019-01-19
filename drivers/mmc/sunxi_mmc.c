@@ -104,7 +104,7 @@ static int mmc_resource_init(int sdc_no)
 
 	return ret;
 }
-#endif
+#endif	/* !DM_MMC */
 
 static int mmc_set_mod_clk(struct sunxi_mmc_priv *priv, unsigned int hz)
 {
@@ -566,7 +566,7 @@ struct mmc *sunxi_mmc_init(int sdc_no)
 
 	return mmc_create(cfg, priv);
 }
-#else
+#else	/* DM_MMC */
 
 static int sunxi_mmc_set_ios(struct udevice *dev)
 {
@@ -747,4 +747,4 @@ U_BOOT_DRIVER(sunxi_mmc_drv) = {
 	.platdata_auto_alloc_size = sizeof(struct sunxi_mmc_plat),
 	.priv_auto_alloc_size = sizeof(struct sunxi_mmc_priv),
 };
-#endif
+#endif	/* DM_MMC */
