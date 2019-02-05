@@ -146,6 +146,10 @@ config SUNXI_DRAM_MAX_SIZE
 	default 0xC0000000 if MACH_SUN50I || MACH_SUN50I_H5 || MACH_SUN50I_H6
 	default 0x80000000
 
+config SUNXI_ARMV8_32BIT_BUILD
+	bool "Build 32-bit binaries for ARMv8 SoCs"
+	default n
+
 choice
 	prompt "Sunxi SoC Variant"
 	optional
@@ -275,7 +279,8 @@ config MACH_SUN9I
 
 config MACH_SUN50I
 	bool "sun50i (Allwinner A64)"
-	select ARM64
+	select ARM64 if !SUNXI_ARMV8_32BIT_BUILD
+	select CPU_V7A if SUNXI_ARMV8_32BIT_BUILD
 	select DM_I2C
 	select PHY_SUN4I_USB
 	select SUN6I_PRCM
@@ -291,14 +296,16 @@ config MACH_SUN50I
 
 config MACH_SUN50I_H5
 	bool "sun50i (Allwinner H5)"
-	select ARM64
+	select ARM64 if !SUNXI_ARMV8_32BIT_BUILD
+	select CPU_V7A if SUNXI_ARMV8_32BIT_BUILD
 	select MACH_SUNXI_H3_H5
 	select FIT
 	select SPL_LOAD_FIT
 
 config MACH_SUN50I_H6
 	bool "sun50i (Allwinner H6)"
-	select ARM64
+	select ARM64 if !SUNXI_ARMV8_32BIT_BUILD
+	select CPU_V7A if SUNXI_ARMV8_32BIT_BUILD
 	select SUPPORT_SPL
 	select FIT
 	select SPL_LOAD_FIT
