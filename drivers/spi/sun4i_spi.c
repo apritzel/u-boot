@@ -39,6 +39,30 @@
 
 #define SUN4I_TXDATA_REG	0x04
 
+#ifdef CONFIG_SUNXI_GEN_SUN6I
+#define SUN4I_CTL_REG		0x04
+#define SUN4I_CTL_ENABLE		BIT(0)
+#define SUN4I_CTL_MASTER		BIT(1)
+#define SUN4I_CTL_TP			BIT(7)
+#define SUN4I_CTL_SRST			BIT(31)
+
+#define SUN4I_CTL_CPHA			BIT(0)
+#define SUN4I_CTL_CPOL			BIT(1)
+#define SUN4I_CTL_CS_ACTIVE_LOW		BIT(2)
+#define SUN4I_CTL_CS_MASK		0x30
+#define SUN4I_CTL_CS(cs)		(((cs) << 4) & SUN4I_CTL_CS_MASK)
+#define SUN4I_CTL_CS_MANUAL		BIT(6)
+#define SUN4I_CTL_CS_LEVEL		BIT(7)
+#define SUN4I_CTL_DHB			BIT(8)
+#define SUN4I_CTL_XCH_MASK		0x80000000
+#define SUN4I_CTL_XCH			BIT(31)
+
+#define SUN4I_CTL_RF_RST		BIT(15)
+#define SUN4I_CTL_TF_RST		BIT(31)
+
+#else
+#define SUN4I_CTL_SRST			0
+
 #define SUN4I_CTL_REG		0x08
 #define SUN4I_CTL_ENABLE		BIT(0)
 #define SUN4I_CTL_MASTER		BIT(1)
@@ -56,6 +80,7 @@
 #define SUN4I_CTL_CS_MANUAL		BIT(16)
 #define SUN4I_CTL_CS_LEVEL		BIT(17)
 #define SUN4I_CTL_TP			BIT(18)
+#endif
 
 #define SUN4I_INT_CTL_REG	0x0c
 #define SUN4I_INT_CTL_RF_F34		BIT(4)
@@ -94,11 +119,39 @@
 #define SUN4I_SPI_DEFAULT_RATE	1000000
 #define SUN4I_SPI_TIMEOUT_US	1000000
 
+#ifdef CONFIG_SUNXI_GEN_SUN6I
+/* sun6i spi register set */
+struct sun4i_spi_regs {
+	u32 res0;
+	u32 ctl;	/* 0x04 */
+	u32 tctl;	/* 0x08 */
+	u32 res1;
+	u32 intctl;	/* 0x10 */
+	u32 st;		/* 0x14 */
+	u32 fifo_ctl;	/* 0x18 */
+	u32 fifo_sta;	/* 0x1c */
+	u32 wait;	/* 0x20 */
+	u32 cctl;	/* 0x24 */
+	u32 res2[2];
+	u32 bc;		/* 0x30 */
+	u32 tc;		/* 0x34 */
+	u32 bctl;	/* 0x38 */
+	u32 res3[113];
+	u32 txdata;	/* 0x200 */
+	u32 res4[63];
+	u32 rxdata;	/* 0x300 */
+};
+#else
 /* sun4i spi register set */
 struct sun4i_spi_regs {
 	u32 rxdata;
 	u32 txdata;
-	u32 ctl;
+	union {
+		u32 ctl;
+		u32 tctl;
+		u32 fifo_ctl;
+		u32 bctl;
+	};
 	u32 intctl;
 	u32 st;
 	u32 dmactl;
@@ -108,6 +161,7 @@ struct sun4i_spi_regs {
 	u32 tc;
 	u32 fifo_sta;
 };
+#endif
 
 struct sun4i_spi_platdata {
 	u32 base_addr;
@@ -154,7 +208,7 @@ static void sun4i_spi_set_cs(struct udevice *bus, u8 cs, bool enable)
 	struct sun4i_spi_priv *priv = dev_get_priv(bus);
 	u32 reg;
 
-	reg = readl(&priv->regs->ctl);
+	reg = readl(&priv->regs->tctl);
 
 	reg &= ~SUN4I_CTL_CS_MASK;
 	reg |= SUN4I_CTL_CS(cs);
@@ -164,7 +218,7 @@ static void sun4i_spi_set_cs(struct udevice *bus, u8 cs, bool enable)
 	else
 		reg |= SUN4I_CTL_CS_LEVEL;
 
-	writel(reg, &priv->regs->ctl);
+	writel(reg, &priv->regs->tctl);
 }
 
 static int sun4i_spi_parse_pins(struct udevice *dev)
@@ -236,7 +290,10 @@ static int sun4i_spi_parse_pins(struct udevice *dev)
 			if (pin < 0)
 				break;
 
-			sunxi_gpio_set_cfgpin(pin, SUNXI_GPC_SPI0);
+			if (IS_ENABLED(CONFIG_MACH_SUN50I))
+				sunxi_gpio_set_cfgpin(pin, SUN50I_GPC_SPI0);
+			else
+				sunxi_gpio_set_cfgpin(pin, SUNXI_GPC_SPI0);
 			sunxi_gpio_set_drv(pin, drive);
 			sunxi_gpio_set_pull(pin, pull);
 		}
@@ -343,9 +400,15 @@ static int sun4i_spi_claim_bus(struct udevice *dev)
 	sun4i_spi_enable_clock(dev->parent);
 
 	writel(SUN4I_CTL_ENABLE | SUN4I_CTL_MASTER | SUN4I_CTL_TP |
-	       SUN4I_CTL_CS_MANUAL | SUN4I_CTL_CS_ACTIVE_LOW,
+	       SUN4I_CTL_SRST,
 	       &priv->regs->ctl);
 
+	if (IS_ENABLED(CONFIG_SUNXI_GEN_SUN6I))
+		while (readl(&priv->regs->ctl) & SUN4I_CTL_SRST)
+			;
+
+	setbits_le32(&priv->regs->tctl, SUN4I_CTL_CS_MANUAL |
+		     SUN4I_CTL_CS_ACTIVE_LOW);
 	return 0;
 }
 
@@ -386,10 +449,10 @@ static int sun4i_spi_xfer(struct udevice *dev, unsigned int bitlen,
 	if (flags & SPI_XFER_BEGIN)
 		sun4i_spi_set_cs(bus, slave_plat->cs, true);
 
-	reg = readl(&priv->regs->ctl);
+	reg = readl(&priv->regs->fifo_ctl);
 
 	/* Reset FIFOs */
-	writel(reg | SUN4I_CTL_RF_RST | SUN4I_CTL_TF_RST, &priv->regs->ctl);
+	writel(reg | SUN4I_CTL_RF_RST | SUN4I_CTL_TF_RST, &priv->regs->fifo_ctl);
 
 	while (len) {
 		/* Setup the transfer now... */
@@ -398,16 +461,18 @@ static int sun4i_spi_xfer(struct udevice *dev, unsigned int bitlen,
 		/* Setup the counters */
 		writel(SUN4I_BURST_CNT(nbytes), &priv->regs->bc);
 		writel(SUN4I_XMIT_CNT(nbytes), &priv->regs->tc);
+		if (IS_ENABLED(CONFIG_SUNXI_GEN_SUN6I))
+			writel(SUN4I_BURST_CNT(nbytes), &priv->regs->bctl);
 
 		/* Fill the TX FIFO */
 		sun4i_spi_fill_fifo(priv, nbytes);
 
 		/* Start the transfer */
-		reg = readl(&priv->regs->ctl);
-		writel(reg | SUN4I_CTL_XCH, &priv->regs->ctl);
+		reg = readl(&priv->regs->tctl);
+		writel(reg | SUN4I_CTL_XCH, &priv->regs->tctl);
 
 		/* Wait transfer to complete */
-		ret = wait_for_bit_le32(&priv->regs->ctl, SUN4I_CTL_XCH_MASK,
+		ret = wait_for_bit_le32(&priv->regs->tctl, SUN4I_CTL_XCH_MASK,
 					false, SUN4I_SPI_TIMEOUT_US, false);
 		if (ret) {
 			printf("ERROR: sun4i_spi: Timeout transferring data\n");
@@ -480,7 +545,7 @@ static int sun4i_spi_set_mode(struct udevice *dev, uint mode)
 	struct sun4i_spi_priv *priv = dev_get_priv(dev);
 	u32 reg;
 
-	reg = readl(&priv->regs->ctl);
+	reg = readl(&priv->regs->tctl);
 	reg &= ~(SUN4I_CTL_CPOL | SUN4I_CTL_CPHA);
 
 	if (mode & SPI_CPOL)
@@ -490,7 +555,7 @@ static int sun4i_spi_set_mode(struct udevice *dev, uint mode)
 		reg |= SUN4I_CTL_CPHA;
 
 	priv->mode = mode;
-	writel(reg, &priv->regs->ctl);
+	writel(reg, &priv->regs->tctl);
 
 	return 0;
 }
@@ -504,7 +569,12 @@ static const struct dm_spi_ops sun4i_spi_ops = {
 };
 
 static const struct udevice_id sun4i_spi_ids[] = {
+#ifndef CONFIG_SUNXI_GEN_SUN6I
 	{ .compatible = "allwinner,sun4i-a10-spi"  },
+#else
+	{ .compatible = "allwinner,sun6i-a31-spi" },
+	{ .compatible = "allwinner,sun8i-h3-spi" },
+#endif
 	{ }
 };
 

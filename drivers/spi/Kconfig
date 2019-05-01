@@ -219,9 +219,9 @@ config STM32_QSPI
 	  this ST IP core.
 
 config SUN4I_SPI
-	bool "Allwinner A10 SoCs SPI controller"
+	bool "Allwinner SoCs SPI driver"
 	help
-	  SPI driver for Allwinner sun4i, sun5i and sun7i SoCs
+	  SPI driver for Allwinner SoCs
 
 config TEGRA114_SPI
 	bool "nVidia Tegra114 SPI driver"
