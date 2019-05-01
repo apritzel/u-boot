@@ -239,13 +239,23 @@ static int sun4i_spi_parse_pins(struct udevice *dev)
 	return 0;
 }
 
-static inline void sun4i_spi_enable_clock(void)
+static void sun4i_spi_enable_clock(void)
 {
 	struct sunxi_ccm_reg *const ccm =
 		(struct sunxi_ccm_reg *const)SUNXI_CCM_BASE;
 
 	setbits_le32(&ccm->ahb_gate0, (1 << AHB_GATE_OFFSET_SPI0));
 	writel((1 << 31), &ccm->spi0_clk_cfg);
+}
+
+static void sun4i_spi_disable_clock(void)
+{
+	struct sunxi_ccm_reg *const ccm =
+		(struct sunxi_ccm_reg *const)SUNXI_CCM_BASE;
+
+	writel(0, &ccm->spi0_clk_cfg);
+	clrbits_le32(&ccm->ahb_gate0, (1 << AHB_GATE_OFFSET_SPI0));
+
 }
 
 static int sun4i_spi_ofdata_to_platdata(struct udevice *bus)
@@ -269,7 +279,6 @@ static int sun4i_spi_probe(struct udevice *bus)
 	struct sun4i_spi_platdata *plat = dev_get_platdata(bus);
 	struct sun4i_spi_priv *priv = dev_get_priv(bus);
 
-	sun4i_spi_enable_clock();
 	sun4i_spi_parse_pins(bus);
 
 	priv->regs = (struct sun4i_spi_regs *)(uintptr_t)plat->base_addr;
@@ -282,9 +291,12 @@ static int sun4i_spi_claim_bus(struct udevice *dev)
 {
 	struct sun4i_spi_priv *priv = dev_get_priv(dev->parent);
 
+	sun4i_spi_enable_clock();
+
 	writel(SUN4I_CTL_ENABLE | SUN4I_CTL_MASTER | SUN4I_CTL_TP |
 	       SUN4I_CTL_CS_MANUAL | SUN4I_CTL_CS_ACTIVE_LOW,
 	       &priv->regs->ctl);
+
 	return 0;
 }
 
@@ -296,6 +308,8 @@ static int sun4i_spi_release_bus(struct udevice *dev)
 	reg = readl(&priv->regs->ctl);
 	reg &= ~SUN4I_CTL_ENABLE;
 	writel(reg, &priv->regs->ctl);
+
+	sun4i_spi_disable_clock();
 
 	return 0;
 }
