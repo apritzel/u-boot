@@ -334,7 +334,7 @@ static int _bcmgenet_gmac_eth_recv(struct bcmgenet_eth_priv *priv, uchar **packe
 		length = (len >> DMA_BUFLENGTH_SHIFT) & DMA_BUFLENGTH_MASK;
 
 		invalidate_dcache_range((uintptr_t)addr,
-					(addr + RX_TOTAL_BUFSIZE));
+					(addr + RX_BUF_LENGTH));
 
 		/*
 		 * two dummy bytes are added for IP alignment, this can be
