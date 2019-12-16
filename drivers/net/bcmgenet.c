@@ -188,10 +188,7 @@ static void bcmgenet_umac_reset(struct bcmgenet_eth_priv *priv)
 	reg &= ~BIT(1);
 	writel(reg, (priv->mac_reg + SYS_RBUF_FLUSH_CTRL));
 	udelay(10);
-}
 
-static void reset_umac(struct bcmgenet_eth_priv *priv)
-{
 	writel(0, (priv->mac_reg + SYS_RBUF_FLUSH_CTRL));
 	udelay(10);
 
@@ -200,13 +197,6 @@ static void reset_umac(struct bcmgenet_eth_priv *priv)
 	writel(CMD_SW_RESET | CMD_LCL_LOOP_EN, priv->mac_reg + UMAC_CMD);
 	udelay(2);
 	writel(0, priv->mac_reg + UMAC_CMD);
-}
-
-static void init_umac(struct bcmgenet_eth_priv *priv)
-{
-	u32 reg;
-
-	reset_umac(priv);
 
 	/* clear tx/rx counter */
 	writel(MIB_RESET_RX | MIB_RESET_TX | MIB_RESET_RUNT,
@@ -483,7 +473,6 @@ static int _bcmgenet_eth_init(struct bcmgenet_eth_priv *priv, u8 *enetaddr)
 
 	bcmgenet_umac_reset(priv);
 
-	init_umac(priv);
 
 	_bcmgenet_write_hwaddr(priv, enetaddr);
 
