@@ -393,7 +393,7 @@ static void rx_ring_init(struct bcmgenet_eth_priv *priv)
 	       (priv->mac_reg + RDMA_RING_REG_BASE(DEFAULT_Q) + RDMA_READ_PTR));
 	writel(0x0,
 	       (priv->mac_reg + RDMA_RING_REG_BASE(DEFAULT_Q) + RDMA_WRITE_PTR));
-	writel((TOTAL_DESC * (DMA_DESC_SIZE - 1)),
+	writel(TOTAL_DESC * DMA_DESC_SIZE / 4 - 1,
 	       (priv->mac_reg + RDMA_RING_REG_BASE(DEFAULT_Q) + DMA_END_ADDR));
 	writel(0x0,
 	       (priv->mac_reg + RDMA_RING_REG_BASE(DEFAULT_Q) + RDMA_PROD_INDEX));
@@ -417,7 +417,7 @@ static void tx_ring_init(struct bcmgenet_eth_priv *priv)
 	       (priv->mac_reg + TDMA_RING_REG_BASE(DEFAULT_Q) + TDMA_READ_PTR));
 	writel(0x0,
 	       (priv->mac_reg + TDMA_RING_REG_BASE(DEFAULT_Q) + TDMA_WRITE_PTR));
-	writel((TOTAL_DESC * (DMA_DESC_SIZE - 1)),
+	writel(TOTAL_DESC * DMA_DESC_SIZE / 4 - 1,
 	       (priv->mac_reg + TDMA_RING_REG_BASE(DEFAULT_Q) + DMA_END_ADDR));
 	writel(0x0,
 	       (priv->mac_reg + TDMA_RING_REG_BASE(DEFAULT_Q) + TDMA_PROD_INDEX));
