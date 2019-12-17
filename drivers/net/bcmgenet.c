@@ -353,7 +353,6 @@ static int _bcmgenet_free_pkt(struct bcmgenet_eth_priv *priv, int len)
 	priv->c_index = (priv->c_index + 1) & 0xFFFF;
 	writel(priv->c_index,
 	       priv->mac_reg + RDMA_RING_REG_BASE(DEFAULT_Q) + RDMA_CONS_INDEX);
-	udelay(1000);
 
 	priv->rx_index++;
 	if (!(priv->rx_index % TOTAL_DESC)) {
