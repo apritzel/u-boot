@@ -229,39 +229,23 @@ static int bcmgenet_gmac_write_hwaddr(struct udevice *dev)
 	return 0;
 }
 
-static u32 bcmgenet_dma_disable(struct bcmgenet_eth_priv *priv)
+static void bcmgenet_disable_dma(struct bcmgenet_eth_priv *priv)
 {
-	u32 reg;
-	u32 dma_ctrl;
-
-	dma_ctrl = 1 << (DEFAULT_Q + DMA_RING_BUF_EN_SHIFT) | DMA_EN;
-	reg = readl(priv->mac_reg + TDMA_REG_BASE + DMA_CTRL);
-	reg &= ~dma_ctrl;
-	writel(reg, (priv->mac_reg + TDMA_REG_BASE + DMA_CTRL));
-
-	reg = readl(priv->mac_reg + RDMA_REG_BASE + DMA_CTRL);
-	reg &= ~dma_ctrl;
-	writel(reg, (priv->mac_reg + RDMA_REG_BASE + DMA_CTRL));
+	clrbits_le32(priv->mac_reg + TDMA_REG_BASE + DMA_CTRL, DMA_EN);
+	clrbits_le32(priv->mac_reg + RDMA_REG_BASE + DMA_CTRL, DMA_EN);
 
 	writel(1, priv->mac_reg + UMAC_TX_FLUSH);
 	udelay(10);
 	writel(0, priv->mac_reg + UMAC_TX_FLUSH);
-
-	return dma_ctrl;
 }
 
-static void bcmgenet_enable_dma(struct bcmgenet_eth_priv *priv, u32 dma_ctrl)
+static void bcmgenet_enable_dma(struct bcmgenet_eth_priv *priv)
 {
-	u32 reg;
-
-	dma_ctrl |= (1 << (DEFAULT_Q + DMA_RING_BUF_EN_SHIFT));
-	dma_ctrl |= DMA_EN;
+	u32 dma_ctrl = (1 << (DEFAULT_Q + DMA_RING_BUF_EN_SHIFT)) | DMA_EN;
 
 	writel(dma_ctrl, priv->mac_reg + TDMA_REG_BASE + DMA_CTRL);
 
-	reg = readl(priv->mac_reg + RDMA_REG_BASE + DMA_CTRL);
-	reg |= dma_ctrl;
-	writel(reg, priv->mac_reg + RDMA_REG_BASE + DMA_CTRL);
+	setbits_le32(priv->mac_reg + RDMA_REG_BASE + DMA_CTRL, dma_ctrl);
 }
 
 static int bcmgenet_gmac_eth_send(struct udevice *dev, void *packet, int length)
@@ -452,7 +436,6 @@ static void bcmgenet_adjust_link(struct bcmgenet_eth_priv *priv)
 static int bcmgenet_gmac_eth_start(struct udevice *dev)
 {
 	struct bcmgenet_eth_priv *priv = dev_get_priv(dev);
-	u32 dma_ctrl, reg;
 
 	priv->tx_desc_base = priv->mac_reg + 0x4000;
 	priv->rx_desc_base = priv->mac_reg + 0x2000;
@@ -464,7 +447,7 @@ static int bcmgenet_gmac_eth_start(struct udevice *dev)
 	bcmgenet_gmac_write_hwaddr(dev);
 
 	/* Disable RX/TX DMA and flush TX queues */
-	dma_ctrl = bcmgenet_dma_disable(priv);
+	bcmgenet_disable_dma(priv);
 
 	rx_ring_init(priv);
 	rx_descs_init(priv);
@@ -472,7 +455,7 @@ static int bcmgenet_gmac_eth_start(struct udevice *dev)
 	tx_ring_init(priv);
 
 	/* Enable RX/TX DMA */
-	bcmgenet_enable_dma(priv, dma_ctrl);
+	bcmgenet_enable_dma(priv);
 
 	/* PHY Start Up, read PHY properties over the wire
 	 * from generic PHY set-up
@@ -483,9 +466,7 @@ static int bcmgenet_gmac_eth_start(struct udevice *dev)
 	bcmgenet_adjust_link(priv);
 
 	/* Enable Rx/Tx */
-	reg = readl(priv->mac_reg + UMAC_CMD);
-	reg |= (CMD_TX_EN | CMD_RX_EN);
-	writel(reg, (priv->mac_reg + UMAC_CMD));
+	setbits_le32(priv->mac_reg + UMAC_CMD, CMD_TX_EN | CMD_RX_EN);
 
 	return 0;
 }
@@ -515,13 +496,9 @@ static int bcmgenet_phy_init(struct bcmgenet_eth_priv *priv, void *dev)
 	return 0;
 }
 
-static inline void bcmgenet_mdio_start(struct bcmgenet_eth_priv *priv)
+static void bcmgenet_mdio_start(struct bcmgenet_eth_priv *priv)
 {
-	u32 reg;
-
-	reg = readl_relaxed(priv->mac_reg + MDIO_CMD);
-	reg |= MDIO_START_BUSY;
-	writel_relaxed(reg, priv->mac_reg + MDIO_CMD);
+	setbits_le32(priv->mac_reg + MDIO_CMD, MDIO_START_BUSY);
 }
 
 static int bcmgenet_mdio_write(struct mii_dev *bus, int addr, int devad,
@@ -658,16 +635,10 @@ static int bcmgenet_eth_probe(struct udevice *dev)
 static void bcmgenet_gmac_eth_stop(struct udevice *dev)
 {
 	struct bcmgenet_eth_priv *priv = dev_get_priv(dev);
-	u32 reg, dma_ctrl;
 
-	reg = readl(priv->mac_reg + UMAC_CMD);
-	reg &= ~(CMD_TX_EN | CMD_RX_EN);
-	writel(reg, (priv->mac_reg + UMAC_CMD));
-
-	dma_ctrl = 1 << (DEFAULT_Q + DMA_RING_BUF_EN_SHIFT) | DMA_EN;
-	reg = readl(priv->mac_reg + TDMA_REG_BASE + DMA_CTRL);
-	reg &= ~dma_ctrl;
-	writel(reg, (priv->mac_reg + TDMA_REG_BASE + DMA_CTRL));
+	clrbits_le32(priv->mac_reg + UMAC_CMD, CMD_TX_EN | CMD_RX_EN);
+	clrbits_le32(priv->mac_reg + TDMA_REG_BASE + DMA_CTRL,
+		     1 << (DEFAULT_Q + DMA_RING_BUF_EN_SHIFT) | DMA_EN);
 }
 
 static const struct eth_ops bcmgenet_gmac_eth_ops = {
