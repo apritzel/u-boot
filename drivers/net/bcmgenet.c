@@ -751,7 +751,8 @@ static int bcmgenet_eth_ofdata_to_platdata(struct udevice *dev)
 
 static const struct udevice_id bcmgenet_eth_ids[] = {
 	{.compatible = "brcm,genet-v5"},
-	{ }
+	{.compatible = "brcm,bcm2711-genet-v5"},
+	{}
 };
 
 U_BOOT_DRIVER(eth_bcmgenet) = {
