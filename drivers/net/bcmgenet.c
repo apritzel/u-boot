@@ -407,36 +407,38 @@ static void tx_ring_init(struct bcmgenet_eth_priv *priv)
 	       (priv->mac_reg + TDMA_REG_BASE + DMA_RING_CFG));
 }
 
-static void bcmgenet_adjust_link(struct bcmgenet_eth_priv *priv)
+static int bcmgenet_adjust_link(struct bcmgenet_eth_priv *priv)
 {
 	struct phy_device *phy_dev = priv->phydev;
-	u32 reg = 0, reg_rgmii;
+	u32 speed;
 
 	switch (phy_dev->speed) {
 	case SPEED_1000:
-		reg = UMAC_SPEED_1000;
+		speed = UMAC_SPEED_1000;
 		break;
 	case SPEED_100:
-		reg = UMAC_SPEED_100;
+		speed = UMAC_SPEED_100;
 		break;
 	case SPEED_10:
-		reg = UMAC_SPEED_10;
+		speed = UMAC_SPEED_10;
 		break;
+	default:
+		printf("bcmgenet: Unsupported PHY speed: %d\n", phy_dev->speed);
+		return -EINVAL;
 	}
 
-	reg <<= CMD_SPEED_SHIFT;
+	clrsetbits_le32(priv->mac_reg + EXT_RGMII_OOB_CTRL, OOB_DISABLE,
+			RGMII_LINK | RGMII_MODE_EN | ID_MODE_DIS);
 
-	reg_rgmii = readl(priv->mac_reg + EXT_RGMII_OOB_CTRL);
-	reg_rgmii &= ~OOB_DISABLE;
-	reg_rgmii |= (RGMII_LINK | RGMII_MODE_EN | ID_MODE_DIS);
-	writel(reg_rgmii, priv->mac_reg + EXT_RGMII_OOB_CTRL);
+	writel(speed << CMD_SPEED_SHIFT, (priv->mac_reg + UMAC_CMD));
 
-	writel(reg, (priv->mac_reg + UMAC_CMD));
+	return 0;
 }
 
 static int bcmgenet_gmac_eth_start(struct udevice *dev)
 {
 	struct bcmgenet_eth_priv *priv = dev_get_priv(dev);
+	int ret;
 
 	priv->tx_desc_base = priv->mac_reg + 0x4000;
 	priv->rx_desc_base = priv->mac_reg + 0x2000;
@@ -458,13 +460,19 @@ static int bcmgenet_gmac_eth_start(struct udevice *dev)
 	/* Enable RX/TX DMA */
 	bcmgenet_enable_dma(priv);
 
-	/* PHY Start Up, read PHY properties over the wire
-	 * from generic PHY set-up
-	 */
-	phy_startup(priv->phydev);
+	/* read PHY properties over the wire from generic PHY set-up */
+	ret = phy_startup(priv->phydev);
+	if (ret) {
+		printf("bcmgenet: PHY startup failed: %d\n", ret);
+		return ret;
+	}
 
 	/* Update MAC registers based on PHY property */
-	bcmgenet_adjust_link(priv);
+	ret = bcmgenet_adjust_link(priv);
+	if (ret) {
+		printf("bcmgenet: adjust PHY link failed: %d\n", ret);
+		return ret;
+	}
 
 	/* Enable Rx/Tx */
 	setbits_le32(priv->mac_reg + UMAC_CMD, CMD_TX_EN | CMD_RX_EN);
