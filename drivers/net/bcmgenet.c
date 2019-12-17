@@ -337,8 +337,11 @@ static int bcmgenet_gmac_eth_recv(struct udevice *dev,
 	return -EAGAIN;
 }
 
-static int _bcmgenet_free_pkt(struct bcmgenet_eth_priv *priv, int len)
+static int bcmgenet_gmac_free_pkt(struct udevice *dev, uchar *packet,
+				  int length)
 {
+	struct bcmgenet_eth_priv *priv = dev_get_priv(dev);
+
 	priv->c_index = (priv->c_index + 1) & 0xFFFF;
 	writel(priv->c_index,
 	       priv->mac_reg + RDMA_RING_REG_BASE(DEFAULT_Q) + RDMA_CONS_INDEX);
@@ -674,14 +677,6 @@ static void bcmgenet_gmac_eth_stop(struct udevice *dev)
 	reg = readl(priv->mac_reg + TDMA_REG_BASE + DMA_CTRL);
 	reg &= ~dma_ctrl;
 	writel(reg, (priv->mac_reg + TDMA_REG_BASE + DMA_CTRL));
-}
-
-static int bcmgenet_gmac_free_pkt(struct udevice *dev, uchar *packet,
-				  int length)
-{
-	struct bcmgenet_eth_priv *priv = dev_get_priv(dev);
-
-	return _bcmgenet_free_pkt(priv, length);
 }
 
 static const struct eth_ops bcmgenet_gmac_eth_ops = {
