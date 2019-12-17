@@ -44,19 +44,15 @@
 
 #define GENET_EXT_OFF			0x0080
 #define EXT_RGMII_OOB_CTRL		(GENET_EXT_OFF + 0x0C)
-#define RGMII_MODE_EN_V123		BIT(0)
 #define RGMII_LINK			BIT(4)
 #define OOB_DISABLE			BIT(5)
 #define RGMII_MODE_EN			BIT(6)
 #define ID_MODE_DIS			BIT(16)
 
 #define GENET_RBUF_OFF			0x0300
-#define RBUF_FLUSH_CTRL_V1		(GENET_RBUF_OFF + 0x04)
 #define RBUF_TBUF_SIZE_CTRL		(GENET_RBUF_OFF + 0xb4)
 #define RBUF_CTRL			(GENET_RBUF_OFF + 0x00)
-#define RBUF_64B_EN			BIT(0)
 #define RBUF_ALIGN_2B			BIT(1)
-#define RBUF_BAD_DIS			BIT(2)
 
 #define GENET_UMAC_OFF			0x0800
 #define UMAC_MIB_CTRL			(GENET_UMAC_OFF + 0x580)
