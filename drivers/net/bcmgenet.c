@@ -93,7 +93,9 @@
 #define MIB_RESET_TX			BIT(2)
 
 /* total number of Buffer Descriptors, same for Rx/Tx */
-#define TOTAL_DESC			256
+#define TOTAL_DESCS			256
+#define RX_DESCS			TOTAL_DESCS
+#define TX_DESCS			TOTAL_DESCS
 
 #define DEFAULT_Q			0x10
 
@@ -137,12 +139,12 @@
 
 #define GENET_RX_OFF			0x2000
 #define GENET_RDMA_REG_OFF					\
-	(GENET_RX_OFF + TOTAL_DESC * DMA_DESC_SIZE)
+	(GENET_RX_OFF + TOTAL_DESCS * DMA_DESC_SIZE)
 #define GENET_TX_OFF			0x4000
 #define GENET_TDMA_REG_OFF					\
-	(GENET_TX_OFF + TOTAL_DESC * DMA_DESC_SIZE)
+	(GENET_TX_OFF + TOTAL_DESCS * DMA_DESC_SIZE)
 
-#define DMA_FC_THRESH_HI		(TOTAL_DESC >> 4)
+#define DMA_FC_THRESH_HI		(RX_DESCS >> 4)
 #define DMA_FC_THRESH_LO		5
 #define DMA_FC_THRESH_VALUE		((DMA_FC_THRESH_LO << 16) |	\
 					  DMA_FC_THRESH_HI)
@@ -176,7 +178,7 @@
 #define DMA_SCB_BURST_SIZE		0x0C
 
 #define RX_BUF_LENGTH			2048
-#define RX_TOTAL_BUFSIZE		(RX_BUF_LENGTH * TOTAL_DESC)
+#define RX_TOTAL_BUFSIZE		(RX_BUF_LENGTH * RX_DESCS)
 #define RX_BUF_OFFSET			2
 
 DECLARE_GLOBAL_DATA_PTR;
@@ -289,7 +291,7 @@ static int bcmgenet_gmac_eth_send(struct udevice *dev, void *packet, int length)
 	writel(len_stat, (desc_base + DMA_DESC_LENGTH_STATUS));
 
 	/* Increment index and start transmission */
-	if (++priv->tx_index >= TOTAL_DESC)
+	if (++priv->tx_index >= TX_DESCS)
 		priv->tx_index = 0;
 
 	prod_index++;
@@ -343,7 +345,7 @@ static int bcmgenet_gmac_free_pkt(struct udevice *dev, uchar *packet,
 	writel(priv->c_index, priv->mac_reg + RDMA_CONS_INDEX);
 
 	/* Forward our descriptor pointer, wrapping around if needed. */
-	if (++priv->rx_index >= TOTAL_DESC)
+	if (++priv->rx_index >= RX_DESCS)
 		priv->rx_index = 0;
 
 	return 0;
@@ -359,7 +361,7 @@ static void rx_descs_init(struct bcmgenet_eth_priv *priv)
 
 	len_stat = ((RX_BUF_LENGTH << DMA_BUFLENGTH_SHIFT) | DMA_OWN);
 
-	for (i = 0; i < TOTAL_DESC; i++) {
+	for (i = 0; i < RX_DESCS; i++) {
 		writel(lower_32_bits((uintptr_t)&rxbuffs[i * RX_BUF_LENGTH]),
 		       desc_base + i * DMA_DESC_SIZE + DMA_DESC_ADDRESS_LO);
 		writel(upper_32_bits((uintptr_t)&rxbuffs[i * RX_BUF_LENGTH]),
@@ -377,12 +379,12 @@ static void rx_ring_init(struct bcmgenet_eth_priv *priv)
 	writel(0x0, priv->mac_reg + RDMA_RING_REG_BASE + DMA_START_ADDR);
 	writel(0x0, priv->mac_reg + RDMA_READ_PTR);
 	writel(0x0, priv->mac_reg + RDMA_WRITE_PTR);
-	writel(TOTAL_DESC * DMA_DESC_SIZE / 4 - 1,
+	writel(RX_DESCS * DMA_DESC_SIZE / 4 - 1,
 	       priv->mac_reg + RDMA_RING_REG_BASE + DMA_END_ADDR);
 
 	writel(0x0, priv->mac_reg + RDMA_PROD_INDEX);
 	writel(0x0, priv->mac_reg + RDMA_CONS_INDEX);
-	writel((TOTAL_DESC << DMA_RING_SIZE_SHIFT) | RX_BUF_LENGTH,
+	writel((RX_DESCS << DMA_RING_SIZE_SHIFT) | RX_BUF_LENGTH,
 	       priv->mac_reg + RDMA_RING_REG_BASE + DMA_RING_BUF_SIZE);
 	writel(DMA_FC_THRESH_VALUE, priv->mac_reg + RDMA_XON_XOFF_THRESH);
 	writel(1 << DEFAULT_Q, priv->mac_reg + RDMA_REG_BASE + DMA_RING_CFG);
@@ -396,13 +398,13 @@ static void tx_ring_init(struct bcmgenet_eth_priv *priv)
 	writel(0x0, priv->mac_reg + TDMA_RING_REG_BASE + DMA_START_ADDR);
 	writel(0x0, priv->mac_reg + TDMA_READ_PTR);
 	writel(0x0, priv->mac_reg + TDMA_WRITE_PTR);
-	writel(TOTAL_DESC * DMA_DESC_SIZE / 4 - 1,
+	writel(TX_DESCS * DMA_DESC_SIZE / 4 - 1,
 	       priv->mac_reg + TDMA_RING_REG_BASE + DMA_END_ADDR);
 	writel(0x0, priv->mac_reg + TDMA_PROD_INDEX);
 	writel(0x0, priv->mac_reg + TDMA_CONS_INDEX);
 	writel(0x1, priv->mac_reg + TDMA_RING_REG_BASE + DMA_MBUF_DONE_THRESH);
 	writel(0x0, priv->mac_reg + TDMA_FLOW_PERIOD);
-	writel((TOTAL_DESC << DMA_RING_SIZE_SHIFT) | RX_BUF_LENGTH,
+	writel((TX_DESCS << DMA_RING_SIZE_SHIFT) | RX_BUF_LENGTH,
 	       priv->mac_reg + TDMA_RING_REG_BASE + DMA_RING_BUF_SIZE);
 
 	writel(1 << DEFAULT_Q, priv->mac_reg + TDMA_REG_BASE + DMA_RING_CFG);
