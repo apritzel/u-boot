@@ -18,6 +18,7 @@
 #include <linux/libfdt.h>
 #include <linux/iopoll.h>
 #include <asm/dma-mapping.h>
+#include <wait_bit.h>
 
 /* Register definitions derived from Linux source */
 #define SYS_REV_CTRL			 0x00
@@ -506,11 +507,7 @@ static int bcmgenet_mdio_write(struct mii_dev *bus, int addr, int devad,
 {
 	struct udevice *dev = bus->priv;
 	struct bcmgenet_eth_priv *priv = dev_get_priv(dev);
-	u32 status, val;
-	ulong start_time;
-	ulong timeout_us = 20000;
-
-	start_time = timer_get_us();
+	u32 val;
 
 	/* Prepare the read operation */
 	val = MDIO_WR | (addr << MDIO_PMD_SHIFT) |
@@ -520,27 +517,16 @@ static int bcmgenet_mdio_write(struct mii_dev *bus, int addr, int devad,
 	/* Start MDIO transaction */
 	bcmgenet_mdio_start(priv);
 
-	for (;;) {
-		status = readl_relaxed(priv->mac_reg + MDIO_CMD);
-		if (!(status & MDIO_START_BUSY))
-			break;
-		if (timeout_us > 0 && (timer_get_us() - start_time)
-				>= timeout_us)
-			return -ETIMEDOUT;
-	}
-
-	return 0;
+	return wait_for_bit_le32(priv->mac_reg + MDIO_CMD,
+				 MDIO_START_BUSY, false, 20, true);
 }
 
 static int bcmgenet_mdio_read(struct mii_dev *bus, int addr, int devad, int reg)
 {
 	struct udevice *dev = bus->priv;
 	struct bcmgenet_eth_priv *priv = dev_get_priv(dev);
-	u32 status, val;
-	ulong start_time;
-	ulong timeout_us =  20000;
-
-	start_time = timer_get_us();
+	u32 val;
+	int ret;
 
 	/* Prepare the read operation */
 	val = MDIO_RD | (addr << MDIO_PMD_SHIFT) | (reg << MDIO_REG_SHIFT);
@@ -549,13 +535,10 @@ static int bcmgenet_mdio_read(struct mii_dev *bus, int addr, int devad, int reg)
 	/* Start MDIO transaction */
 	bcmgenet_mdio_start(priv);
 
-	for (;;) {
-		status = readl_relaxed(priv->mac_reg + MDIO_CMD);
-		if (!(status & MDIO_START_BUSY))
-			break;
-		if (timeout_us > 0 && (timer_get_us() - start_time) >= timeout_us)
-			return -ETIMEDOUT;
-	}
+	ret = wait_for_bit_le32(priv->mac_reg + MDIO_CMD,
+				MDIO_START_BUSY, false, 20, true);
+	if (ret)
+		return ret;
 
 	val = readl_relaxed(priv->mac_reg + MDIO_CMD);
 
