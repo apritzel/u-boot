@@ -570,6 +570,7 @@ static int bcmgenet_mdio_init(const char *name, struct udevice *priv)
 	return  mdio_register(bus);
 }
 
+/* We only support RGMII (as used on the RPi4). */
 static int bcmgenet_interface_set(struct bcmgenet_eth_priv *priv)
 {
 	phy_interface_t phy_mode = priv->interface;
@@ -592,7 +593,8 @@ static int bcmgenet_eth_probe(struct udevice *dev)
 	struct bcmgenet_eth_priv *priv = dev_get_priv(dev);
 	int offset = dev_of_offset(dev);
 	const char *name;
-	int reg;
+	u32 reg;
+	int ret;
 	u8 major;
 
 	priv->mac_reg = (void *)pdata->iobase;
@@ -612,12 +614,17 @@ static int bcmgenet_eth_probe(struct udevice *dev)
 	debug("GENET version is %1d.%1d EPHY: 0x%04x",
 	      major, (reg >> 16) & 0x0f, reg & 0xffff);
 
-	bcmgenet_interface_set(priv);
+	ret = bcmgenet_interface_set(priv);
+	if (ret)
+		return ret;
 
 	offset = fdt_first_subnode(gd->fdt_blob, offset);
 	name = fdt_get_name(gd->fdt_blob, offset, NULL);
 
-	bcmgenet_mdio_init(name, dev);
+	ret = bcmgenet_mdio_init(name, dev);
+	if (ret)
+		return ret;
+
 	priv->bus = miiphy_get_dev_by_name(name);
 
 	return bcmgenet_phy_init(priv, dev);
