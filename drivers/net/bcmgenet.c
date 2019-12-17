@@ -90,8 +90,9 @@
  */
 #define ENET_BRCM_TAG_LEN		 6
 #define ENET_PAD			 8
-#define ENET_MAX_MTU_SIZE		 (ETH_DATA_LEN + ETH_HLEN + VLAN_HLEN + \
-					  ENET_BRCM_TAG_LEN + ETH_FCS_LEN + ENET_PAD)
+#define ENET_MAX_MTU_SIZE		 (ETH_DATA_LEN + ETH_HLEN +	  \
+					  VLAN_HLEN + ENET_BRCM_TAG_LEN + \
+					  ETH_FCS_LEN + ENET_PAD)
 
 /* Tx/Rx Dma Descriptor common bits*/
 #define DMA_EN                           BIT(0)
@@ -346,11 +347,11 @@ static void rx_descs_init(struct bcmgenet_eth_priv *priv)
 
 	for (i = 0; i < TOTAL_DESC; i++) {
 		writel(lower_32_bits((uintptr_t)&rxbuffs[i * RX_BUF_LENGTH]),
-		       (((desc_base + (i * DMA_DESC_SIZE)) + DMA_DESC_ADDRESS_LO)));
+		       desc_base + i * DMA_DESC_SIZE + DMA_DESC_ADDRESS_LO);
 		writel(upper_32_bits((uintptr_t)&rxbuffs[i * RX_BUF_LENGTH]),
-		       (((desc_base + (i * DMA_DESC_SIZE)) + DMA_DESC_ADDRESS_HI)));
+		       desc_base + i * DMA_DESC_SIZE + DMA_DESC_ADDRESS_HI);
 		writel(len_stat,
-		       ((desc_base + (i * DMA_DESC_SIZE) + DMA_DESC_LENGTH_STATUS)));
+		       desc_base + i * DMA_DESC_SIZE + DMA_DESC_LENGTH_STATUS);
 	}
 }
 
@@ -659,7 +660,8 @@ static int bcmgenet_eth_ofdata_to_platdata(struct udevice *dev)
 	offset = fdtdec_lookup_phandle(gd->fdt_blob, node, "phy-handle");
 	if (offset > 0) {
 		priv->phyaddr = fdtdec_get_int(gd->fdt_blob, offset, "reg", 0);
-		pdata->max_speed = fdtdec_get_int(gd->fdt_blob, offset, "max-speed", 0);
+		pdata->max_speed = fdtdec_get_int(gd->fdt_blob, offset,
+						  "max-speed", 0);
 	}
 
 	return 0;
