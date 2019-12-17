@@ -306,8 +306,10 @@ static int bcmgenet_gmac_eth_send(struct udevice *dev, void *packet, int length)
 	return 0;
 }
 
-static int _bcmgenet_gmac_eth_recv(struct bcmgenet_eth_priv *priv, uchar **packetp)
+static int bcmgenet_gmac_eth_recv(struct udevice *dev,
+				  int flags, uchar **packetp)
 {
+	struct bcmgenet_eth_priv *priv = dev_get_priv(dev);
 	u32 len;
 	u32 addr;
 	u32 length;
@@ -417,14 +419,6 @@ static void tx_ring_init(struct bcmgenet_eth_priv *priv)
 	       (priv->mac_reg + TDMA_RING_REG_BASE(DEFAULT_Q) + DMA_RING_BUF_SIZE));
 	writel((1 << DEFAULT_Q),
 	       (priv->mac_reg + TDMA_REG_BASE + DMA_RING_CFG));
-}
-
-static int bcmgenet_gmac_eth_recv(struct udevice *dev, int flags,
-				  uchar **packetp)
-{
-	struct bcmgenet_eth_priv *priv = dev_get_priv(dev);
-
-	return _bcmgenet_gmac_eth_recv(priv, packetp);
 }
 
 static void bcmgenet_adjust_link(struct bcmgenet_eth_priv *priv)
