@@ -319,15 +319,13 @@ static int _bcmgenet_gmac_eth_send(struct bcmgenet_eth_priv *priv, void *packet,
 
 static int _bcmgenet_gmac_eth_recv(struct bcmgenet_eth_priv *priv, uchar **packetp)
 {
-	u32 len_stat;
 	u32 len;
 	u32 addr;
-	u32 length = 0;
-	void *desc_base = (priv->rx_desc_base + (priv->rx_index * DMA_DESC_SIZE));
+	u32 length;
+	void *desc_base = priv->rx_desc_base + priv->rx_index * DMA_DESC_SIZE;
+	u32 prod_index = readl(priv->mac_reg + RDMA_PROD_INDEX);
 
-	len_stat = readl(desc_base + DMA_DESC_LENGTH_STATUS);
-
-	if (!(len_stat & DMA_OWN)) {
+	if (prod_index > priv->c_index) {
 		len  = readl(desc_base + DMA_DESC_LENGTH_STATUS);
 		addr = readl(desc_base + DMA_DESC_ADDRESS_LO);
 
