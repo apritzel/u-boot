@@ -266,21 +266,20 @@ static void bcmgenet_enable_dma(struct bcmgenet_eth_priv *priv, u32 dma_ctrl)
 	writel(reg, priv->mac_reg + RDMA_REG_BASE + DMA_CTRL);
 }
 
-static int _bcmgenet_gmac_eth_send(struct bcmgenet_eth_priv *priv, void *packet,
-				   int len)
+static int bcmgenet_gmac_eth_send(struct udevice *dev, void *packet, int length)
 {
-	u32 size, len_stat, prod_index, cons;
+	struct bcmgenet_eth_priv *priv = dev_get_priv(dev);
+	void *desc_base = priv->tx_desc_base + priv->tx_index * DMA_DESC_SIZE;
+	u32 len_stat = length << DMA_BUFLENGTH_SHIFT;
+	u32 prod_index, cons;
 	u32 tries = 100;
-
-	void *desc_base = (priv->tx_desc_base +	(priv->tx_index * DMA_DESC_SIZE));
-
-	len_stat = (len << DMA_BUFLENGTH_SHIFT) | (0x3F << DMA_TX_QTAG_SHIFT);
-	len_stat |= (DMA_TX_APPEND_CRC | DMA_SOP | DMA_EOP);
 
 	prod_index = readl(priv->mac_reg + TDMA_RING_REG_BASE(DEFAULT_Q) + TDMA_PROD_INDEX);
 
-	size = roundup(len, ARCH_DMA_MINALIGN);
-	flush_dcache_range((ulong)packet, (ulong)packet + size);
+	flush_dcache_range((ulong)packet, (ulong)packet + length);
+
+	len_stat |= 0x3F << DMA_TX_QTAG_SHIFT;
+	len_stat |= DMA_TX_APPEND_CRC | DMA_SOP | DMA_EOP;
 
 	/* Set-up packet for transmission */
 	writel(lower_32_bits((ulong)packet), (desc_base + DMA_DESC_ADDRESS_LO));
@@ -418,13 +417,6 @@ static void tx_ring_init(struct bcmgenet_eth_priv *priv)
 	       (priv->mac_reg + TDMA_RING_REG_BASE(DEFAULT_Q) + DMA_RING_BUF_SIZE));
 	writel((1 << DEFAULT_Q),
 	       (priv->mac_reg + TDMA_REG_BASE + DMA_RING_CFG));
-}
-
-static int bcmgenet_gmac_eth_send(struct udevice *dev, void *packet, int length)
-{
-	struct bcmgenet_eth_priv *priv = dev_get_priv(dev);
-
-	return _bcmgenet_gmac_eth_send(priv, packet, length);
 }
 
 static int bcmgenet_gmac_eth_recv(struct udevice *dev, int flags,
