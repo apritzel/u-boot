@@ -272,11 +272,9 @@ static int bcmgenet_gmac_eth_send(struct udevice *dev, void *packet, int length)
 	writel(upper_32_bits((ulong)packet), (desc_base + DMA_DESC_ADDRESS_HI));
 	writel(len_stat, (desc_base + DMA_DESC_LENGTH_STATUS));
 
-	/* Increment index and wrap-up */
-	priv->tx_index++;
-	if (!(priv->tx_index % TOTAL_DESC)) {
+	/* Increment index and start transmission */
+	if (++priv->tx_index >= TOTAL_DESC)
 		priv->tx_index = 0;
-	}
 
 	prod_index++;
 
@@ -331,10 +329,8 @@ static int bcmgenet_gmac_free_pkt(struct udevice *dev, uchar *packet,
 	priv->c_index = (priv->c_index + 1) & 0xFFFF;
 	writel(priv->c_index, priv->mac_reg + RDMA_CONS_INDEX);
 
-	priv->rx_index++;
-	if (!(priv->rx_index % TOTAL_DESC)) {
+	if (++priv->rx_index >= TOTAL_DESC)
 		priv->rx_index = 0;
-	}
 
 	return 0;
 }
