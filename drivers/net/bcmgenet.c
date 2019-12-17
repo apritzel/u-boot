@@ -603,16 +603,16 @@ static int bcmgenet_eth_probe(struct udevice *dev)
 
 	/* Read GENET HW version */
 	reg = readl_relaxed(priv->mac_reg + SYS_REV_CTRL);
-	major = (reg >> 24 & 0x0f);
-	if (major == 6)
-		major = 5;
-	else if (major == 5)
-		major = 4;
-	else if (major == 0)
-		major = 1;
+	major = (reg >> 24) & 0x0f;
+	if (major != 6) {
+		if (major == 5)
+			major = 4;
+		else if (major == 0)
+			major = 1;
 
-	debug("GENET version is %1d.%1d EPHY: 0x%04x",
-	      major, (reg >> 16) & 0x0f, reg & 0xffff);
+		printf("Unsupported GENETv%d.%d\n", major, (reg >> 16) & 0x0f);
+		return -ENODEV;
+	}
 
 	ret = bcmgenet_interface_set(priv);
 	if (ret)
