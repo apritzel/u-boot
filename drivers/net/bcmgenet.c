@@ -297,31 +297,27 @@ static int bcmgenet_gmac_eth_recv(struct udevice *dev,
 				  int flags, uchar **packetp)
 {
 	struct bcmgenet_eth_priv *priv = dev_get_priv(dev);
-	u32 len;
-	u32 addr;
-	u32 length;
 	void *desc_base = priv->rx_desc_base + priv->rx_index * DMA_DESC_SIZE;
 	u32 prod_index = readl(priv->mac_reg + RDMA_PROD_INDEX);
+	u32 length, addr;
 
-	if (prod_index > priv->c_index) {
-		len  = readl(desc_base + DMA_DESC_LENGTH_STATUS);
-		addr = readl(desc_base + DMA_DESC_ADDRESS_LO);
+	if (prod_index == priv->c_index)
+		return -EAGAIN;
 
-		length = (len >> DMA_BUFLENGTH_SHIFT) & DMA_BUFLENGTH_MASK;
+	length = readl(desc_base + DMA_DESC_LENGTH_STATUS);
+	length = (length >> DMA_BUFLENGTH_SHIFT) & DMA_BUFLENGTH_MASK;
+	addr = readl(desc_base + DMA_DESC_ADDRESS_LO);
 
-		invalidate_dcache_range((uintptr_t)addr,
-					(addr + RX_BUF_LENGTH));
+	invalidate_dcache_range(addr,
+				addr + roundup(length, ARCH_DMA_MINALIGN));
 
-		/*
-		 * two dummy bytes are added for IP alignment, this can be
-		 * avoided by not programming RBUF_ALIGN_2B bit in RBUF_CTRL
-		 */
-		*packetp = (uchar *)(ulong)addr + RX_BUF_OFFSET;
+	/* To cater for the IP header alignment the hardware does.
+	 * This would actually not be needed if we don't program
+	 * RBUF_ALIGN_2B
+	 */
+	*packetp = (uchar *)(ulong)addr + RX_BUF_OFFSET;
 
-		return (length - RX_BUF_OFFSET);
-	}
-
-	return -EAGAIN;
+	return length - RX_BUF_OFFSET;
 }
 
 static int bcmgenet_gmac_free_pkt(struct udevice *dev, uchar *packet,
