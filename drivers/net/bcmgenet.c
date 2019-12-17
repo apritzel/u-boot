@@ -111,10 +111,6 @@
 #define DMA_TX_OW_CRC			 0x0020
 #define DMA_TX_DO_CSUM			 0x0010
 #define DMA_TX_QTAG_SHIFT		 7
-#define GENET_TDMA_REG_OFF		 (0x4000 + \
-					  TOTAL_DESC * DMA_DESC_SIZE)
-#define GENET_RDMA_REG_OFF		 (0x2000 + \
-					  TOTAL_DESC * DMA_DESC_SIZE)
 
 /* DMA rings size */
 #define DMA_RING_SIZE			 (0x40)
@@ -125,6 +121,13 @@
 #define DMA_DESC_ADDRESS_LO		 0x04
 #define DMA_DESC_ADDRESS_HI		 0x08
 #define DMA_DESC_SIZE                    0xc
+
+#define GENET_RX_OFF			0x2000
+#define GENET_RDMA_REG_OFF					\
+	(GENET_RX_OFF + TOTAL_DESC * DMA_DESC_SIZE)
+#define GENET_TX_OFF			0x4000
+#define GENET_TDMA_REG_OFF					\
+	(GENET_TX_OFF + TOTAL_DESC * DMA_DESC_SIZE)
 
 #define DMA_FC_THRESH_HI		 (TOTAL_DESC >> 4)
 #define DMA_FC_THRESH_LO		 5
@@ -427,8 +430,8 @@ static int bcmgenet_gmac_eth_start(struct udevice *dev)
 	struct bcmgenet_eth_priv *priv = dev_get_priv(dev);
 	int ret;
 
-	priv->tx_desc_base = priv->mac_reg + 0x4000;
-	priv->rx_desc_base = priv->mac_reg + 0x2000;
+	priv->tx_desc_base = priv->mac_reg + GENET_TX_OFF;
+	priv->rx_desc_base = priv->mac_reg + GENET_RX_OFF;
 	priv->tx_index = 0x0;
 	priv->rx_index = 0x0;
 
