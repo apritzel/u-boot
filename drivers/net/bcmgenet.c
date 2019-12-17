@@ -40,10 +40,10 @@
 
 #define GENET_SYS_OFF			0x0000
 #define SYS_RBUF_FLUSH_CTRL		(GENET_SYS_OFF  + 0x08)
-#define SYS_TBUF_FLUSH_CTRL		(GENET_SYS_OFF  + 0x0C)
+#define SYS_TBUF_FLUSH_CTRL		(GENET_SYS_OFF  + 0x0c)
 
 #define GENET_EXT_OFF			0x0080
-#define EXT_RGMII_OOB_CTRL		(GENET_EXT_OFF + 0x0C)
+#define EXT_RGMII_OOB_CTRL		(GENET_EXT_OFF + 0x0c)
 #define RGMII_LINK			BIT(4)
 #define OOB_DISABLE			BIT(5)
 #define RGMII_MODE_EN			BIT(6)
@@ -57,7 +57,7 @@
 #define GENET_UMAC_OFF			0x0800
 #define UMAC_MIB_CTRL			(GENET_UMAC_OFF + 0x580)
 #define UMAC_MAX_FRAME_LEN		(GENET_UMAC_OFF + 0x014)
-#define UMAC_MAC0			(GENET_UMAC_OFF + 0x00C)
+#define UMAC_MAC0			(GENET_UMAC_OFF + 0x00c)
 #define UMAC_MAC1			(GENET_UMAC_OFF + 0x010)
 #define UMAC_CMD			(GENET_UMAC_OFF + 0x008)
 #define MDIO_CMD			(GENET_UMAC_OFF + 0x614)
@@ -67,9 +67,9 @@
 #define MDIO_RD				(2 << 26)
 #define MDIO_WR				BIT(26)
 #define MDIO_PMD_SHIFT			21
-#define MDIO_PMD_MASK			0x1F
+#define MDIO_PMD_MASK			0x1f
 #define MDIO_REG_SHIFT			16
-#define MDIO_REG_MASK			0x1F
+#define MDIO_REG_MASK			0x1f
 
 #define CMD_TX_EN			BIT(0)
 #define CMD_RX_EN			BIT(1)
@@ -104,7 +104,7 @@
 					 VLAN_HLEN + ENET_BRCM_TAG_LEN + \
 					 ETH_FCS_LEN + ENET_PAD)
 
-/* Tx/Rx Dma Descriptor common bits*/
+/* Tx/Rx Dma Descriptor common bits */
 #define DMA_EN				BIT(0)
 #define DMA_RING_BUF_EN_SHIFT		0x01
 #define DMA_RING_BUF_EN_MASK		0xffff
@@ -116,7 +116,7 @@
 #define DMA_SOP				0x2000
 #define DMA_WRAP			0x1000
 #define DMA_MAX_BURST_LENGTH		0x8
-/* Tx specific Dma descriptor bits */
+/* Tx specific DMA descriptor bits */
 #define DMA_TX_UNDERRUN			0x0200
 #define DMA_TX_APPEND_CRC		0x0040
 #define DMA_TX_OW_CRC			0x0020
@@ -124,10 +124,10 @@
 #define DMA_TX_QTAG_SHIFT		7
 
 /* DMA rings size */
-#define DMA_RING_SIZE			(0x40)
+#define DMA_RING_SIZE			0x40
 #define DMA_RINGS_SIZE			(DMA_RING_SIZE * (DEFAULT_Q + 1))
 
-/* DMA Descriptor */
+/* DMA descriptor */
 #define DMA_DESC_LENGTH_STATUS		0x00
 #define DMA_DESC_ADDRESS_LO		0x04
 #define DMA_DESC_ADDRESS_HI		0x08
@@ -154,7 +154,7 @@
 #define TDMA_PROD_INDEX			(TDMA_RING_REG_BASE + 0x0c)
 #define DMA_RING_BUF_SIZE		0x10
 #define DMA_START_ADDR			0x14
-#define DMA_END_ADDR			0x1C
+#define DMA_END_ADDR			0x1c
 #define DMA_MBUF_DONE_THRESH		0x24
 #define TDMA_FLOW_PERIOD		(TDMA_RING_REG_BASE + 0x28)
 #define TDMA_WRITE_PTR			(TDMA_RING_REG_BASE + 0x2c)
@@ -169,9 +169,9 @@
 
 #define TDMA_REG_BASE			(GENET_TDMA_REG_OFF + DMA_RINGS_SIZE)
 #define RDMA_REG_BASE			(GENET_RDMA_REG_OFF + DMA_RINGS_SIZE)
-#define DMA_RING_CFG			0x0
+#define DMA_RING_CFG			0x00
 #define DMA_CTRL			0x04
-#define DMA_SCB_BURST_SIZE		0x0C
+#define DMA_SCB_BURST_SIZE		0x0c
 
 #define RX_BUF_LENGTH			2048
 #define RX_TOTAL_BUFSIZE		(RX_BUF_LENGTH * RX_DESCS)
@@ -355,7 +355,7 @@ static void rx_descs_init(struct bcmgenet_eth_priv *priv)
 
 	priv->c_index = 0;
 
-	len_stat = ((RX_BUF_LENGTH << DMA_BUFLENGTH_SHIFT) | DMA_OWN);
+	len_stat = (RX_BUF_LENGTH << DMA_BUFLENGTH_SHIFT) | DMA_OWN;
 
 	for (i = 0; i < RX_DESCS; i++) {
 		writel(lower_32_bits((uintptr_t)&rxbuffs[i * RX_BUF_LENGTH]),
@@ -566,7 +566,7 @@ static int bcmgenet_mdio_init(const char *name, struct udevice *priv)
 	snprintf(bus->name, sizeof(bus->name), name);
 	bus->priv = (void *)priv;
 
-	return  mdio_register(bus);
+	return mdio_register(bus);
 }
 
 /* We only support RGMII (as used on the RPi4). */
@@ -653,7 +653,7 @@ static int bcmgenet_eth_ofdata_to_platdata(struct udevice *dev)
 	struct bcmgenet_eth_priv *priv = dev_get_priv(dev);
 	const char *phy_mode;
 	int node = dev_of_offset(dev);
-	int offset = 0;
+	int offset;
 
 	pdata->iobase = (phys_addr_t)devfdt_get_addr(dev);
 
