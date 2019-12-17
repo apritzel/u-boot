@@ -1,7 +1,19 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Ethernet driver for GENET controller found on RPI4.
+ * Copyright (C) 2019 Amit Singh Tomar <amittomer25@gmail.com>
  *
+ * Driver for Broadcom GENETv5 Ethernet controller (as found on the RPi4)
+ * This driver is based on the Linux driver:
+ *      drivers/net/ethernet/broadcom/genet/bcmgenet.c
+ *      which is: Copyright (c) 2014-2017 Broadcom
+ *
+ * The hardware supports multiple queues (16 priority queues and one
+ * default queue), both for RX and TX. There are 256 DMA descriptors (both
+ * for TX and RX), and they live in MMIO registers. The hardware allows
+ * assigning descriptor ranges to queues, but we choose the most simple setup:
+ * All 256 descriptors are assigned to the default queue (#16).
+ * Also the Linux driver supports multiple generations of the MAC, whereas
+ * we only support v5, as used in the Raspberry Pi 4.
  */
 
 #include <asm/io.h>
@@ -326,9 +338,11 @@ static int bcmgenet_gmac_free_pkt(struct udevice *dev, uchar *packet,
 {
 	struct bcmgenet_eth_priv *priv = dev_get_priv(dev);
 
+	/* Tell the MAC we have consumed that last receive buffer. */
 	priv->c_index = (priv->c_index + 1) & 0xFFFF;
 	writel(priv->c_index, priv->mac_reg + RDMA_CONS_INDEX);
 
+	/* Forward our descriptor pointer, wrapping around if needed. */
 	if (++priv->rx_index >= TOTAL_DESC)
 		priv->rx_index = 0;
 
@@ -667,6 +681,10 @@ static int bcmgenet_eth_ofdata_to_platdata(struct udevice *dev)
 	return 0;
 }
 
+/* The BCM2711 implementation has a limited burst length compared to a generic
+ * GENETv5 version, but we go with that shorter value (8) in both cases, for
+ * the sake of simplicity.
+ */
 static const struct udevice_id bcmgenet_eth_ids[] = {
 	{.compatible = "brcm,genet-v5"},
 	{.compatible = "brcm,bcm2711-genet-v5"},
