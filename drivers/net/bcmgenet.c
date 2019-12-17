@@ -451,9 +451,11 @@ static void bcmgenet_adjust_link(struct bcmgenet_eth_priv *priv)
 	writel(reg, (priv->mac_reg + UMAC_CMD));
 }
 
-static int _bcmgenet_eth_init(struct bcmgenet_eth_priv *priv, u8 *enetaddr)
+static int bcmgenet_gmac_eth_start(struct udevice *dev)
 {
-	u32 reg, dma_ctrl;
+	struct bcmgenet_eth_priv *priv = dev_get_priv(dev);
+	struct eth_pdata *pdata = dev_get_platdata(dev);
+	u32 dma_ctrl, reg;
 
 	priv->tx_desc_base = priv->mac_reg + 0x4000;
 	priv->rx_desc_base = priv->mac_reg + 0x2000;
@@ -463,7 +465,7 @@ static int _bcmgenet_eth_init(struct bcmgenet_eth_priv *priv, u8 *enetaddr)
 	bcmgenet_umac_reset(priv);
 
 
-	_bcmgenet_write_hwaddr(priv, enetaddr);
+	_bcmgenet_write_hwaddr(priv, pdata->enetaddr);
 
 	/* Disable RX/TX DMA and flush TX queues */
 	dma_ctrl = bcmgenet_dma_disable(priv);
@@ -490,13 +492,6 @@ static int _bcmgenet_eth_init(struct bcmgenet_eth_priv *priv, u8 *enetaddr)
 	writel(reg, (priv->mac_reg + UMAC_CMD));
 
 	return 0;
-}
-
-static int bcmgenet_gmac_eth_start(struct udevice *dev)
-{
-	struct eth_pdata *pdata = dev_get_platdata(dev);
-
-	return _bcmgenet_eth_init(dev->priv, pdata->enetaddr);
 }
 
 static int bcmgenet_phy_init(struct bcmgenet_eth_priv *priv, void *dev)
