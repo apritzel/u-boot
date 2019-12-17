@@ -128,27 +128,30 @@
 
 #define DMA_FC_THRESH_HI		 (TOTAL_DESC >> 4)
 #define DMA_FC_THRESH_LO		 5
+#define DMA_FC_THRESH_VALUE		 ((DMA_FC_THRESH_LO << 16) |	\
+					  DMA_FC_THRESH_HI)
+
 #define DMA_XOFF_THRESHOLD_SHIFT	 16
 
-#define TDMA_RING_REG_BASE(QUEUE_NUMBER) (GENET_TDMA_REG_OFF \
-			   + (DMA_RING_SIZE * (QUEUE_NUMBER)))
-#define TDMA_READ_PTR                    0x00
-#define TDMA_CONS_INDEX                  0x08
-#define TDMA_PROD_INDEX                  0x0C
+#define TDMA_RING_REG_BASE					\
+	(GENET_TDMA_REG_OFF + DEFAULT_Q * DMA_RING_SIZE)
+#define TDMA_READ_PTR                    (TDMA_RING_REG_BASE + 0x00)
+#define TDMA_CONS_INDEX                  (TDMA_RING_REG_BASE + 0x08)
+#define TDMA_PROD_INDEX                  (TDMA_RING_REG_BASE + 0x0c)
 #define DMA_RING_BUF_SIZE                0x10
 #define DMA_START_ADDR                   0x14
 #define DMA_END_ADDR                     0x1C
 #define DMA_MBUF_DONE_THRESH             0x24
-#define TDMA_FLOW_PERIOD                 0x28
-#define TDMA_WRITE_PTR                   0x2C
+#define TDMA_FLOW_PERIOD                 (TDMA_RING_REG_BASE + 0x28)
+#define TDMA_WRITE_PTR                   (TDMA_RING_REG_BASE + 0x2c)
 
-#define RDMA_RING_REG_BASE(QUEUE_NUMBER) (GENET_RDMA_REG_OFF \
-			   + (DMA_RING_SIZE * (QUEUE_NUMBER)))
-#define RDMA_WRITE_PTR                   TDMA_READ_PTR
-#define RDMA_READ_PTR                    TDMA_WRITE_PTR
-#define RDMA_PROD_INDEX                  TDMA_CONS_INDEX
-#define RDMA_CONS_INDEX                  TDMA_PROD_INDEX
-#define RDMA_XON_XOFF_THRESH             TDMA_FLOW_PERIOD
+#define RDMA_RING_REG_BASE					\
+	(GENET_RDMA_REG_OFF + DEFAULT_Q * DMA_RING_SIZE)
+#define RDMA_WRITE_PTR                   (RDMA_RING_REG_BASE + 0x00)
+#define RDMA_PROD_INDEX                  (RDMA_RING_REG_BASE + 0x08)
+#define RDMA_CONS_INDEX                  (RDMA_RING_REG_BASE + 0x0c)
+#define RDMA_XON_XOFF_THRESH             (RDMA_RING_REG_BASE + 0x28)
+#define RDMA_READ_PTR                    (RDMA_RING_REG_BASE + 0x2c)
 
 #define TDMA_REG_BASE			 (GENET_TDMA_REG_OFF + DMA_RINGS_SIZE)
 #define RDMA_REG_BASE			 (GENET_RDMA_REG_OFF + DMA_RINGS_SIZE)
@@ -257,7 +260,7 @@ static int bcmgenet_gmac_eth_send(struct udevice *dev, void *packet, int length)
 	u32 prod_index, cons;
 	u32 tries = 100;
 
-	prod_index = readl(priv->mac_reg + TDMA_RING_REG_BASE(DEFAULT_Q) + TDMA_PROD_INDEX);
+	prod_index = readl(priv->mac_reg + TDMA_PROD_INDEX);
 
 	flush_dcache_range((ulong)packet, (ulong)packet + length);
 
@@ -278,10 +281,10 @@ static int bcmgenet_gmac_eth_send(struct udevice *dev, void *packet, int length)
 	prod_index++;
 
 	/* Start Transmisson */
-	writel(prod_index, (priv->mac_reg + TDMA_RING_REG_BASE(DEFAULT_Q) + TDMA_PROD_INDEX));
+	writel(prod_index, priv->mac_reg + TDMA_PROD_INDEX);
 
 	do {
-		cons = readl(priv->mac_reg + TDMA_RING_REG_BASE(DEFAULT_Q) + TDMA_CONS_INDEX);
+		cons = readl(priv->mac_reg + TDMA_CONS_INDEX);
 	} while ((cons & 0xffff) < prod_index && --tries);
 	if (!tries)
 		return -ETIMEDOUT;
@@ -326,8 +329,7 @@ static int bcmgenet_gmac_free_pkt(struct udevice *dev, uchar *packet,
 	struct bcmgenet_eth_priv *priv = dev_get_priv(dev);
 
 	priv->c_index = (priv->c_index + 1) & 0xFFFF;
-	writel(priv->c_index,
-	       priv->mac_reg + RDMA_RING_REG_BASE(DEFAULT_Q) + RDMA_CONS_INDEX);
+	writel(priv->c_index, priv->mac_reg + RDMA_CONS_INDEX);
 
 	priv->rx_index++;
 	if (!(priv->rx_index % TOTAL_DESC)) {
@@ -360,51 +362,40 @@ static void rx_descs_init(struct bcmgenet_eth_priv *priv)
 static void rx_ring_init(struct bcmgenet_eth_priv *priv)
 {
 	writel(DMA_MAX_BURST_LENGTH,
-	       (priv->mac_reg + RDMA_REG_BASE + DMA_SCB_BURST_SIZE));
-	writel(0x0,
-	       (priv->mac_reg + RDMA_RING_REG_BASE(DEFAULT_Q) + DMA_START_ADDR));
-	writel(0x0,
-	       (priv->mac_reg + RDMA_RING_REG_BASE(DEFAULT_Q) + RDMA_READ_PTR));
-	writel(0x0,
-	       (priv->mac_reg + RDMA_RING_REG_BASE(DEFAULT_Q) + RDMA_WRITE_PTR));
+	       priv->mac_reg + RDMA_REG_BASE + DMA_SCB_BURST_SIZE);
+
+	writel(0x0, priv->mac_reg + RDMA_RING_REG_BASE + DMA_START_ADDR);
+	writel(0x0, priv->mac_reg + RDMA_READ_PTR);
+	writel(0x0, priv->mac_reg + RDMA_WRITE_PTR);
 	writel(TOTAL_DESC * DMA_DESC_SIZE / 4 - 1,
-	       (priv->mac_reg + RDMA_RING_REG_BASE(DEFAULT_Q) + DMA_END_ADDR));
-	writel(0x0,
-	       (priv->mac_reg + RDMA_RING_REG_BASE(DEFAULT_Q) + RDMA_PROD_INDEX));
-	writel(0x0,
-	       (priv->mac_reg + RDMA_RING_REG_BASE(DEFAULT_Q) + RDMA_CONS_INDEX));
-	writel(((TOTAL_DESC << DMA_RING_SIZE_SHIFT) | RX_BUF_LENGTH),
-	       (priv->mac_reg + RDMA_RING_REG_BASE(DEFAULT_Q) + DMA_RING_BUF_SIZE));
-	writel(((DMA_FC_THRESH_LO << DMA_XOFF_THRESHOLD_SHIFT) | DMA_FC_THRESH_HI),
-	       (priv->mac_reg + RDMA_RING_REG_BASE(DEFAULT_Q) + RDMA_XON_XOFF_THRESH));
-	writel((1 << DEFAULT_Q),
-	       (priv->mac_reg + RDMA_REG_BASE + DMA_RING_CFG));
+	       priv->mac_reg + RDMA_RING_REG_BASE + DMA_END_ADDR);
+
+	writel(0x0, priv->mac_reg + RDMA_PROD_INDEX);
+	writel(0x0, priv->mac_reg + RDMA_CONS_INDEX);
+	writel((TOTAL_DESC << DMA_RING_SIZE_SHIFT) | RX_BUF_LENGTH,
+	       priv->mac_reg + RDMA_RING_REG_BASE + DMA_RING_BUF_SIZE);
+	writel(DMA_FC_THRESH_VALUE, priv->mac_reg + RDMA_XON_XOFF_THRESH);
+	writel(1 << DEFAULT_Q, priv->mac_reg + RDMA_REG_BASE + DMA_RING_CFG);
 }
 
 static void tx_ring_init(struct bcmgenet_eth_priv *priv)
 {
 	writel(DMA_MAX_BURST_LENGTH,
-	       (priv->mac_reg + TDMA_REG_BASE + DMA_SCB_BURST_SIZE));
-	writel(0x0,
-	       (priv->mac_reg + TDMA_RING_REG_BASE(DEFAULT_Q) + DMA_START_ADDR));
-	writel(0x0,
-	       (priv->mac_reg + TDMA_RING_REG_BASE(DEFAULT_Q) + TDMA_READ_PTR));
-	writel(0x0,
-	       (priv->mac_reg + TDMA_RING_REG_BASE(DEFAULT_Q) + TDMA_WRITE_PTR));
+	       priv->mac_reg + TDMA_REG_BASE + DMA_SCB_BURST_SIZE);
+
+	writel(0x0, priv->mac_reg + TDMA_RING_REG_BASE + DMA_START_ADDR);
+	writel(0x0, priv->mac_reg + TDMA_READ_PTR);
+	writel(0x0, priv->mac_reg + TDMA_WRITE_PTR);
 	writel(TOTAL_DESC * DMA_DESC_SIZE / 4 - 1,
-	       (priv->mac_reg + TDMA_RING_REG_BASE(DEFAULT_Q) + DMA_END_ADDR));
-	writel(0x0,
-	       (priv->mac_reg + TDMA_RING_REG_BASE(DEFAULT_Q) + TDMA_PROD_INDEX));
-	writel(0x0,
-	       (priv->mac_reg + TDMA_RING_REG_BASE(DEFAULT_Q) + TDMA_CONS_INDEX));
-	writel(0x1,
-	       (priv->mac_reg + TDMA_RING_REG_BASE(DEFAULT_Q) + DMA_MBUF_DONE_THRESH));
-	writel(0x0,
-	       (priv->mac_reg + TDMA_RING_REG_BASE(DEFAULT_Q) + TDMA_FLOW_PERIOD));
-	writel(((TOTAL_DESC << DMA_RING_SIZE_SHIFT) | RX_BUF_LENGTH),
-	       (priv->mac_reg + TDMA_RING_REG_BASE(DEFAULT_Q) + DMA_RING_BUF_SIZE));
-	writel((1 << DEFAULT_Q),
-	       (priv->mac_reg + TDMA_REG_BASE + DMA_RING_CFG));
+	       priv->mac_reg + TDMA_RING_REG_BASE + DMA_END_ADDR);
+	writel(0x0, priv->mac_reg + TDMA_PROD_INDEX);
+	writel(0x0, priv->mac_reg + TDMA_CONS_INDEX);
+	writel(0x1, priv->mac_reg + TDMA_RING_REG_BASE + DMA_MBUF_DONE_THRESH);
+	writel(0x0, priv->mac_reg + TDMA_FLOW_PERIOD);
+	writel((TOTAL_DESC << DMA_RING_SIZE_SHIFT) | RX_BUF_LENGTH,
+	       priv->mac_reg + TDMA_RING_REG_BASE + DMA_RING_BUF_SIZE);
+
+	writel(1 << DEFAULT_Q, priv->mac_reg + TDMA_REG_BASE + DMA_RING_CFG);
 }
 
 static int bcmgenet_adjust_link(struct bcmgenet_eth_priv *priv)
