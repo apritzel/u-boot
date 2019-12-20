@@ -27,8 +27,8 @@
 #include <net.h>
 #include <dm/of_access.h>
 #include <dm/ofnode.h>
-#include <linux/libfdt.h>
 #include <linux/iopoll.h>
+#include <linux/sizes.h>
 #include <asm/dma-mapping.h>
 #include <wait_bit.h>
 
@@ -177,11 +177,9 @@
 #define RX_TOTAL_BUFSIZE		(RX_BUF_LENGTH * RX_DESCS)
 #define RX_BUF_OFFSET			2
 
-DECLARE_GLOBAL_DATA_PTR;
-
 struct bcmgenet_eth_priv {
-	void *mac_reg;
 	char rxbuffer[RX_TOTAL_BUFSIZE] __aligned(ARCH_DMA_MINALIGN);
+	void *mac_reg;
 	void *tx_desc_base;
 	void *rx_desc_base;
 	int tx_index;
@@ -590,13 +588,13 @@ static int bcmgenet_eth_probe(struct udevice *dev)
 {
 	struct eth_pdata *pdata = dev_get_platdata(dev);
 	struct bcmgenet_eth_priv *priv = dev_get_priv(dev);
-	int offset = dev_of_offset(dev);
+	ofnode mdio_node;
 	const char *name;
 	u32 reg;
 	int ret;
 	u8 major;
 
-	priv->mac_reg = (void *)pdata->iobase;
+	priv->mac_reg = map_physmem(pdata->iobase, SZ_64K, MAP_NOCACHE);
 	priv->interface = pdata->phy_interface;
 	priv->speed = pdata->max_speed;
 
@@ -617,8 +615,8 @@ static int bcmgenet_eth_probe(struct udevice *dev)
 	if (ret)
 		return ret;
 
-	offset = fdt_first_subnode(gd->fdt_blob, offset);
-	name = fdt_get_name(gd->fdt_blob, offset, NULL);
+	mdio_node = dev_read_first_subnode(dev);
+	name = ofnode_get_name(mdio_node);
 
 	ret = bcmgenet_mdio_init(name, dev);
 	if (ret)
@@ -651,17 +649,15 @@ static int bcmgenet_eth_ofdata_to_platdata(struct udevice *dev)
 {
 	struct eth_pdata *pdata = dev_get_platdata(dev);
 	struct bcmgenet_eth_priv *priv = dev_get_priv(dev);
+	struct ofnode_phandle_args phy_node;
 	const char *phy_mode;
-	int node = dev_of_offset(dev);
-	int offset;
+	int ret;
 
-	pdata->iobase = (phys_addr_t)devfdt_get_addr(dev);
+	pdata->iobase = dev_read_addr(dev);
 
 	/* Get phy mode from DT */
 	pdata->phy_interface = -1;
-	phy_mode = fdt_getprop(gd->fdt_blob, dev_of_offset(dev), "phy-mode",
-			       NULL);
-
+	phy_mode = dev_read_string(dev, "phy-mode");
 	if (phy_mode)
 		pdata->phy_interface = phy_get_interface_by_name(phy_mode);
 	if (pdata->phy_interface == -1) {
@@ -669,11 +665,11 @@ static int bcmgenet_eth_ofdata_to_platdata(struct udevice *dev)
 		return -EINVAL;
 	}
 
-	offset = fdtdec_lookup_phandle(gd->fdt_blob, node, "phy-handle");
-	if (offset > 0) {
-		priv->phyaddr = fdtdec_get_int(gd->fdt_blob, offset, "reg", 0);
-		pdata->max_speed = fdtdec_get_int(gd->fdt_blob, offset,
-						  "max-speed", 0);
+	ret = dev_read_phandle_with_args(dev, "phy-handle", NULL, 0, 0,
+					 &phy_node);
+	if (!ret) {
+		ofnode_read_s32(phy_node.node, "reg", &priv->phyaddr);
+		ofnode_read_s32(phy_node.node, "max-speed", &pdata->max_speed);
 	}
 
 	return 0;
