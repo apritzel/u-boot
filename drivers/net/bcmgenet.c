@@ -524,8 +524,8 @@ static int bcmgenet_mdio_write(struct mii_dev *bus, int addr, int devad,
 	/* Start MDIO transaction */
 	bcmgenet_mdio_start(priv);
 
-	return wait_for_bit_le32(priv->mac_reg + MDIO_CMD,
-				 MDIO_START_BUSY, false, 20, true);
+	return wait_for_bit_32(priv->mac_reg + MDIO_CMD,
+			       MDIO_START_BUSY, false, 20, true);
 }
 
 static int bcmgenet_mdio_read(struct mii_dev *bus, int addr, int devad, int reg)
@@ -542,8 +542,8 @@ static int bcmgenet_mdio_read(struct mii_dev *bus, int addr, int devad, int reg)
 	/* Start MDIO transaction */
 	bcmgenet_mdio_start(priv);
 
-	ret = wait_for_bit_le32(priv->mac_reg + MDIO_CMD,
-				MDIO_START_BUSY, false, 20, true);
+	ret = wait_for_bit_32(priv->mac_reg + MDIO_CMD,
+			      MDIO_START_BUSY, false, 20, true);
 	if (ret)
 		return ret;
 
