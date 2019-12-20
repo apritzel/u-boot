@@ -249,8 +249,8 @@ static int bcmgenet_gmac_write_hwaddr(struct udevice *dev)
 
 static void bcmgenet_disable_dma(struct bcmgenet_eth_priv *priv)
 {
-	clrbits_le32(priv->mac_reg + TDMA_REG_BASE + DMA_CTRL, DMA_EN);
-	clrbits_le32(priv->mac_reg + RDMA_REG_BASE + DMA_CTRL, DMA_EN);
+	clrbits_32(priv->mac_reg + TDMA_REG_BASE + DMA_CTRL, DMA_EN);
+	clrbits_32(priv->mac_reg + RDMA_REG_BASE + DMA_CTRL, DMA_EN);
 
 	writel(1, priv->mac_reg + UMAC_TX_FLUSH);
 	udelay(10);
@@ -263,7 +263,7 @@ static void bcmgenet_enable_dma(struct bcmgenet_eth_priv *priv)
 
 	writel(dma_ctrl, priv->mac_reg + TDMA_REG_BASE + DMA_CTRL);
 
-	setbits_le32(priv->mac_reg + RDMA_REG_BASE + DMA_CTRL, dma_ctrl);
+	setbits_32(priv->mac_reg + RDMA_REG_BASE + DMA_CTRL, dma_ctrl);
 }
 
 static int bcmgenet_gmac_eth_send(struct udevice *dev, void *packet, int length)
@@ -426,7 +426,7 @@ static int bcmgenet_adjust_link(struct bcmgenet_eth_priv *priv)
 		return -EINVAL;
 	}
 
-	clrsetbits_le32(priv->mac_reg + EXT_RGMII_OOB_CTRL, OOB_DISABLE,
+	clrsetbits_32(priv->mac_reg + EXT_RGMII_OOB_CTRL, OOB_DISABLE,
 			RGMII_LINK | RGMII_MODE_EN | ID_MODE_DIS);
 
 	writel(speed << CMD_SPEED_SHIFT, (priv->mac_reg + UMAC_CMD));
@@ -474,7 +474,7 @@ static int bcmgenet_gmac_eth_start(struct udevice *dev)
 	}
 
 	/* Enable Rx/Tx */
-	setbits_le32(priv->mac_reg + UMAC_CMD, CMD_TX_EN | CMD_RX_EN);
+	setbits_32(priv->mac_reg + UMAC_CMD, CMD_TX_EN | CMD_RX_EN);
 
 	return 0;
 }
@@ -506,7 +506,7 @@ static int bcmgenet_phy_init(struct bcmgenet_eth_priv *priv, void *dev)
 
 static void bcmgenet_mdio_start(struct bcmgenet_eth_priv *priv)
 {
-	setbits_le32(priv->mac_reg + MDIO_CMD, MDIO_START_BUSY);
+	setbits_32(priv->mac_reg + MDIO_CMD, MDIO_START_BUSY);
 }
 
 static int bcmgenet_mdio_write(struct mii_dev *bus, int addr, int devad,
@@ -633,8 +633,8 @@ static void bcmgenet_gmac_eth_stop(struct udevice *dev)
 {
 	struct bcmgenet_eth_priv *priv = dev_get_priv(dev);
 
-	clrbits_le32(priv->mac_reg + UMAC_CMD, CMD_TX_EN | CMD_RX_EN);
-	clrbits_le32(priv->mac_reg + TDMA_REG_BASE + DMA_CTRL,
+	clrbits_32(priv->mac_reg + UMAC_CMD, CMD_TX_EN | CMD_RX_EN);
+	clrbits_32(priv->mac_reg + TDMA_REG_BASE + DMA_CTRL,
 		     1 << (DEFAULT_Q + DMA_RING_BUF_EN_SHIFT) | DMA_EN);
 }
 
