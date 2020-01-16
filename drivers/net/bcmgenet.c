@@ -309,6 +309,23 @@ static int bcmgenet_gmac_eth_send(struct udevice *dev, void *packet, int length)
 	return 0;
 }
 
+/* Check whether all cache lines affected by an invalidate are within
+ * the buffer, to make sure we don't accidentally lose unrelated dirty
+ * data stored nearby.
+ * Alignment of the buffer start address will be checked in the implementation
+ * of invalidate_dcache_range().
+ */
+static void invalidate_dcache_check(unsigned long addr, size_t size,
+				    size_t buffer_size)
+{
+	size_t inval_size = roundup(size, ARCH_DMA_MINALIGN);
+
+	if (unlikely(inval_size > buffer_size))
+		printf("WARNING: Cache invalidate area exceeds buffer size\n");
+
+	invalidate_dcache_range(addr, addr + inval_size);
+}
+
 static int bcmgenet_gmac_eth_recv(struct udevice *dev,
 				  int flags, uchar **packetp)
 {
@@ -324,8 +341,7 @@ static int bcmgenet_gmac_eth_recv(struct udevice *dev,
 	length = (length >> DMA_BUFLENGTH_SHIFT) & DMA_BUFLENGTH_MASK;
 	addr = readl(desc_base + DMA_DESC_ADDRESS_LO);
 
-	invalidate_dcache_range(addr,
-				addr + roundup(length, ARCH_DMA_MINALIGN));
+	invalidate_dcache_check(addr, length, RX_BUF_LENGTH);
 
 	/* To cater for the IP header alignment the hardware does.
 	 * This would actually not be needed if we don't program
