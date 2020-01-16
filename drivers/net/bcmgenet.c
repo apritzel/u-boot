@@ -597,6 +597,7 @@ static int bcmgenet_interface_set(struct bcmgenet_eth_priv *priv)
 
 	switch (phy_mode) {
 	case PHY_INTERFACE_MODE_RGMII:
+	case PHY_INTERFACE_MODE_RGMII_RXID:
 		writel(PORT_MODE_EXT_GPHY, priv->mac_reg + SYS_PORT_CTRL);
 		break;
 	default:
