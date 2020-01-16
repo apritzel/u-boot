@@ -269,12 +269,19 @@ static int bcmgenet_gmac_eth_send(struct udevice *dev, void *packet, int length)
 	struct bcmgenet_eth_priv *priv = dev_get_priv(dev);
 	void *desc_base = priv->tx_desc_base + priv->tx_index * DMA_DESC_SIZE;
 	u32 len_stat = length << DMA_BUFLENGTH_SHIFT;
+	ulong packet_aligned = rounddown((ulong)packet, ARCH_DMA_MINALIGN);
 	u32 prod_index, cons;
 	u32 tries = 100;
 
 	prod_index = readl(priv->mac_reg + TDMA_PROD_INDEX);
 
-	flush_dcache_range((ulong)packet, (ulong)packet + length);
+	/* There is actually no reason for the rounding here, but the ARMv7
+	 * implementation of flush_dcache_range() checks for aligned
+	 * boundaries of the flushed range.
+	 * Adjust them here to pass that check and avoid misleading messages.
+	 */
+	flush_dcache_range(packet_aligned,
+			   packet_aligned + roundup(length, ARCH_DMA_MINALIGN));
 
 	len_stat |= 0x3F << DMA_TX_QTAG_SHIFT;
 	len_stat |= DMA_TX_APPEND_CRC | DMA_SOP | DMA_EOP;
