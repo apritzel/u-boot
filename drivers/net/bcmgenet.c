@@ -639,6 +639,13 @@ static int bcmgenet_eth_probe(struct udevice *dev)
 	if (ret)
 		return ret;
 
+	writel(0, priv->mac_reg + SYS_RBUF_FLUSH_CTRL);
+	udelay(10);
+	/* disable MAC while updating its registers */
+	writel(0, priv->mac_reg + UMAC_CMD);
+	/* issue soft reset with (rg)mii loopback to ensure a stable rxclk */
+	writel(CMD_SW_RESET | CMD_LCL_LOOP_EN, priv->mac_reg + UMAC_CMD);
+
 	mdio_node = dev_read_first_subnode(dev);
 	name = ofnode_get_name(mdio_node);
 
