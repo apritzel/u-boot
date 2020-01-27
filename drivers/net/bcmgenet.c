@@ -663,8 +663,8 @@ static void bcmgenet_gmac_eth_stop(struct udevice *dev)
 	struct bcmgenet_eth_priv *priv = dev_get_priv(dev);
 
 	clrbits_32(priv->mac_reg + UMAC_CMD, CMD_TX_EN | CMD_RX_EN);
-	clrbits_32(priv->mac_reg + TDMA_REG_BASE + DMA_CTRL,
-		     1 << (DEFAULT_Q + DMA_RING_BUF_EN_SHIFT) | DMA_EN);
+
+	bcmgenet_disable_dma(priv);
 }
 
 static const struct eth_ops bcmgenet_gmac_eth_ops = {
