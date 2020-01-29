@@ -215,7 +215,7 @@ enum env_location env_get_location(enum env_operation op, int prio)
 }
 #endif
 
-#ifdef CONFIG_DM_MMC
+#if defined(CONFIG_DM_MMC) && defined(CONFIG_MMC)
 static void mmc_pinmux_setup(int sdc);
 #endif
 
@@ -280,7 +280,7 @@ int board_init(void)
 	i2c_init_board();
 #endif
 
-#ifdef CONFIG_DM_MMC
+#if defined(CONFIG_MMC) && defined(CONFIG_DM_MMC)
 	/*
 	 * Temporary workaround for enabling MMC clocks until a sunxi DM
 	 * pinctrl driver lands.
