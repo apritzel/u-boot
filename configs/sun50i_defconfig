@@ -1,0 +1,15 @@
+CONFIG_ARM=y
+CONFIG_ARCH_SUNXI=y
+CONFIG_SPL=y
+CONFIG_MACH_SUN50I=y
+CONFIG_SUNXI_MULTI_SOC=y
+# CONFIG_MACH_SUN50I_H5=y	# this clashes with the above in the moment
+# CONFIG_ARMV8_SPL_EXCEPTION_VECTORS is not set
+CONFIG_SUNXI_DRAM_DDR3=y
+CONFIG_SUNXI_DRAM_DDR3_1333=y
+CONFIG_SUNXI_DRAM_LPDDR3=y
+CONFIG_SUNXI_DRAM_LPDDR3_STOCK=y
+CONFIG_MMC0_CD_PIN=""
+CONFIG_DEFAULT_DEVICE_TREE="sun50i-a64-pine64-plus"
+CONFIG_OF_LIST="sunxi-1689-generic sunxi-1718-generic sun50i-a64-amarula-relic sun50i-a64-bananapi-m64 sun50i-a64-nanopi-a64 sun50i-a64-olinuxino sun50i-a64-orangepi-win sun50i-a64-pine64-lts sun50i-a64-pine64-plus sun50i-a64-pine64 sun50i-a64-sopine-baseboard sun50i-h5-libretech-all-h3-cc sun50i-h5-nanopi-neo-plus2 sun50i-h5-nanopi-neo2 sun50i-h5-orangepi-pc2 sun50i-h5-orangepi-prime sun50i-h5-orangepi-zero-plus sun50i-h5-orangepi-zero-plus2"
+CONFIG_MMC_SUNXI_SLOT_EXTRA=2
