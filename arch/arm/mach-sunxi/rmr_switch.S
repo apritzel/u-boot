@@ -30,7 +30,7 @@
 
 .text
 
-#ifndef CONFIG_MACH_SUN50I_H6
+#if !defined(CONFIG_MACH_SUN50I_H6) && !defined(CONFIG_MACH_SUN50I_H616)
 	ldr	r1, =0x017000a0		@ MMIO mapped RVBAR[0] register
 #else
 	ldr	r1, =0x09010040		@ MMIO mapped RVBAR[0] register

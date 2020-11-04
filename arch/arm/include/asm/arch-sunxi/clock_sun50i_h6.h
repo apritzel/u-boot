@@ -230,6 +230,7 @@ struct sunxi_ccm_reg {
 #define CCM_PLL1_CTRL_EN		BIT(31)
 #define CCM_PLL1_LOCK_EN		BIT(29)
 #define CCM_PLL1_LOCK			BIT(28)
+#define CCM_PLL1_OUT_EN			BIT(27)
 #define CCM_PLL1_CLOCK_TIME_2		(2 << 24)
 #define CCM_PLL1_CTRL_P(p)		((p) << 16)
 #define CCM_PLL1_CTRL_N(n)		((n) << 8)
@@ -238,6 +239,7 @@ struct sunxi_ccm_reg {
 #define CCM_PLL5_CTRL_EN		BIT(31)
 #define CCM_PLL5_LOCK_EN		BIT(29)
 #define CCM_PLL5_LOCK			BIT(28)
+#define CCM_PLL5_OUT_EN			BIT(27)
 #define CCM_PLL5_CTRL_N(n)		((n) << 8)
 #define CCM_PLL5_CTRL_DIV1(div1)	((div1) << 0)
 #define CCM_PLL5_CTRL_DIV2(div0)	((div0) << 1)
@@ -252,7 +254,6 @@ struct sunxi_ccm_reg {
 #define CCM_PLL6_CTRL_DIV1_MASK		(0x1 << CCM_PLL6_CTRL_DIV1_SHIFT)
 #define CCM_PLL6_CTRL_DIV2_SHIFT	1
 #define CCM_PLL6_CTRL_DIV2_MASK		(0x1 << CCM_PLL6_CTRL_DIV2_SHIFT)
-#define CCM_PLL6_DEFAULT		0xa0006300
 
 /* cpu_axi bit field*/
 #define CCM_CPU_AXI_MUX_MASK		(0x3 << 24)
@@ -262,6 +263,9 @@ struct sunxi_ccm_reg {
 #define CCM_CPU_AXI_AXI_MASK		0x3
 #define CCM_CPU_AXI_DEFAULT_FACTORS	0x301
 
+#ifdef CONFIG_MACH_SUN50I_H6
+#define CCM_PLL6_DEFAULT		0xa0006300
+
 /* psi_ahb1_ahb2 bit field */
 #define CCM_PSI_AHB1_AHB2_DEFAULT	0x03000102
 
@@ -270,6 +274,18 @@ struct sunxi_ccm_reg {
 
 /* apb1 bit field */
 #define CCM_APB1_DEFAULT		0x03000102
+#elif CONFIG_MACH_SUN50I_H616
+#define CCM_PLL6_DEFAULT		0xa8003100
+
+/* psi_ahb1_ahb2 bit field */
+#define CCM_PSI_AHB1_AHB2_DEFAULT	0x03000002
+
+/* ahb3 bit field */
+#define CCM_AHB3_DEFAULT		0x03000002
+
+/* apb1 bit field */
+#define CCM_APB1_DEFAULT		0x03000102
+#endif
 
 /* apb2 bit field */
 #define APB2_CLK_SRC_OSC24M		(0x0 << 24)
@@ -305,6 +321,10 @@ struct sunxi_ccm_reg {
 #define DRAM_CLK_SRC_PLL5		(0 << 24)
 #define DRAM_CLK_M(m)			(((m)-1) << 0)
 
+/* DRAM gate and reset bit field */
+#define DRAM_RESET			BIT(16)
+#define DRAM_ENABLE			BIT(0)
+
 /* MMC clock bit field */
 #define CCM_MMC_CTRL_M(x)		((x) - 1)
 #define CCM_MMC_CTRL_N(x)		((x) << 8)
@@ -312,9 +332,13 @@ struct sunxi_ccm_reg {
 #define CCM_MMC_CTRL_PLL6X2		(0x1 << 24)
 #define CCM_MMC_CTRL_PLL_PERIPH2X2	(0x2 << 24)
 #define CCM_MMC_CTRL_ENABLE		(0x1 << 31)
-/* H6 doesn't have these delays */
+/* H6 and H616 don't have these delays */
 #define CCM_MMC_CTRL_OCLK_DLY(a)	((void) (a), 0)
 #define CCM_MMC_CTRL_SCLK_DLY(a)	((void) (a), 0)
+
+/* TWI gate and reset fields */
+#define CCM_TWI_GATE_SHIFT		(0)
+#define CCM_TWI_RESET_SHIFT		(16)
 
 #ifndef __ASSEMBLY__
 void clock_set_pll1(unsigned int hz);

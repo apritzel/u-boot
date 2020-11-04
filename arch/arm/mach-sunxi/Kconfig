@@ -48,6 +48,12 @@ config DRAM_SUN50I_H6
 	  Select this dram controller driver for some sun50i platforms,
 	  like H6.
 
+config DRAM_SUN50I_H616
+	bool
+	help
+	  Select this dram controller driver for some sun50i platforms,
+	  like H616.
+
 config SUN6I_P2WI
 	bool "Allwinner sun6i internal P2WI controller"
 	help
@@ -82,7 +88,7 @@ config SUN8I_RSB
 config SUNXI_SRAM_ADDRESS
 	hex
 	default 0x10000 if MACH_SUN9I || MACH_SUN50I || MACH_SUN50I_H5
-	default 0x20000 if MACH_SUN50I_H6
+	default 0x20000 if MACH_SUN50I_H6 || MACH_SUN50I_H616
 	default 0x0
 	---help---
 	Older Allwinner SoCs have their mask boot ROM mapped just below 4GB,
@@ -141,9 +147,10 @@ config MACH_SUNXI_H3_H5
 	select SUPPORT_SPL
 
 # TODO: try out A80's 8GiB DRAM space
+# TODO: H616 supports 4 GiB DRAM space
 config SUNXI_DRAM_MAX_SIZE
 	hex
-	default 0xC0000000 if MACH_SUN50I || MACH_SUN50I_H5 || MACH_SUN50I_H6
+	default 0xC0000000 if MACH_SUN50I || MACH_SUN50I_H5 || MACH_SUN50I_H6 || MACH_SUN50I_H616
 	default 0x80000000
 
 choice
@@ -308,6 +315,15 @@ config MACH_SUN50I_H6
 	select SPL_LOAD_FIT
 	select DRAM_SUN50I_H6
 
+config MACH_SUN50I_H616
+	bool "sun50i (Allwinner H616)"
+	select ARM64
+	select DRAM_SUN50I_H616
+	select FIT
+	select SPL_LOAD_FIT
+	select SUNXI_GEN_SUN6I
+	select SUPPORT_SPL
+
 endchoice
 
 # The sun8i SoCs share a lot, this helps to avoid a lot of "if A23 || A33"
@@ -415,7 +431,7 @@ config DRAM_CLK
 	default 312 if MACH_SUN6I || MACH_SUN8I
 	default 360 if MACH_SUN4I || MACH_SUN5I || MACH_SUN7I || \
 		       MACH_SUN8I_V3S
-	default 672 if MACH_SUN50I
+	default 672 if MACH_SUN50I || MACH_SUN50I_H616
 	default 744 if MACH_SUN50I_H6
 	---help---
 	Set the dram clock speed, valid range 240 - 480 (prior to sun9i),
@@ -433,6 +449,7 @@ endif
 
 config DRAM_ZQ
 	int "sunxi dram zq value"
+	depends on !MACH_SUN50I_H616
 	default 123 if MACH_SUN4I || MACH_SUN5I || MACH_SUN6I || \
 		       MACH_SUN8I_A23 || MACH_SUN8I_A33 || MACH_SUN8I_A83T
 	default 127 if MACH_SUN7I
@@ -450,6 +467,7 @@ config DRAM_ODT_EN
 	default y if MACH_SUN8I_R40
 	default y if MACH_SUN50I
 	default y if MACH_SUN50I_H6
+	default y if MACH_SUN50I_H616
 	---help---
 	Select this to enable dram odt (on die termination).
 
@@ -540,7 +558,7 @@ config SYS_CLK_FREQ
 	default 816000000 if MACH_SUN50I || MACH_SUN50I_H5
 	default 1008000000 if MACH_SUN8I
 	default 1008000000 if MACH_SUN9I
-	default 888000000 if MACH_SUN50I_H6
+	default 888000000 if MACH_SUN50I_H6 || MACH_SUN50I_H616
 
 config SYS_CONFIG_NAME
 	default "sun4i" if MACH_SUN4I
@@ -551,6 +569,7 @@ config SYS_CONFIG_NAME
 	default "sun9i" if MACH_SUN9I
 	default "sun50i" if MACH_SUN50I
 	default "sun50i" if MACH_SUN50I_H6
+	default "sun50i" if MACH_SUN50I_H616
 
 config SYS_BOARD
 	default "sunxi"
@@ -728,6 +747,7 @@ config R_I2C_ENABLE
 	bool "Enable the PRCM I2C/TWI controller"
 	# This is used for the pmic on H3
 	default y if SY8106A_POWER
+	default y if AXP305_POWER
 	select CMD_I2C
 	---help---
 	Set this to y to enable the I2C controller which is part of the PRCM.
@@ -757,6 +777,7 @@ config VIDEO_SUNXI
 	depends on !MACH_SUN9I
 	depends on !MACH_SUN50I
 	depends on !MACH_SUN50I_H6
+	depends on !MACH_SUN50I_H616
 	select VIDEO
 	imply VIDEO_DT_SIMPLEFB
 	default y
@@ -990,6 +1011,7 @@ config SPL_STACK_R_ADDR
 	default 0x2fe00000 if MACH_SUN9I
 	default 0x4fe00000 if MACH_SUN50I
 	default 0x4fe00000 if MACH_SUN50I_H6
+	default 0x4fe00000 if MACH_SUN50I_H616
 
 config SPL_SPI_SUNXI
 	bool "Support for SPI Flash on Allwinner SoCs in SPL"

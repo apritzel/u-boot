@@ -15,6 +15,9 @@
 #ifdef CONFIG_AXP221_POWER
 #include <axp221.h>
 #endif
+#ifdef CONFIG_AXP305_POWER
+#include <axp305.h>
+#endif
 #ifdef CONFIG_AXP809_POWER
 #include <axp809.h>
 #endif
@@ -27,6 +30,7 @@ int axp_set_dcdc2(unsigned int mvolt);
 int axp_set_dcdc3(unsigned int mvolt);
 int axp_set_dcdc4(unsigned int mvolt);
 int axp_set_dcdc5(unsigned int mvolt);
+int axp_set_dcdcd(unsigned int mvolt);
 int axp_set_aldo1(unsigned int mvolt);
 int axp_set_aldo2(unsigned int mvolt);
 int axp_set_aldo3(unsigned int mvolt);

@@ -179,8 +179,13 @@
 #endif /* !CONFIG_ARM64 */
 #elif CONFIG_SUNXI_SRAM_ADDRESS == 0x20000
 #define CONFIG_SPL_MAX_SIZE		0x7fa0		/* 32 KiB */
+#ifdef CONFIG_MACH_SUN50I_H6
 /* end of SRAM A2 on H6 for now */
 #define LOW_LEVEL_SRAM_STACK		0x00118000
+#elif CONFIG_MACH_SUN50I_H616
+/* end of SRAM C on H616 for now */
+#define LOW_LEVEL_SRAM_STACK		0x58000
+#endif
 #else
 #define CONFIG_SPL_MAX_SIZE		0x5fa0		/* 24KB on sun4i/sun7i */
 #define LOW_LEVEL_SRAM_STACK		0x00008000	/* End of sram */
