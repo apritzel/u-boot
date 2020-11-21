@@ -40,12 +40,15 @@ ENTRY(return_to_fel)
 	str	w2, [x1]
 
 	ldr	x0, =0xfa50392f		// CPU hotplug magic
-#ifndef CONFIG_MACH_SUN50I_H6
-	ldr	x2, =(SUNXI_CPUCFG_BASE + 0x1a4) // offset for CPU hotplug base
-	str	w0, [x2, #0x8]
-#else
+#ifdef CONFIG_MACH_SUN50I_H616
+	ldr	x2, =(SUNXI_RTC_BASE + 0x5c0)
+	str	w0, [x2], #0x4
+#elif CONFIG_MACH_SUN50I_H6
 	ldr	x2, =(SUNXI_RTC_BASE + 0x1b8)	// BOOT_CPU_HP_FLAG_REG
 	str	w0, [x2], #0x4
+#else
+	ldr	x2, =(SUNXI_CPUCFG_BASE + 0x1a4) // offset for CPU hotplug base
+	str	w0, [x2, #0x8]
 #endif
 	adr	x0, back_in_32
 	str	w0, [x2]
