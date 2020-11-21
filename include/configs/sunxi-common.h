@@ -183,6 +183,8 @@
 /* end of SRAM A2 on H6 for now */
 #define LOW_LEVEL_SRAM_STACK		0x00118000
 #elif CONFIG_MACH_SUN50I_H616
+#undef CONFIG_SPL_MAX_SIZE
+#define CONFIG_SPL_MAX_SIZE		0xbfa0		/* 48 KiB */
 /* end of SRAM C on H616 for now */
 #define LOW_LEVEL_SRAM_STACK		0x58000
 #endif
@@ -193,7 +195,7 @@
 
 #define CONFIG_SPL_STACK		LOW_LEVEL_SRAM_STACK
 
-#define CONFIG_SPL_PAD_TO		32768		/* decimal for 'dd' */
+#define CONFIG_SPL_PAD_TO		49152		/* decimal for 'dd' */
 
 
 /* I2C */

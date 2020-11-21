@@ -45,7 +45,7 @@ int gen_check_sum(struct boot_file_head *head_p)
 	return 0;
 }
 
-#define SUNXI_SRAM_SIZE 0x8000	/* SoC with smaller size are limited before */
+#define SUNXI_SRAM_SIZE 0xc000	/* SoC with smaller size are limited before */
 #define SRAM_LOAD_MAX_SIZE (SUNXI_SRAM_SIZE - sizeof(struct boot_file_head))
 
 /*
