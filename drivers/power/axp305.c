@@ -66,6 +66,7 @@ int axp_init(void)
 	return ret;
 }
 
+#ifndef CONFIG_PSCI_RESET
 int do_poweroff(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
 {
 	pmic_bus_write(AXP305_SHUTDOWN, AXP305_POWEROFF);
@@ -76,3 +77,4 @@ int do_poweroff(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
 	/* not reached */
 	return 0;
 }
+#endif
