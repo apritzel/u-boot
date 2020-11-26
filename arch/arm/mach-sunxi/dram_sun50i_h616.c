@@ -242,11 +242,11 @@ static void mctl_phy_odt(void)
 	writel(0xe, SUNXI_DRAM_PHY0_BASE + 0x448);
 	writel(0xe, SUNXI_DRAM_PHY0_BASE + 0x44c);
 
-	writel(0x1c, SUNXI_DRAM_PHY0_BASE + 0x340);
-	writel(0x1c, SUNXI_DRAM_PHY0_BASE + 0x344);
+	writel(0xe, SUNXI_DRAM_PHY0_BASE + 0x340);
+	writel(0xe, SUNXI_DRAM_PHY0_BASE + 0x344);
 
-	writel(0x1c, SUNXI_DRAM_PHY0_BASE + 0x348);
-	writel(0x1c, SUNXI_DRAM_PHY0_BASE + 0x34c);
+	writel(0xe, SUNXI_DRAM_PHY0_BASE + 0x348);
+	writel(0xe, SUNXI_DRAM_PHY0_BASE + 0x34c);
 
 	writel(0x8, SUNXI_DRAM_PHY0_BASE + 0x380);
 	writel(0x8, SUNXI_DRAM_PHY0_BASE + 0x384);
@@ -657,8 +657,6 @@ static bool mctl_phy_bit_delay_compensation(struct dram_para *para)
 
 	setbits_le32(SUNXI_DRAM_PHY0_BASE + 0x54, 0x80);
 
-	clrbits_le32(SUNXI_DRAM_PHY0_BASE + 0x60, 4);
-
 	return true;
 }
 
@@ -694,7 +692,7 @@ static bool mctl_phy_init(struct dram_para *para)
 	for (i = 0; i < ARRAY_SIZE(phy_init); i++)
 		writel(phy_init[i], &ptr[i]);
 
-	ptr = (u32*)(SUNXI_DRAM_PHY0_BASE + 0x780);
+	/*ptr = (u32*)(SUNXI_DRAM_PHY0_BASE + 0x780);
 	for (i = 0; i < 32; i++)
 		writel(0x16, &ptr[i]);
 	writel(0xe, SUNXI_DRAM_PHY0_BASE + 0x78c);
@@ -702,7 +700,7 @@ static bool mctl_phy_init(struct dram_para *para)
 	writel(0xe, SUNXI_DRAM_PHY0_BASE + 0x7b8);
 	writel(0x8, SUNXI_DRAM_PHY0_BASE + 0x7d4);
 	writel(0xe, SUNXI_DRAM_PHY0_BASE + 0x7dc);
-	writel(0xe, SUNXI_DRAM_PHY0_BASE + 0x7e0);
+	writel(0xe, SUNXI_DRAM_PHY0_BASE + 0x7e0);*/
 
 	writel(0x80, SUNXI_DRAM_PHY0_BASE + 0x3dc);
 	writel(0x80, SUNXI_DRAM_PHY0_BASE + 0x45c);
@@ -773,14 +771,14 @@ static bool mctl_phy_init(struct dram_para *para)
 	clrbits_le32(&mctl_ctl->rfshctl3, 1);
 	writel(1, &mctl_ctl->swctl);
 
-	/*for (i = 0; i < 5; i++)
+	for (i = 0; i < 5; i++)
 		if (mctl_phy_write_leveling(para))
 			break;
 	if (i == 5) {
 		debug("write leveling failed!\n");
 		return false;
 	}
-	debug("write leveling finished\n");*/
+	debug("write leveling finished\n");
 
 	for (i = 0; i < 5; i++)
 		if (mctl_phy_read_calibration(para))
@@ -791,25 +789,27 @@ static bool mctl_phy_init(struct dram_para *para)
 	}
 	debug("read calibration finished\n");
 
-	/*for (i = 0; i < 5; i++)
+	for (i = 0; i < 5; i++)
 		if (mctl_phy_read_training(para))
 			break;
 	if (i == 5) {
 		debug("read training failed!\n");
 		return false;
 	}
-	debug("read training finished\n");*/
+	debug("read training finished\n");
 
-	/*for (i = 0; i < 5; i++)
+	for (i = 0; i < 5; i++)
 		if (mctl_phy_write_training(para))
 			break;
 	if (i == 5) {
 		debug("write training failed!\n");
 		return false;
 	}
-	debug("write training finished\n");*/
+	debug("write training finished\n");
 
-	mctl_phy_bit_delay_compensation(para);
+	//mctl_phy_bit_delay_compensation(para);
+
+	clrbits_le32(SUNXI_DRAM_PHY0_BASE + 0x60, 4);
 
 	/*for (i = 0; i < 0x1000; i += 0x10)
 		printf("%08x: %08x %08x %08x %08x\n",

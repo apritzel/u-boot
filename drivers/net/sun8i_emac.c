@@ -561,9 +561,9 @@ static int parse_phy_pins(struct udevice *dev)
 		if (pin < 0)
 			continue;
 
-		if (priv->variant == H3_EMAC)
+		if (priv->variant == H3_EMAC || priv->variant == H6_EMAC)
 			sunxi_gpio_set_cfgpin(pin, SUN8I_IOMUX_H3);
-		else if (priv->variant == R40_GMAC || priv->variant == H6_EMAC)
+		else if (priv->variant == R40_GMAC)
 			sunxi_gpio_set_cfgpin(pin, SUN8I_IOMUX_R40);
 		else
 			sunxi_gpio_set_cfgpin(pin, SUN8I_IOMUX);
