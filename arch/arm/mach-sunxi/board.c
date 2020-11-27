@@ -281,6 +281,14 @@ uint32_t sunxi_get_boot_device(void)
 }
 
 #ifdef CONFIG_SPL_BUILD
+static u32 sunxi_get_spl_size(void)
+{
+	if (!is_boot0_magic(SPL_ADDR + 4)) /* eGON.BT0 */
+		return 32768;
+
+	return readl(SPL_ADDR + 0x10);
+}
+
 /*
  * The eGON SPL image can be located at 8KB or at 128KB into an SD card or
  * an eMMC device. The boot source has bit 4 set in the latter case.
@@ -290,6 +298,7 @@ uint32_t sunxi_get_boot_device(void)
 unsigned long spl_mmc_get_uboot_raw_sector(struct mmc *mmc)
 {
 	unsigned long sector = CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR;
+	u32 spl_size = sunxi_get_spl_size();
 
 	switch (sunxi_get_boot_source()) {
 	case SUNXI_BOOTED_FROM_MMC0_HIGH:
@@ -297,6 +306,9 @@ unsigned long spl_mmc_get_uboot_raw_sector(struct mmc *mmc)
 		sector += (128 - 8) * 2;
 		break;
 	}
+
+	if (spl_size > 32768)
+		sector += (spl_size - 32768) / 512;
 
 	return sector;
 }
