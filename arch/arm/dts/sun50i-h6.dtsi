@@ -251,14 +251,6 @@
 				drive-strength = <40>;
 			};
 
-			ext_rgmii_h616_pins: rgmii2-pins {
-				pins = "PI0", "PI1", "PI2", "PI3", "PI4",
-				       "PI5", "PI7", "PI8", "PI9", "PI10",
-				       "PI11", "PI12", "PI13", "PI14", "PI15";
-				function = "emac";
-				drive-strength = <40>;
-			};
-
 			hdmi_pins: hdmi-pins {
 				pins = "PH8", "PH9", "PH10";
 				function = "hdmi";
