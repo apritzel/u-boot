@@ -319,6 +319,8 @@ config MACH_SUN50I_H616
 	bool "sun50i (Allwinner H616)"
 	select ARM64
 	select DRAM_SUN50I_H616
+	select FIT
+	select SPL_LOAD_FIT
 	select SUNXI_GEN_SUN6I
 	select SUPPORT_SPL
 
