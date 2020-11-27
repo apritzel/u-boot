@@ -557,6 +557,8 @@ static bool mctl_phy_bit_delay_compensation(struct dram_para *para)
 	u32 *ptr;
 	int i;
 
+	return true;
+
 	clrbits_le32(SUNXI_DRAM_PHY0_BASE + 0x60, 1);
 	setbits_le32(SUNXI_DRAM_PHY0_BASE + 8, 8);
 	clrbits_le32(SUNXI_DRAM_PHY0_BASE + 0x190, 0x10);
@@ -807,7 +809,7 @@ static bool mctl_phy_init(struct dram_para *para)
 	}
 	debug("write training finished\n");
 
-	//mctl_phy_bit_delay_compensation(para);
+	mctl_phy_bit_delay_compensation(para);
 
 	clrbits_le32(SUNXI_DRAM_PHY0_BASE + 0x60, 4);
 
