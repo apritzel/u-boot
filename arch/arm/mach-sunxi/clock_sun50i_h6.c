@@ -68,6 +68,9 @@ void clock_set_pll1(unsigned int clk)
 
 	/* clk = 24*n/p, p is ignored if clock is >288MHz */
 	writel(CCM_PLL1_CTRL_EN | CCM_PLL1_LOCK_EN | CCM_PLL1_CLOCK_TIME_2 |
+#ifdef CONFIG_MACH_SUN50I_H616
+	       CCM_PLL1_OUT_EN |
+#endif
 	       CCM_PLL1_CTRL_N(clk / 24000000), &ccm->pll1_cfg);
 	while (!(readl(&ccm->pll1_cfg) & CCM_PLL1_LOCK)) {}
 
@@ -83,6 +86,11 @@ unsigned int clock_get_pll6(void)
 {
 	struct sunxi_ccm_reg *const ccm =
 		(struct sunxi_ccm_reg *)SUNXI_CCM_BASE;
+#ifdef CONFIG_MACH_SUN50I_H6
+	int m = 4;
+#else
+	int m = 2;
+#endif
 
 	uint32_t rval = readl(&ccm->pll6_cfg);
 	int n = ((rval & CCM_PLL6_CTRL_N_MASK) >> CCM_PLL6_CTRL_N_SHIFT);
@@ -91,7 +99,7 @@ unsigned int clock_get_pll6(void)
 	int div2 = ((rval & CCM_PLL6_CTRL_DIV2_MASK) >>
 			CCM_PLL6_CTRL_DIV2_SHIFT) + 1;
 	/* The register defines PLL6-4X, not plain PLL6 */
-	return 24000000 / 4 * n / div1 / div2;
+	return 24000000 / m * n / div1 / div2;
 }
 
 int clock_twi_onoff(int port, int state)
