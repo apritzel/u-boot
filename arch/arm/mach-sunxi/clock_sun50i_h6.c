@@ -2,6 +2,7 @@
 #include <asm/io.h>
 #include <asm/arch/cpu.h>
 #include <asm/arch/clock.h>
+#include <asm/arch/prcm.h>
 
 #ifdef CONFIG_SPL_BUILD
 void clock_init_safe(void)
@@ -91,4 +92,34 @@ unsigned int clock_get_pll6(void)
 			CCM_PLL6_CTRL_DIV2_SHIFT) + 1;
 	/* The register defines PLL6-4X, not plain PLL6 */
 	return 24000000 / 4 * n / div1 / div2;
+}
+
+int clock_twi_onoff(int port, int state)
+{
+	struct sunxi_ccm_reg *const ccm =
+		(struct sunxi_ccm_reg *)SUNXI_CCM_BASE;
+	struct sunxi_prcm_reg *const prcm =
+		(struct sunxi_prcm_reg *)SUNXI_PRCM_BASE;
+
+	if (port == 5) {
+		if (state) {
+			setbits_le32(&prcm->twi_gate_reset, PRCM_TWI_GATE);
+			setbits_le32(&prcm->twi_gate_reset, PRCM_TWI_RESET);
+		} else {
+			clrbits_le32(&prcm->twi_gate_reset, PRCM_TWI_RESET);
+			clrbits_le32(&prcm->twi_gate_reset, PRCM_TWI_GATE);
+		}
+		return 0;
+	}
+
+	/* set the apb clock gate and reset for twi */
+	if (state) {
+		setbits_le32(&ccm->twi_gate_reset, 1UL << (GATE_SHIFT + port));
+		setbits_le32(&ccm->twi_gate_reset, 1UL << (RESET_SHIFT + port));
+	} else {
+		clrbits_le32(&ccm->twi_gate_reset, 1UL << (GATE_SHIFT + port));
+		clrbits_le32(&ccm->twi_gate_reset, 1UL << (RESET_SHIFT + port));
+	}
+
+	return 0;
 }
