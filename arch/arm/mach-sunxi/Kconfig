@@ -360,6 +360,7 @@ config MACH_SUN50I_H6
 config MACH_SUN50I_H616
 	bool "sun50i (Allwinner H616)"
 	select ARM64
+	select PHY_SUN4I_USB
 	select DRAM_SUN50I_H616
 	select SUN50I_GEN_H6
 
