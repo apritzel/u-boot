@@ -326,16 +326,16 @@ static int sun8i_emac_set_syscon(struct sun8i_eth_pdata *pdata,
 
 	if (priv->variant == R40_GMAC) {
 		/* Select RGMII for R40 */
-		reg = readl(priv->sysctl_reg + 0x164);
+		reg = readl(priv->sysctl_reg);
 		reg |= SC_ETCS_INT_GMII |
 		       SC_EPIT |
 		       (CONFIG_GMAC_TX_DELAY << SC_ETXDC_OFFSET);
 
-		writel(reg, priv->sysctl_reg + 0x164);
+		writel(reg, priv->sysctl_reg);
 		return 0;
 	}
 
-	reg = readl(priv->sysctl_reg + 0x30);
+	reg = readl(priv->sysctl_reg);
 
 	reg = sun8i_emac_set_syscon_ephy(priv, reg);
 
@@ -373,7 +373,7 @@ static int sun8i_emac_set_syscon(struct sun8i_eth_pdata *pdata,
 		reg |= ((pdata->rx_delay_ps / 100) << SC_ERXDC_OFFSET)
 			 & SC_ERXDC_MASK;
 
-	writel(reg, priv->sysctl_reg + 0x30);
+	writel(reg, priv->sysctl_reg);
 
 	return 0;
 }
@@ -925,6 +925,10 @@ static int sun8i_emac_eth_ofdata_to_platdata(struct udevice *dev)
 		debug("%s: Cannot find syscon base address\n", __func__);
 		return -EINVAL;
 	}
+	if (priv->variant == R40_GMAC)
+		priv->sysctl_reg += 0x164;
+	else
+		priv->sysctl_reg += 0x30;
 
 	pdata->phy_interface = -1;
 	priv->phyaddr = -1;
