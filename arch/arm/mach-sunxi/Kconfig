@@ -152,6 +152,7 @@ config SUN50I_GEN_H6
 	bool
 	select FIT
 	select SPL_LOAD_FIT
+	select PHY_SUN4I_USB
 	select SUPPORT_SPL
 	---help---
 	Select this for sunxi SoCs which have H6 like peripherals, clocks
@@ -352,7 +353,6 @@ config MACH_SUN50I_H5
 config MACH_SUN50I_H6
 	bool "sun50i (Allwinner H6)"
 	select ARM64
-	select PHY_SUN4I_USB
 	select DRAM_SUN50I_H6
 	select SUN50I_GEN_H6
 
