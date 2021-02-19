@@ -235,6 +235,7 @@ static int sunxi_hdmi_edid_get_mode(struct sunxi_display_priv *sunxi_display,
 	struct sunxi_ccm_reg * const ccm =
 		(struct sunxi_ccm_reg *)SUNXI_CCM_BASE;
 	int i, r, ext_blocks = 0;
+	bool can_do_full_hd = false;
 
 	/* Reset i2c controller */
 	setbits_le32(&ccm->hdmi_clk_cfg, CCM_HDMI_CTRL_DDC_GATE);
@@ -289,14 +290,40 @@ static int sunxi_hdmi_edid_get_mode(struct sunxi_display_priv *sunxi_display,
 	}
 
 	/* Take the first usable detailed timing */
+	r = -ENOENT;
 	for (i = 0; i < 4; i++, t++) {
-		r = video_edid_dtd_to_ctfb_res_modes(t, mode);
-		if (r == 0)
-			break;
+		if (video_edid_dtd_to_ctfb_res_modes(t, mode) == 0) {
+			if (mode->xres >= 1920 && mode->yres >= 1080)
+				can_do_full_hd = true;
+
+			/* 165 MHz maximum pixel clock according to manual */
+			if (mode->pixclock_khz <= 165000) {
+				r = 0;
+				break;
+			}
+			r = -E2BIG;
+		}
 	}
-	if (i == 4) {
+	if (r == -ENOENT) {
 		printf("EDID: no usable detailed timing found\n");
-		return -ENOENT;
+
+		return r;
+	}
+	/*
+	 * If the monitor reported a mode line, but it is beyond the SoC's
+	 * capabilities (4K, for instance), use a standard mode.
+	 */
+	if (r == -E2BIG) {
+		const struct ctfb_res_modes *std_mode;
+		int res = RES_MODE_1024x768;
+		const char *options;
+		unsigned int depth;
+
+		if (can_do_full_hd)
+			res = RES_MODE_1920x1080;
+
+		video_get_ctfb_res_modes(res, 24, &std_mode, &depth, &options);
+		*mode = *std_mode;
 	}
 
 	/* Check for basic audio support, if found enable hdmi output */
