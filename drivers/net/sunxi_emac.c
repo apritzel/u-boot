@@ -17,6 +17,7 @@
 #include <net.h>
 #include <asm/io.h>
 #include <asm/arch/clock.h>
+#include <power/regulator.h>
 
 /* EMAC register  */
 struct emac_regs {
@@ -164,9 +165,8 @@ struct emac_eth_dev {
 	struct mii_dev *bus;
 	struct phy_device *phydev;
 	int link_printed;
-#ifdef CONFIG_DM_ETH
 	uchar rx_buf[EMAC_RX_BUFSIZE];
-#endif
+	struct udevice *phy_reg;
 };
 
 struct emac_rxhdr {
@@ -575,6 +575,9 @@ static int sunxi_emac_eth_probe(struct udevice *dev)
 	if (ret)
 		return ret;
 
+	if (priv->phy_reg)
+		regulator_set_enable(priv->phy_reg, true);
+
 	return sunxi_emac_init_phy(priv, dev);
 }
 
@@ -588,8 +591,11 @@ static const struct eth_ops sunxi_emac_eth_ops = {
 static int sunxi_emac_eth_of_to_plat(struct udevice *dev)
 {
 	struct eth_pdata *pdata = dev_get_plat(dev);
+	struct emac_eth_dev *priv = dev_get_priv(dev);
 
 	pdata->iobase = dev_read_addr(dev);
+
+	device_get_supply_regulator(dev, "target-supply", &priv->phy_reg);
 
 	return 0;
 }

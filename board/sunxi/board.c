@@ -228,15 +228,6 @@ int board_init(void)
 	if (ret)
 		return ret;
 
-	/* strcmp() would look better, but doesn't get optimised away. */
-	if (CONFIG_MACPWR[0]) {
-		macpwr_pin = sunxi_name_to_gpio(CONFIG_MACPWR);
-		if (macpwr_pin >= 0) {
-			gpio_request(macpwr_pin, "macpwr");
-			gpio_direction_output(macpwr_pin, 1);
-		}
-	}
-
 #if CONFIG_IS_ENABLED(DM_I2C)
 	/*
 	 * Temporary workaround for enabling I2C clocks until proper sunxi DM
@@ -244,7 +235,6 @@ int board_init(void)
 	 */
 	i2c_init_board();
 #endif
-
 	eth_init_board();
 
 	return 0;
