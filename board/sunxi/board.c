@@ -229,20 +229,6 @@ int board_init(void)
 		return ret;
 
 	/* strcmp() would look better, but doesn't get optimised away. */
-	if (CONFIG_SATAPWR[0]) {
-		satapwr_pin = sunxi_name_to_gpio(CONFIG_SATAPWR);
-		if (satapwr_pin >= 0) {
-			gpio_request(satapwr_pin, "satapwr");
-			gpio_direction_output(satapwr_pin, 1);
-
-			/*
-			 * Give the attached SATA device time to power-up
-			 * to avoid link timeouts
-			 */
-			mdelay(500);
-		}
-	}
-
 	if (CONFIG_MACPWR[0]) {
 		macpwr_pin = sunxi_name_to_gpio(CONFIG_MACPWR);
 		if (macpwr_pin >= 0) {
