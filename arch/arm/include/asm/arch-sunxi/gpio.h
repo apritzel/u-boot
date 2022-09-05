@@ -29,13 +29,6 @@
 #define SUNXI_GPIO_I	8
 
 /*
- * This defines the number of GPIO banks for the _main_ GPIO controller.
- * You should fix up the padding in struct sunxi_gpio_reg below if you
- * change this.
- */
-#define SUNXI_GPIO_BANKS 9
-
-/*
  * sun6i/sun8i and later SoCs have an additional GPIO controller (R_PIO)
  * at a different register offset.
  *
@@ -52,45 +45,41 @@
 #define SUNXI_GPIO_M	12
 #define SUNXI_GPIO_N	13
 
-struct sunxi_gpio {
-	u32 cfg[4];
-	u32 dat;
-	u32 drv[2];
-	u32 pull[2];
-};
-
-/* gpio interrupt control */
-struct sunxi_gpio_int {
-	u32 cfg[3];
-	u32 ctl;
-	u32 sta;
-	u32 deb;		/* interrupt debounce */
-};
-
-struct sunxi_gpio_reg {
-	struct sunxi_gpio gpio_bank[SUNXI_GPIO_BANKS];
-	u8 res[0xbc];
-	struct sunxi_gpio_int gpio_int;
-};
-
 #define SUN50I_H6_GPIO_POW_MOD_SEL	0x340
 #define SUN50I_H6_GPIO_POW_MOD_VAL	0x348
-
-#define BANK_TO_GPIO(bank)	(((bank) < SUNXI_GPIO_L) ? \
-	&((struct sunxi_gpio_reg *)SUNXI_PIO_BASE)->gpio_bank[bank] : \
-	&((struct sunxi_gpio_reg *)SUNXI_R_PIO_BASE)->gpio_bank[(bank) - SUNXI_GPIO_L])
 
 #define GPIO_BANK(pin)		((pin) >> 5)
 #define GPIO_NUM(pin)		((pin) & 0x1f)
 
+#define GPIO_CFG_REG_OFFSET	0x00
 #define GPIO_CFG_INDEX(pin)	(((pin) & 0x1f) >> 3)
 #define GPIO_CFG_OFFSET(pin)	((((pin) & 0x1f) & 0x7) << 2)
 
+#define GPIO_DAT_REG_OFFSET	0x10
+
+#define GPIO_DRV_REG_OFFSET	0x14
 #define GPIO_DRV_INDEX(pin)	(((pin) & 0x1f) >> 4)
 #define GPIO_DRV_OFFSET(pin)	((((pin) & 0x1f) & 0xf) << 1)
 
+#define GPIO_PULL_REG_OFFSET	0x1c
 #define GPIO_PULL_INDEX(pin)	(((pin) & 0x1f) >> 4)
 #define GPIO_PULL_OFFSET(pin)	((((pin) & 0x1f) & 0xf) << 1)
+
+#define SUNXI_PINCTRL_BANK_SIZE 0x24
+
+static inline void* BANK_TO_GPIO(int bank)
+{
+	void *pio_base;
+
+	if (bank < SUNXI_GPIO_L) {
+		pio_base = (void *)(uintptr_t)SUNXI_PIO_BASE;
+	} else {
+		pio_base = (void *)(uintptr_t)SUNXI_R_PIO_BASE;
+		bank -= SUNXI_GPIO_L;
+	}
+
+	return pio_base + bank * SUNXI_PINCTRL_BANK_SIZE;
+}
 
 /* GPIO bank sizes */
 #define SUNXI_GPIOS_PER_BANK	32
@@ -214,18 +203,18 @@ enum sunxi_gpio_number {
 #define SUNXI_GPIO_AXP0_GPIO_COUNT	6
 
 struct sunxi_gpio_plat {
-	struct sunxi_gpio	*regs;
+	void			*regs;
 	char			bank_name[3];
 };
 
-void sunxi_gpio_set_cfgbank(struct sunxi_gpio *pio, int bank_offset, u32 val);
+void sunxi_gpio_set_cfgbank(void *bank_base, int pin_offset, u32 val);
 void sunxi_gpio_set_cfgpin(u32 pin, u32 val);
-int sunxi_gpio_get_cfgbank(struct sunxi_gpio *pio, int bank_offset);
+int sunxi_gpio_get_cfgbank(void *bank_base, int pin_offset);
 int sunxi_gpio_get_cfgpin(u32 pin);
 void sunxi_gpio_set_drv(u32 pin, u32 val);
-void sunxi_gpio_set_drv_bank(struct sunxi_gpio *pio, u32 bank_offset, u32 val);
+void sunxi_gpio_set_drv_bank(void *bank_base, u32 pin_offset, u32 val);
 void sunxi_gpio_set_pull(u32 pin, u32 val);
-void sunxi_gpio_set_pull_bank(struct sunxi_gpio *pio, int bank_offset, u32 val);
+void sunxi_gpio_set_pull_bank(void *bank_base, int pin_offset, u32 val);
 int sunxi_name_to_gpio(const char *name);
 
 #if !defined CONFIG_SPL_BUILD && defined CONFIG_AXP_GPIO
