@@ -113,6 +113,12 @@ config SUNXI_SRAM_ADDRESS
 config SUNXI_A64_TIMER_ERRATUM
 	bool
 
+config SUNXI_NEW_PINCTRL
+	bool
+	---help---
+	The Allwinner D1 and other new SoCs use a different register map
+	for the GPIO block, which we need to know about in the SPL.
+
 # Note only one of these may be selected at a time! But hidden choices are
 # not supported by Kconfig
 config SUNXI_GEN_SUN4I
