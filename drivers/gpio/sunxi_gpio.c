@@ -17,6 +17,7 @@
 #include <asm/io.h>
 #include <asm/gpio.h>
 #include <dt-bindings/gpio/gpio.h>
+#include <sunxi_gpio.h>
 
 #if !CONFIG_IS_ENABLED(DM_GPIO)
 int gpio_request(unsigned gpio, const char *label)
