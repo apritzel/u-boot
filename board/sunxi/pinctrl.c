@@ -3,11 +3,14 @@
  * (C) Copyright 2007-2011
  * Allwinner Technology Co., Ltd. <www.allwinnertech.com>
  * Tom Cubie <tangliang@allwinnertech.com>
+ *
+ * Low level GPIO/pin controller access functions, to be shared by non-DM
+ * SPL code and the DM pinctrl/GPIO drivers.
  */
 
 #include <common.h>
 #include <asm/io.h>
-#include <asm/arch/gpio.h>
+#include <sunxi_gpio.h>
 
 void sunxi_gpio_set_cfgbank(void *bank_base, int pin_offset, u32 val)
 {
