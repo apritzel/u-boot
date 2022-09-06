@@ -46,6 +46,16 @@ int sunxi_gpio_get_cfgpin(u32 pin)
 	return sunxi_gpio_get_cfgbank(bank_base, pin % 32);
 }
 
+void sunxi_gpio_set_output_bank(void *bank_base, u32 clear_mask, u32 set_mask)
+{
+	clrsetbits_le32(bank_base + GPIO_DAT_REG_OFFSET, clear_mask, set_mask);
+}
+
+u32 sunxi_gpio_get_output_bank(void *bank_base)
+{
+	return readl(bank_base + GPIO_DAT_REG_OFFSET);
+}
+
 void sunxi_gpio_set_drv(u32 pin, u32 val)
 {
 	u32 bank = GPIO_BANK(pin);

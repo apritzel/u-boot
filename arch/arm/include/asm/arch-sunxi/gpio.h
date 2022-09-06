@@ -211,6 +211,8 @@ void sunxi_gpio_set_cfgbank(void *bank_base, int pin_offset, u32 val);
 void sunxi_gpio_set_cfgpin(u32 pin, u32 val);
 int sunxi_gpio_get_cfgbank(void *bank_base, int pin_offset);
 int sunxi_gpio_get_cfgpin(u32 pin);
+void sunxi_gpio_set_output_bank(void *bank_base, u32 clear_mask, u32 set_mask);
+u32 sunxi_gpio_get_output_bank(void *bank_base);
 void sunxi_gpio_set_drv(u32 pin, u32 val);
 void sunxi_gpio_set_drv_bank(void *bank_base, u32 pin_offset, u32 val);
 void sunxi_gpio_set_pull(u32 pin, u32 val);
