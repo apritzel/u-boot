@@ -122,4 +122,11 @@ config CLK_SUN50I_A64
 	  This enables common clock driver support for platforms based
 	  on Allwinner A64 SoC.
 
+config CLK_SUN50I_A133
+	bool "Clock driver for Allwinner A133"
+	default MACH_SUN50I_A133
+	help
+	  This enables common clock driver support for platforms based
+	  on Allwinner A133 SoC.
+
 endif # CLK_SUNXI

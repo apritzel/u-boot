@@ -1,10 +1,10 @@
 #include <config.h>
 
-#ifdef CONFIG_MACH_SUN50I_H6
+#ifdef CONFIG_MACH_SUN50I_H616
+#define BL31_ADDR 0x40000000
+#elif CONFIG_SUN50I_GEN_H6
 #define BL31_ADDR 0x104000
 #define  SCP_ADDR 0x114000
-#elif defined(CONFIG_MACH_SUN50I_H616)
-#define BL31_ADDR 0x40000000
 #else
 #define BL31_ADDR  0x44000
 #define  SCP_ADDR  0x50000
@@ -12,7 +12,9 @@
 
 / {
 	aliases {
+#if !defined(CONFIG_MACH_SUN50I_A133)
 		mmc0 = &mmc0;
+#endif
 #if CONFIG_MMC_SUNXI_SLOT_EXTRA == 2
 		mmc1 = &mmc2;
 #endif
