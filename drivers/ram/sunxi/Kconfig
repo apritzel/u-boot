@@ -1,0 +1,13 @@
+config DRAM_SUN20I_D1
+	bool "DM DRAM driver support for Allwinner D1"
+	depends on RAM && ARCH_SUNXI
+	default y
+	help
+	  This enables support for DRAM drivers using the driver model
+	  for Allwinner SoCs.
+
+config DRAM_SUN8I_R528
+	bool "DRAM driver support for Allwinner R528/T113s"
+	default y if MACH_SUN8I_R528
+	help
+	  Select this DRAM controller driver for the R528/T113s SoCs.
