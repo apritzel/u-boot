@@ -684,33 +684,36 @@ static void mctl_sys_init(dram_para_t *para)
 //
 static void mctl_com_init(dram_para_t *para)
 {
-	unsigned int val, end;
+	uint32_t val, width;
 	unsigned long ptr;
-	int			 i;
+	int i;
 
 	// purpose ??
-	val = readl(0x3102008) & 0xffffc0ff;
-	val |= 0x2000;
-	writel(val, 0x3102008);
+	clrsetbits_le32(0x3102008, 0x3f00, 0x2000);
 
-	// Set sdram type and word width
-	val = readl(0x3102000) & 0xff000fff;
-	val |= (para->dram_type & 0x7) << 16; // DRAM type
-	val |= (~para->dram_para2 & 0x1) << 12; // DQ width
-	if ((para->dram_type) != 6 && (para->dram_type) != 7) {
-		val |= ((para->dram_tpr13 >> 5) & 0x1) << 19; // 2T or 1T
-		val |= 0x400000;
+	// set SDRAM type and word width
+	val  = readl(0x3102000) & ~0x00fff000;
+	val |= (para->dram_type & 0x7) << 16;		// DRAM type
+	val |= (~para->dram_para2 & 0x1) << 12;		// DQ width
+	val |= BIT(22);					// ??
+	if (para->dram_type == SUNXI_DRAM_TYPE_LPDDR2 ||
+	    para->dram_type == SUNXI_DRAM_TYPE_LPDDR3) {
+		val |= BIT(19);		// type 6 and 7 must use 1T
 	} else {
-		val |= 0x480000; // type 6 and 7 must use 1T
+		if (para->dram_tpr13 & BIT(5))
+			val |= BIT(19);
 	}
 	writel(val, 0x3102000);
 
 	// init rank / bank / row for single/dual or two different ranks
-	val = para->dram_para2;
-	end = ((val & 0x100) && (((val >> 12) & 0xf) != 1)) ? 32 : 16;
-	ptr = 0x3102000;
+	if ((para->dram_para2 & BIT(8)) &&
+	    ((para->dram_para2 & 0xf000) != 0x1000))
+		width = 32;
+	else
+		width = 16;
 
-	for (i = 0; i != end; i += 16) {
+	ptr = 0x3102000;
+	for (i = 0; i < width; i += 16) {
 		val = readl(ptr) & 0xfffff000;
 
 		val |= (para->dram_para2 >> 12) & 0x3; // rank
@@ -719,21 +722,11 @@ static void mctl_com_init(dram_para_t *para)
 
 		// convert from page size to column addr width - 3
 		switch ((para->dram_para1 >> i) & 0xf) {
-			case 8:
-				val |= 0xa00;
-				break;
-			case 4:
-				val |= 0x900;
-				break;
-			case 2:
-				val |= 0x800;
-				break;
-			case 1:
-				val |= 0x700;
-				break;
-			default:
-				val |= 0x600;
-				break;
+		case 8: val |= 0xa00; break;
+		case 4: val |= 0x900; break;
+		case 2: val |= 0x800; break;
+		case 1: val |= 0x700; break;
+		default: val |= 0x600; break;
 		}
 		writel(val, ptr);
 		ptr += 4;
@@ -744,19 +737,13 @@ static void mctl_com_init(dram_para_t *para)
 	writel(val, 0x3103120);
 
 	// set mctl reg 3c4 to zero when using half DQ
-	if (para->dram_para2 & (1 << 0)) {
+	if (para->dram_para2 & BIT(0))
 		writel(0, 0x31033c4);
-	}
 
 	// purpose ??
 	if (para->dram_tpr4) {
-		val = readl(0x3102000);
-		val |= (para->dram_tpr4 << 25) & 0x06000000;
-		writel(val, 0x3102000);
-
-		val = readl(0x3102004);
-		val |= ((para->dram_tpr4 >> 2) << 12) & 0x001ff000;
-		writel(val, 0x3102004);
+                setbits_le32(0x3102000, (para->dram_tpr4 & 0x3) << 25);
+                setbits_le32(0x3102004, (para->dram_tpr4 & 0x7fc) << 10);
 	}
 }
 
