@@ -1649,10 +1649,10 @@ int init_DRAM(int type, dram_para_t *para)
 unsigned long sunxi_dram_init(void)
 {
 	dram_para_t para = {
-		.dram_clk	= 792,
-		.dram_type	= 3, // SUNXI_DRAM_TYPE_DDR3
-		.dram_zq	= 0x007b7bfb,
-		.dram_odt_en	= 0,
+		.dram_clk	= CONFIG_DRAM_CLK,
+		.dram_type	= SUNXI_DRAM_TYPE_DDR3,	// 3
+		.dram_zq	= CONFIG_DRAM_ZQ,
+		.dram_odt_en	= CONFIG_DRAM_SUNXI_ODT_EN,
 		.dram_para1	= 0x000010d2,
 		.dram_para2	= 0,
 		.dram_mr0	= 0x1c70,
@@ -1670,9 +1670,9 @@ unsigned long sunxi_dram_init(void)
 		.dram_tpr8	= 0,
 		.dram_tpr9	= 0, // clock?
 		.dram_tpr10	= 0,
-		.dram_tpr11	= 0x00340000,
-		.dram_tpr12	= 0x00000046,
-		.dram_tpr13	= 0x34000100,
+		.dram_tpr11	= CONFIG_DRAM_SUNXI_TPR11,
+		.dram_tpr12	= CONFIG_DRAM_SUNXI_TPR12,
+		.dram_tpr13	= CONFIG_DRAM_SUNXI_TPR13,
 	};
 
 	return init_DRAM(0, &para) * 1024UL * 1024;
