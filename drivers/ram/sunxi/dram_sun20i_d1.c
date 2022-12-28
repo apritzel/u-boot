@@ -3,6 +3,10 @@
 #ifdef __UBOOT__
 #include <asm/io.h>
 #include <common.h>
+#ifdef CONFIG_RAM
+  #include <dm.h>
+  #include <ram.h>
+#endif
 #include <linux/delay.h>
 
 #include "dram_sun20i_d1.h"
@@ -1389,7 +1393,63 @@ unsigned long sunxi_dram_init(void)
 
 	return init_DRAM(0, &para) * 1024UL * 1024;
 };
+
+#ifdef CONFIG_RAM		/* using the driver model */
+struct sunxi_ram_priv {
+	size_t size;
+};
+
+static int sunxi_ram_probe(struct udevice *dev)
+{
+	struct sunxi_ram_priv *priv = dev_get_priv(dev);
+	unsigned long dram_size;
+
+	debug("%s: %s: probing\n", __func__, dev->name);
+
+	dram_size = sunxi_dram_init();
+	if (!dram_size) {
+		printf("DRAM init failed: %d\n", ret);
+		return -ENODEV;
+	}
+
+	priv->size = dram_size;
+
+	return 0;
+}
+
+static int sunxi_ram_get_info(struct udevice *dev, struct ram_info *info)
+{
+	struct sunxi_ram_priv *priv = dev_get_priv(dev);
+
+	debug("%s: %s: getting info\n", __func__, dev->name);
+
+	info->base = CONFIG_SYS_SDRAM_BASE;
+	info->size = priv->size;
+
+	return 0;
+}
+
+static struct ram_ops sunxi_ram_ops = {
+	.get_info = sunxi_ram_get_info,
+};
+
+static const struct udevice_id sunxi_ram_ids[] = {
+	{ .compatible = "allwinner,sun20i-d1-mbus" },
+	{ }
+};
+
+U_BOOT_DRIVER(sunxi_ram) = {
+	.name = "sunxi_ram",
+	.id = UCLASS_RAM,
+	.of_match = sunxi_ram_ids,
+	.ops = &sunxi_ram_ops,
+	.probe = sunxi_ram_probe,
+	.priv_auto = sizeof(struct sunxi_ram_priv),
+};
+#endif				/* CONFIG_RAM (using driver model) */
+
 #else				/* __UBOOT__ */
+
 void abort(void)
 {
 	while (1)
