@@ -1226,19 +1226,14 @@ static int dramc_simple_wr_test(uint mem_mb, int len)
 //
 static void mctl_vrefzq_init(dram_para_t *para)
 {
-	unsigned int val;
+	if (para->dram_tpr13 & BIT(17))
+		return;
 
-	if ((para->dram_tpr13 & (1 << 17)) == 0) {
-		val = readl(0x3103110) & 0x80808080; // IOCVR0
-		val |= para->dram_tpr5;
-		writel(val, 0x3103110);
+	clrsetbits_le32(0x3103110, 0x7f7f7f7f, para->dram_tpr5);
 
-		if ((para->dram_tpr13 & (1 << 16)) == 0) {
-			val = readl(0x3103114) & 0xffffff80; // IOCVR1
-			val |= para->dram_tpr6 & 0x7f;
-			writel(val, 0x3103114);
-		}
-	}
+	// IOCVR1
+	if ((para->dram_tpr13 & BIT(16)) == 0)
+		clrsetbits_le32(0x3103114, 0x7f, para->dram_tpr6 & 0x7f);
 }
 
 // Perform an init of the controller. This is actually done 3 times. The first
