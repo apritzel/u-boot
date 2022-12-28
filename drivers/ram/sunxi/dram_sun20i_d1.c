@@ -19,6 +19,13 @@
 #define udelay(c)		sdelay(c)
 #define printf			debug
 
+#define clrsetbits_le32(addr, clear, set)			\
+	write32((addr), (read32(addr) & ~(clear)) | (set))
+#define setbits_le32(addr, set)					\
+	write32((addr), read32(addr) | (set))
+#define clrbits_le32(addr, clear)				\
+	write32((addr), read32(addr) & ~(clear))
+
 #define CONFIG_SYS_SDRAM_BASE	SDRAM_BASE
 
 #endif
