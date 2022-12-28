@@ -99,89 +99,54 @@ static void dram_disable_all_master(void)
 
 static void eye_delay_compensation(dram_para_t *para) // s1
 {
-	unsigned int val;
+	uint32_t delay;
 	unsigned long ptr;
 
 	// DATn0IOCR, n =  0...7
-	for (ptr = 0x3103310; ptr != 0x3103334; ptr += 4) {
-		val = readl(ptr);
-		val |= (para->dram_tpr11 << 9) & 0x1e00;
-		val |= (para->dram_tpr12 << 1) & 0x001e;
-		writel(val, ptr);
-	}
+	delay = (para->dram_tpr11 & 0xf) << 9;
+	delay |= (para->dram_tpr12 & 0xf) << 1;
+	for (ptr = 0x3103310; ptr < 0x3103334; ptr += 4)
+		setbits_le32(ptr, delay);
 
 	// DATn1IOCR, n =  0...7
-	for (ptr = 0x3103390; ptr != 0x31033b4; ptr += 4) {
-		val = readl(ptr);
-		val |= ((para->dram_tpr11 >> 4) << 9) & 0x1e00;
-		val |= ((para->dram_tpr12 >> 4) << 1) & 0x001e;
-		writel(val, ptr);
-	}
+	delay = (para->dram_tpr11 & 0xf0) << 5;
+	delay |= (para->dram_tpr12 & 0xf0) >> 3;
+	for (ptr = 0x3103390; ptr != 0x31033b4; ptr += 4)
+		setbits_le32(ptr, delay);
 
 	// PGCR0: assert AC loopback FIFO reset
-	val = readl(0x3103100);
-	val &= 0xfbffffff;
-	writel(val, 0x3103100);
+	clrbits_le32(0x3103100, 0x04000000);
 
 	// ??
-	val = readl(0x3103334);
-	val |= ((para->dram_tpr11 >> 16) << 9) & 0x1e00;
-	val |= ((para->dram_tpr12 >> 16) << 1) & 0x001e;
-	writel(val, 0x3103334);
 
-	val = readl(0x3103338);
-	val |= ((para->dram_tpr11 >> 16) << 9) & 0x1e00;
-	val |= ((para->dram_tpr12 >> 16) << 1) & 0x001e;
-	writel(val, 0x3103338);
+	delay = (para->dram_tpr11 & 0xf0000) >> 7;
+	delay |= (para->dram_tpr12 & 0xf0000) >> 15;
+	setbits_le32(0x3103334, delay);
+	setbits_le32(0x3103338, delay);
 
-	val = readl(0x31033b4);
-	val |= ((para->dram_tpr11 >> 20) << 9) & 0x1e00;
-	val |= ((para->dram_tpr12 >> 20) << 1) & 0x001e;
-	writel(val, 0x31033b4);
+	delay = (para->dram_tpr11 & 0xf00000) >> 11;
+	delay |= (para->dram_tpr12 & 0xf00000) >> 19;
+	setbits_le32(0x31033b4, delay);
+	setbits_le32(0x31033b8, delay);
 
-	val = readl(0x31033b8);
-	val |= ((para->dram_tpr11 >> 20) << 9) & 0x1e00;
-	val |= ((para->dram_tpr12 >> 20) << 1) & 0x001e;
-	writel(val, 0x31033b8);
-
-	val = readl(0x310333c);
-	val |= ((para->dram_tpr11 >> 16) << 25) & 0x1e000000;
-	writel(val, 0x310333c);
-
-	val = readl(0x31033bc);
-	val |= ((para->dram_tpr11 >> 20) << 25) & 0x1e000000;
-	writel(val, 0x31033bc);
+	setbits_le32(0x310333c, (para->dram_tpr11 & 0xf0000) << 9);
+	setbits_le32(0x31033bc, (para->dram_tpr11 & 0xf00000) << 5);
 
 	// PGCR0: release AC loopback FIFO reset
-	val = readl(0x3103100);
-	val |= 0x04000000;
-	writel(val, 0x3103100);
+	setbits_le32(0x3103100, BIT(26));
 
 	udelay(1);
 
-	for (ptr = 0x3103240; ptr != 0x310327c; ptr += 4) {
-		val = readl(ptr);
-		val |= ((para->dram_tpr10 >> 4) << 8) & 0x0f00;
-		writel(val, ptr);
-	}
+	delay = (para->dram_tpr10 & 0xf0) << 4;
+	for (ptr = 0x3103240; ptr != 0x310327c; ptr += 4)
+		setbits_le32(ptr, delay);
+	for (ptr = 0x3103228; ptr != 0x3103240; ptr += 4)
+		setbits_le32(ptr, delay);
 
-	for (ptr = 0x3103228; ptr != 0x3103240; ptr += 4) {
-		val = readl(ptr);
-		val |= ((para->dram_tpr10 >> 4) << 8) & 0x0f00;
-		writel(val, ptr);
-	}
+	setbits_le32(0x3103218, (para->dram_tpr10 & 0x0f) << 8);
+	setbits_le32(0x310321c, (para->dram_tpr10 & 0x0f) << 8);
 
-	val = readl(0x3103218);
-	val |= (para->dram_tpr10 << 8) & 0x0f00;
-	writel(val, 0x3103218);
-
-	val = readl(0x310321c);
-	val |= (para->dram_tpr10 << 8) & 0x0f00;
-	writel(val, 0x310321c);
-
-	val = readl(0x3103280);
-	val |= ((para->dram_tpr10 >> 12) << 8) & 0x0f00;
-	writel(val, 0x3103280);
+	setbits_le32(0x3103280, (para->dram_tpr10 & 0xf00) >> 4);
 }
 
 static int auto_cal_timing(unsigned int time, unsigned int freq)
