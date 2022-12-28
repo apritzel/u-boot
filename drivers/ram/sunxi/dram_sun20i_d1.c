@@ -38,50 +38,43 @@ static void sid_read_ldoB_cal(dram_para_t *para)
 {
 	uint32_t reg;
 
-	reg = (readl(0x0300621c) << 0x10) >> 0x18;
+	reg = (readl(SUNXI_SID_BASE + 0x1c) & 0xff00) >> 8;
 
-	if (reg != 0) {
-		if (para->dram_type != 2) {
-			if (para->dram_type == 3) {
-				if (0x20 < reg) {
-					reg = reg - 0x16;
-				}
-			} else {
-				reg = 0;
-			}
-		}
-
-		writel((readl(0x03000150) & 0xffff00ff) | (reg << 8), 0x03000150);
-	}
-
-	return;
-}
-
-static void dram_vol_set(dram_para_t *para)
-{
-	int reg, vol = 0;
+	if (reg == 0)
+		return;
 
 	switch (para->dram_type) {
-		case 2:
-			vol = 47;
-			break;
-		case 3:
-			vol = 25;
-			break;
-		default:
-			vol = 0;
+	case SUNXI_DRAM_TYPE_DDR2:
+		break;
+	case SUNXI_DRAM_TYPE_DDR3:
+		if (reg > 0x20)
+			reg -= 0x16;
+		break;
+	default:
+		reg = 0;
+		break;
 	}
-	vol = 25; // XXX
 
-	reg = readl(0x3000150);
-	reg = (reg & 0xffdf00ff) | vol << 8;
-	/*
-		reg = readl(0x3000150);
-		reg &= ~(0xff00);
-		reg |= vol << 8;
-		reg &= ~(0x200000);
-	*/
-	writel(reg, 0x3000150);
+	clrsetbits_le32(0x3000150, 0xff00, reg << 8);
+}
+
+static void dram_voltage_set(dram_para_t *para)
+{
+	int vol;
+
+	switch (para->dram_type) {
+	case SUNXI_DRAM_TYPE_DDR2:
+		vol = 47;
+		break;
+	case SUNXI_DRAM_TYPE_DDR3:
+		vol = 25;
+		break;
+	default:
+		vol = 0;
+		break;
+	}
+
+	clrsetbits_le32(0x3000150, 0x20ff00, vol << 8);
 
 	udelay(1);
 
@@ -1550,7 +1543,7 @@ int init_DRAM(int type, dram_para_t *para)
 	}
 
 	// Set voltage
-	dram_vol_set(para);
+	dram_voltage_set(para);
 
 	// Set SDRAM controller auto config
 	if ((para->dram_tpr13 & 0x1) == 0) {
