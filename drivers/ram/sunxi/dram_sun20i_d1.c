@@ -24,14 +24,9 @@
 
 #endif
 
-static char *memcpy_self(char *dst, char *src, int len)
-{
-	int i;
-	for (i = 0; i != len; i++) {
-		dst[i] = src[i];
-	}
-	return dst;
-}
+#ifndef SUNXI_SID_BASE
+#define SUNXI_SID_BASE	0x3006200
+#endif
 
 static void sid_read_ldoB_cal(dram_para_t *para)
 {
@@ -801,81 +796,85 @@ static void mctl_com_init(dram_para_t *para)
 	}
 }
 
-// This routine seems to have several remapping tables for 22 lines.
-// It is unclear which lines are being remapped. It seems to pick
-// table cfg7 for the Nezha board.
-//
-char		cfg0[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-static char cfg1[] = {1, 9, 3, 7, 8, 18, 4, 13, 5, 6, 10, 2, 14, 12, 0, 0, 21, 17, 20, 19, 11, 22};
-static char cfg2[] = {4, 9, 3, 7, 8, 18, 1, 13, 2, 6, 10, 5, 14, 12, 0, 0, 21, 17, 20, 19, 11, 22};
-static char cfg3[] = {1, 7, 8, 12, 10, 18, 4, 13, 5, 6, 3, 2, 9, 0, 0, 0, 21, 17, 20, 19, 11, 22};
-static char cfg4[] = {4, 12, 10, 7, 8, 18, 1, 13, 2, 6, 3, 5, 9, 0, 0, 0, 21, 17, 20, 19, 11, 22};
-static char cfg5[] = {13, 2, 7, 9, 12, 19, 5, 1, 6, 3, 4, 8, 10, 0, 0, 0, 21, 22, 18, 17, 11, 20};
-static char cfg6[] = {3, 10, 7, 13, 9, 11, 1, 2, 4, 6, 8, 5, 12, 0, 0, 0, 20, 1, 0, 21, 22, 17};
-static char cfg7[] = {3, 2, 4, 7, 9, 1, 17, 12, 18, 14, 13, 8, 15, 6, 10, 5, 19, 22, 16, 21, 20, 11};
+static const uint8_t ac_remapping_tables[][22] = {
+	[0] = { 0 },
+	[1] = {  1,  9,  3,  7,  8, 18,  4, 13,  5,  6, 10,
+		 2, 14, 12,  0,  0, 21, 17, 20, 19, 11, 22 },
+	[2] = {  4,  9,  3,  7,  8, 18,  1, 13,  2,  6, 10,
+		 5, 14, 12,  0,  0, 21, 17, 20, 19, 11, 22 },
+	[3] = {  1,  7,  8, 12, 10, 18,  4, 13,  5,  6,  3,
+		 2,  9,  0,  0,  0, 21, 17, 20, 19, 11, 22 },
+	[4] = {  4, 12, 10,  7,  8, 18,  1, 13,  2,  6,  3,
+		 5,  9,  0,  0,  0, 21, 17, 20, 19, 11, 22 },
+	[5] = { 13,  2,  7,  9, 12, 19,  5,  1,  6,  3,  4,
+		 8, 10,  0,  0,  0, 21, 22, 18, 17, 11, 20 },
+	[6] = {  3, 10,  7, 13,  9, 11,  1,  2,  4,  6,  8,
+		 5, 12,  0,  0,  0, 20,  1,  0, 21, 22, 17 },
+	[7] = {  3,  2,  4,  7,  9,  1, 17, 12, 18, 14, 13,
+		 8, 15,  6, 10,  5, 19, 22, 16, 21, 20, 11 },
+};
 
+/*
+ * This routine chooses one of several remapping tables for 22 lines.
+ * It is unclear which lines are being remapped. It seems to pick
+ * table cfg7 for the Nezha board.
+ */
 static void mctl_phy_ac_remapping(dram_para_t *para)
 {
-	unsigned int fuse, val;
+	const uint8_t *cfg;
+	uint32_t fuse, val;
 
-	fuse = (readl(0x3006228) << 0x14) >> 0x1c;
-	debug("ddr_efuse_type: 0x%x\n", fuse);
+	/*
+	 * It is unclear whether the LPDDRx types don't need any remapping,
+	 * or whether the original code just didn't provide tables.
+	 */
+	if (para->dram_type != SUNXI_DRAM_TYPE_DDR2 &&
+	    para->dram_type != SUNXI_DRAM_TYPE_DDR3)
+		return;
 
-	val = (unsigned int)(readl(0x03006200) << 0x10) >> 0x18;
-	debug("mark_id: 0x%x\n", val);
+	fuse = (readl(SUNXI_SID_BASE + 0x28) & 0xf00) >> 8;
+	debug("DDR efuse: 0x%x\n", fuse);
 
-	if ((para->dram_tpr13 >> 18) & 0x3) {
-		memcpy_self(cfg0, cfg7, 22);
+	if (para->dram_type == SUNXI_DRAM_TYPE_DDR2) {
+		if (fuse == 15)
+			return;
+		cfg = ac_remapping_tables[6];
 	} else {
-		switch (fuse) {
-#if 1
-			case 8:
-				memcpy_self(cfg0, cfg2, 22);
-				break;
-			case 9:
-				memcpy_self(cfg0, cfg3, 22);
-				break;
-#endif
-			case 10:
-				memcpy_self(cfg0, cfg5, 22);
-				break;
-#if 1
-			case 11:
-				memcpy_self(cfg0, cfg4, 22);
-				break;
+		if (para->dram_tpr13 & 0xc0000) {
+			cfg = ac_remapping_tables[7];
+		} else {
+			switch (fuse) {
+			case 8: cfg = ac_remapping_tables[2]; break;
+			case 9: cfg = ac_remapping_tables[3]; break;
+			case 10: cfg = ac_remapping_tables[5]; break;
+			case 11: cfg = ac_remapping_tables[4]; break;
 			default:
-			case 12:
-				memcpy_self(cfg0, cfg1, 22);
-				break;
+			case 12: cfg = ac_remapping_tables[1]; break;
 			case 13:
-			case 14:
-				break;
-#endif
+			case 14: cfg = ac_remapping_tables[0]; break;
+			}
 		}
 	}
 
-	if (para->dram_type == 2) {
-		if (fuse == 15)
-			return;
-		memcpy_self(cfg0, cfg6, 22);
-	}
+	val = (cfg[4] << 25) | (cfg[3] << 20) | (cfg[2] << 15) |
+	      (cfg[1] << 10) | (cfg[0] << 5);
+	write32(0x3102500, val);
 
-	if (para->dram_type == 2 || para->dram_type == 3) {
-		val = (cfg0[4] << 25) | (cfg0[3] << 20) | (cfg0[2] << 15) | (cfg0[1] << 10) | (cfg0[0] << 5);
-		write32(0x3102500, val);
+	val = (cfg[10] << 25) | (cfg[9] << 20) | (cfg[8] << 15) |
+	      (cfg[ 7] << 10) | (cfg[6] <<  5) | cfg[5];
+	write32(0x3102504, val);
 
-		val = (cfg0[10] << 25) | (cfg0[9] << 20) | (cfg0[8] << 15) | (cfg0[7] << 10) | (cfg0[6] << 5) | cfg0[5];
-		write32(0x3102504, val);
+	val = (cfg[15] << 20) | (cfg[14] << 15) | (cfg[13] << 10) |
+	      (cfg[12] <<  5) | cfg[11];
+	write32(0x3102508, val);
 
-		val = (cfg0[15] << 20) | (cfg0[14] << 15) | (cfg0[13] << 10) | (cfg0[12] << 5) | cfg0[11];
-		write32(0x3102508, val);
+	val = (cfg[21] << 25) | (cfg[20] << 20) | (cfg[19] << 15) |
+	      (cfg[18] << 10) | (cfg[17] <<  5) | cfg[16];
+	write32(0x310250c, val);
 
-		val = (cfg0[21] << 25) | (cfg0[20] << 20) | (cfg0[19] << 15) | (cfg0[18] << 10) | (cfg0[17] << 5) | cfg0[16];
-		write32(0x310250c, val);
-
-		val = (cfg0[4] << 25) | (cfg0[3] << 20) | (cfg0[2] << 15) | (cfg0[1] << 10) | (cfg0[0] << 5) | 1;
-		write32(0x3102500, val);
-	}
+	val = (cfg[4] << 25) | (cfg[3] << 20) | (cfg[2] << 15) |
+	      (cfg[1] << 10) | (cfg[0] <<  5) | 1;
+	write32(0x3102500, val);
 }
 
 // Init the controller channel. The key part is placing commands in the main
