@@ -1033,41 +1033,43 @@ static int DRAMC_get_dram_size(void)
  */
 static int dqs_gate_detect(dram_para_t *para)
 {
-	uint32_t val, dx0, dx1;
+	uint32_t dx0, dx1;
 
-	if (readl(0x3103010) & BIT(22)) {
-		dx0 = (readl(0x03103348) & 0x3000000) >> 24;
-		dx1 = (readl(0x031033c8) & 0x3000000) >> 24;
-
-		if (dx0 == 2) {
-			val = para->dram_para2 & ~0xf00f;
-
-			if (dx1 == 2) {
-				para->dram_para2 = val;
-				debug("single rank and full DQ\n");
-			} else {
-				para->dram_para2 = val | 1;
-				debug("single rank and half DQ\n");
-			}
-		} else {
-			if (dx0 != 0) {
-				if ((para->dram_tpr13 & BIT(29)) == 0)
-					return 0;
-
-				debug("DX0 state: %d\n", dx0);
-				debug("DX1 state: %d\n", dx1);
-				return 0;
-			}
-
-			para->dram_para2 = (para->dram_para2 & ~0xf) | 0x1001;
-			debug("dual rank and half DQ\n");
-		}
-	} else {
-		para->dram_para2 = (para->dram_para2 & ~0xf) | 0x1000;
+	if ((readl(0x3103010) & BIT(22)) == 0) {
+		para->dram_para2 = (para->dram_para2 & ~0xf) | BIT(12);
 		debug("dual rank and full DQ\n");
+
+		return 1;
 	}
 
-	return 1;
+	dx0 = (readl(0x03103348) & 0x3000000) >> 24;
+	if (dx0 == 0) {
+		para->dram_para2 = (para->dram_para2 & ~0xf) | 0x1001;
+		debug("dual rank and half DQ\n");
+
+		return 1;
+	}
+
+	if (dx0 == 2) {
+		dx1 = (readl(0x031033c8) & 0x3000000) >> 24;
+		if (dx1 == 2) {
+			para->dram_para2 = para->dram_para2 & ~0xf00f;
+			debug("single rank and full DQ\n");
+		} else {
+			para->dram_para2 = (para->dram_para2 & ~0xf00f) | BIT(0);
+			debug("single rank and half DQ\n");
+		}
+
+		return 1;
+	}
+
+	if ((para->dram_tpr13 & BIT(29)) == 0)
+		return 0;
+
+	debug("DX0 state: %d\n", dx0);
+	debug("DX1 state: %d\n", dx1);
+
+	return 0;
 }
 
 #define uint unsigned int
