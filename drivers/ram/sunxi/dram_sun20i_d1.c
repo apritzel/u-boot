@@ -582,7 +582,7 @@ static void auto_set_timing_para(dram_para_t *para) // s5
 	writel(reg_val, 0x3103078);
 
 	// Set phy interface time PITMG0, PTR3, PTR4
-	reg_val = (0x2 << 24) | (t_rdata_en << 16) | (0x1 << 8) | (wr_latency << 0);
+	reg_val = (0x2 << 24) | (t_rdata_en << 16) | BIT(8) | (wr_latency << 0);
 	writel(reg_val, 0x3103080);
 	writel(((tdinit0 << 0) | (tdinit1 << 20)), 0x3103050);
 	writel(((tdinit2 << 0) | (tdinit3 << 20)), 0x3103054);
@@ -1176,7 +1176,7 @@ static int auto_scan_dram_size(dram_para_t *para)
 
 		// Scan per address line, until address wraps (i.e. see shadow)
 		for (i = 11; i < 17; i++) {
-			chk = CONFIG_SYS_SDRAM_BASE + (1 << (i + 11));
+			chk = CONFIG_SYS_SDRAM_BASE + (1U << (i + 11));
 			ptr = CONFIG_SYS_SDRAM_BASE;
 			for (j = 0; j < 64; j++) {
 				if (readl(chk) != ((j & 1) ? ptr : ~ptr))
@@ -1206,7 +1206,7 @@ static int auto_scan_dram_size(dram_para_t *para)
 		udelay(1);
 
 		// Test if bit A23 is BA2 or mirror XXX A22?
-		chk = CONFIG_SYS_SDRAM_BASE + (1 << 22);
+		chk = CONFIG_SYS_SDRAM_BASE + (1U << 22);
 		ptr = CONFIG_SYS_SDRAM_BASE;
 		for (i = 0, j = 0; i < 64; i++) {
 			if (readl(chk) != ((i & 1) ? ptr : ~ptr)) {
@@ -1235,7 +1235,7 @@ static int auto_scan_dram_size(dram_para_t *para)
 
 		// Scan per address line, until address wraps (i.e. see shadow)
 		for (i = 9; i < 14; i++) {
-			chk = CONFIG_SYS_SDRAM_BASE + (1 << i);
+			chk = CONFIG_SYS_SDRAM_BASE + (1U << i);
 			ptr = CONFIG_SYS_SDRAM_BASE;
 			for (j = 0; j < 64; j++) {
 				if (readl(chk) != ((j & 1) ? ptr : ~ptr))
