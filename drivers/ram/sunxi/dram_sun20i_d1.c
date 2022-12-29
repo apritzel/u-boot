@@ -1070,11 +1070,9 @@ static int dqs_gate_detect(dram_para_t *para)
 	return 0;
 }
 
-#define uint unsigned int
-
-static int dramc_simple_wr_test(uint mem_mb, int len)
+static int dramc_simple_wr_test(unsigned int mem_mb, int len)
 {
-	unsigned int  offs	= (mem_mb >> 1) << 18; // half of memory size
+	unsigned int  offs	= (mem_mb / 2) << 18; // half of memory size
 	unsigned int  patt1 = 0x01234567;
 	unsigned int  patt2 = 0xfedcba98;
 	unsigned int *addr, v1, v2, i;
@@ -1102,6 +1100,7 @@ static int dramc_simple_wr_test(uint mem_mb, int len)
 			return 1;
 		}
 	}
+
 	debug("DRAM: simple test OK\n");
 	return 0;
 }
