@@ -601,7 +601,10 @@ static int ccu_set_pll_ddr_clk(int index, dram_para_t *para)
 {
 	unsigned int val, clk, n;
 
-	clk = (para->dram_tpr13 & (1 << 6)) ? para->dram_tpr9 : para->dram_clk;
+	if (para->dram_tpr13 & BIT(6))
+		clk = para->dram_tpr9;
+	else
+		clk = para->dram_clk;
 
 	// set VCO clock divider
 	n = (clk * 2) / 24;
