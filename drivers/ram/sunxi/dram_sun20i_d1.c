@@ -1024,50 +1024,47 @@ static int DRAMC_get_dram_size(void)
 	return size0 + size1; // add size of each rank
 }
 
-// The below routine reads the command status register to extract
-// DQ width and rank count. This follows the DQS training command in
-// channel_init. If error bit 22 is reset, we have two ranks and full DQ.
-// If there was an error, figure out whether it was half DQ, single rank,
-// or both. Set bit 12 and 0 in dram_para2 with the results.
-//
+/*
+ * The below routine reads the command status register to extract
+ * DQ width and rank count. This follows the DQS training command in
+ * channel_init. If error bit 22 is reset, we have two ranks and full DQ.
+ * If there was an error, figure out whether it was half DQ, single rank,
+ * or both. Set bit 12 and 0 in dram_para2 with the results.
+ */
 static int dqs_gate_detect(dram_para_t *para)
 {
-	unsigned int u1;
-	unsigned int u2;
+	uint32_t val, dx0, dx1;
 
-	if (readl(0x3103010) & (1 << 22)) {
-		u1 = (uint32_t)(readl(0x03103348) << 6) >> 0x1e;
-		u2 = (uint32_t)(readl(0x031033c8) << 6) >> 0x1e;
+	if (readl(0x3103010) & BIT(22)) {
+		dx0 = (readl(0x03103348) & 0x3000000) >> 24;
+		dx1 = (readl(0x031033c8) & 0x3000000) >> 24;
 
-		if (u1 == 2) {
-			u1 = para->dram_para2 & 0xffff0ff0;
+		if (dx0 == 2) {
+			val = para->dram_para2 & ~0xf00f;
 
-			if (u2 == 2) {
-				para->dram_para2 = u1;
+			if (dx1 == 2) {
+				para->dram_para2 = val;
 				debug("single rank and full DQ\n");
 			} else {
-				para->dram_para2 = u1 | 1;
+				para->dram_para2 = val | 1;
 				debug("single rank and half DQ\n");
 			}
-
 		} else {
-			if (u1 != 0) {
-				if ((para->dram_tpr13 & 0x20000000) == 0) {
+			if (dx0 != 0) {
+				if ((para->dram_tpr13 & BIT(29)) == 0)
 					return 0;
-				}
 
-				debug("DX0 state: %d\n", u1);
-				debug("DX1 state: %d\n", u2);
+				debug("DX0 state: %d\n", dx0);
+				debug("DX1 state: %d\n", dx1);
 				return 0;
 			}
 
-			para->dram_para2 = (para->dram_para2 & 0xfffffff0) | 0x1001;
+			para->dram_para2 = (para->dram_para2 & ~0xf) | 0x1001;
 			debug("dual rank and half DQ\n");
 		}
-
 	} else {
-		para->dram_para2 = (para->dram_para2 & 0xfffffff0) | 0x1000;
-		debug("two rank and full DQ\n");
+		para->dram_para2 = (para->dram_para2 & ~0xf) | 0x1000;
+		debug("dual rank and full DQ\n");
 	}
 
 	return 1;
