@@ -835,111 +835,78 @@ static unsigned int mctl_channel_init(unsigned int ch_index, dram_para_t *para)
 {
 	unsigned int val, dqs_gating_mode;
 
-	dqs_gating_mode = (para->dram_tpr13 >> 2) & 0x3;
+	dqs_gating_mode = (para->dram_tpr13 & 0xc) >> 2;
 
 	// set DDR clock to half of CPU clock
-	val = readl(0x310200c) & 0xfffff000;
-	val |= (para->dram_clk >> 1) - 1;
-	writel(val, 0x310200c);
+	clrsetbits_le32(0x310200c, 0xfff, (para->dram_clk / 2) - 1);
 
 	// MRCTRL0 nibble 3 undocumented
-	val = readl(0x3103108) & 0xfffff0ff;
-	val |= 0x300;
-	writel(val, 0x3103108);
+	clrsetbits_le32(0x3103108, 0xf00, 0x300);
 
-	val = ((~para->dram_odt_en) & 1) << 5;
+	if (para->dram_odt_en)
+		val = 0;
+	else
+		val = BIT(5);
 
 	// DX0GCR0
-	if (para->dram_clk > 672) {
-		writel(readl(0x3103344) & 0xffff09c1, 0x3103344);
-	} else {
-		writel(readl(0x3103344) & 0xffff0fc1, 0x3103344);
-	}
-	writel(readl(0x3103344) | val, 0x3103344);
+	if (para->dram_clk > 672)
+		clrsetbits_le32(0x3103344, 0xf63e, val);
+	else
+		clrsetbits_le32(0x3103344, 0xf03e, val);
 
 	// DX1GCR0
 	if (para->dram_clk > 672) {
-		writel(readl(0x3103344) | 0x400, 0x3103344);
-		writel(readl(0x31033c4) & 0xffff09c1, 0x31033c4);
+                setbits_le32(0x3103344, 0x400);
+		clrsetbits_le32(0x31033c4, 0xf63e, val);
 	} else {
-		writel(readl(0x31033c4) & 0xffff0fc1, 0x31033c4);
+		clrsetbits_le32(0x31033c4, 0xf03e, val);
 	}
-	writel(readl(0x31033c4) | val, 0x31033c4);
 
 	// 0x3103208 undocumented
-	writel(readl(0x3103208) | 2, 0x3103208);
+	setbits_le32(0x3103208, BIT(1));
 
 	eye_delay_compensation(para);
 
 	// set PLL SSCG ?
-	//
 	val = readl(0x3103108);
 	if (dqs_gating_mode == 1) {
-		val &= ~(0xc0);
-		writel(val, 0x3103108);
-
-		val = readl(0x31030bc);
-		val &= 0xfffffef8;
-		writel(val, 0x31030bc);
+		clrsetbits_le32(0x3103108, 0xc0, 0);
+		clrbits_le32(0x31030bc, 0x107);
 	} else if (dqs_gating_mode == 2) {
-		val &= ~(0xc0);
-		val |= 0x80;
-		writel(val, 0x3103108);
+		clrsetbits_le32(0x3103108, 0xc0, 0x80);
 
-		val = readl(0x31030bc);
-		val &= 0xfffffef8;
-		val |= ((para->dram_tpr13 >> 16) & 0x1f) - 2;
-		val |= 0x100;
-		writel(val, 0x31030bc);
-
-		val = readl(0x310311c) & 0x7fffffff;
-		val |= 0x08000000;
-		writel(val, 0x310311c);
+		clrsetbits_le32(0x31030bc, 0x107,
+				(((para->dram_tpr13 >> 16) & 0x1f) - 2) | 0x100);
+		clrsetbits_le32(0x310311c, BIT(31), BIT(27));
 	} else {
-		val &= ~(0x40);
-		writel(val, 0x3103108);
-
+		clrbits_le32(0x3103108, 0x40);
 		udelay(10);
-
-		val = readl(0x3103108);
-		val |= 0xc0;
-		writel(val, 0x3103108);
+		setbits_le32(0x3103108, 0xc0);
 	}
 
-	if (para->dram_type == 6 || para->dram_type == 7) {
-		val = readl(0x310311c);
-		if (dqs_gating_mode == 1) {
-			val &= 0xf7ffff3f;
-			val |= 0x80000000;
-		} else {
-			val &= 0x88ffffff;
-			val |= 0x22000000;
-		}
-		writel(val, 0x310311c);
+	if (para->dram_type == SUNXI_DRAM_TYPE_LPDDR2 ||
+	    para->dram_type == SUNXI_DRAM_TYPE_LPDDR3) {
+		if (dqs_gating_mode == 1)
+			clrsetbits_le32(0x310311c, 0x080000c0, 0x80000000);
+		else
+			clrsetbits_le32(0x310311c, 0x77000000, 0x22000000);
 	}
 
-	val = readl(0x31030c0);
-	val &= 0xf0000000;
-	val |= (para->dram_para2 & (1 << 12)) ? 0x03000001 : 0x01000007; // 0x01003087 XXX
-	writel(val, 0x31030c0);
+	clrsetbits_le32(0x31030c0, 0x0fffffff,
+			(para->dram_para2 & BIT(12)) ? 0x03000001 : 0x01000007);
 
 	if (readl(0x70005d4) & (1 << 16)) {
-		val = readl(0x7010250);
-		val &= 0xfffffffd;
-		writel(val, 0x7010250);
-
+		clrbits_le32(0x7010250, 0x2);
 		udelay(10);
 	}
 
 	// Set ZQ config
-	val = readl(0x3103140) & 0xfc000000;
-	val |= para->dram_zq & 0x00ffffff;
-	val |= 0x02000000;
-	writel(val, 0x3103140);
+	clrsetbits_le32(0x3103140, 0x3ffffff,
+			(para->dram_zq & 0x00ffffff) | BIT(25));
 
 	// Initialise DRAM controller
 	if (dqs_gating_mode == 1) {
-		//		writel(0x52, 0x3103000); // prep PHY reset + PLL init + z-cal
+		//writel(0x52, 0x3103000); // prep PHY reset + PLL init + z-cal
 		writel(0x53, 0x3103000); // Go
 
 		while ((readl(0x3103010) & 0x1) == 0) {
@@ -947,67 +914,42 @@ static unsigned int mctl_channel_init(unsigned int ch_index, dram_para_t *para)
 		udelay(10);
 
 		// 0x520 = prep DQS gating + DRAM init + d-cal
-		//		val = (para->dram_type == 3) ? 0x5a0	// + DRAM reset
-		//					     : 0x520;
-
-		if (para->dram_type == 3) {
-			writel(0x5a0, 0x3103000);
-		} else {
+		if (para->dram_type == SUNXI_DRAM_TYPE_DDR3)
+			writel(0x5a0, 0x3103000);		// + DRAM reset
+		else
 			writel(0x520, 0x3103000);
-		}
-
 	} else {
 		if ((readl(0x70005d4) & (1 << 16)) == 0) {
 			// prep DRAM init + PHY reset + d-cal + PLL init + z-cal
-			//			val = (para->dram_type == 3) ? 0x1f2	// + DRAM reset
-			//						     : 0x172;
-
-			if (para->dram_type == 3) {
-				writel(0x1f2, 0x3103000);
-			} else {
+			if (para->dram_type == SUNXI_DRAM_TYPE_DDR3)
+				writel(0x1f2, 0x3103000);	// + DRAM reset
+			else
 				writel(0x172, 0x3103000);
-			}
 		} else {
 			// prep PHY reset + d-cal + z-cal
-			//			val = 0x62;
 			writel(0x62, 0x3103000);
 		}
 	}
 
-	//	writel(val, 0x3103000); // Prep
-	//	val |= 1;
-	//	writel(val, 0x3103000); // Go
-
-	writel(readl(0x3103000) | 1, 0x3103000); // GO
+	setbits_le32(0x3103000, 0x1);		 // GO
 
 	udelay(10);
 	while ((readl(0x3103010) & 0x1) == 0) {
 	} // wait for IDONE
 
 	if (readl(0x70005d4) & (1 << 16)) {
-		val = readl(0x310310c);
-		val &= 0xf9ffffff;
-		val |= 0x04000000;
-		writel(val, 0x310310c);
-
+		clrsetbits_le32(0x310310c, 0x06000000, 0x04000000);
 		udelay(10);
 
-		val = readl(0x3103004);
-		val |= 0x1;
-		writel(val, 0x3103004);
+		setbits_le32(0x3103004, 0x1);
 
 		while ((readl(0x3103018) & 0x7) != 0x3) {
 		}
 
-		val = readl(0x7010250);
-		val &= 0xfffffffe;
-		writel(val, 0x7010250);
-
+		clrbits_le32(0x7010250, 0x1);
 		udelay(10);
 
-		val = readl(0x3103004);
-		val &= 0xfffffffe;
-		writel(val, 0x3103004);
+		clrbits_le32(0x3103004, 0x1);
 
 		while ((readl(0x3103018) & 0x7) != 0x1) {
 		}
@@ -1015,15 +957,8 @@ static unsigned int mctl_channel_init(unsigned int ch_index, dram_para_t *para)
 		udelay(15);
 
 		if (dqs_gating_mode == 1) {
-			val = readl(0x3103108);
-			val &= 0xffffff3f;
-			writel(val, 0x3103108);
-
-			val = readl(0x310310c);
-			val &= 0xf9ffffff;
-			val |= 0x02000000;
-			writel(val, 0x310310c);
-
+			clrbits_le32(0x3103108, 0xc0);
+			clrsetbits_le32(0x310310c, 0x06000000, 0x02000000);
 			udelay(1);
 			writel(0x401, 0x3103000);
 
@@ -1033,56 +968,26 @@ static unsigned int mctl_channel_init(unsigned int ch_index, dram_para_t *para)
 	}
 
 	// Check for training error
-	/*	val = readl(0x3103010);
-		if (((val >> 20) & 0xff) && (val & 0x100000)) {
-			printf("ZQ calibration error, check external 240 ohm resistor.\r\n");
-			return 0;
-		}
-	*/
-	if ((readl(0x3103010) & 0xff00000) == 0) {
-		val = 1;
-
-	} else {
-		val = (readl(0x3103010) & 0x100000);
-
-		if (val != 0) {
-			printf("ZQ calibration error, check external 240 ohm resistor\n");
-			return 0;
-		}
+	if (readl(0x3103010) & BIT(20)) {
+		printf("ZQ calibration error, check external 240 ohm resistor\n");
+		return 0;
 	}
 
 	// STATR = Zynq STAT? Wait for status 'normal'?
 	while ((readl(0x3103018) & 0x1) == 0) {
 	}
 
-	val = readl(0x310308c);
-	val |= 0x80000000;
-	writel(val, 0x310308c);
-
+	setbits_le32(0x310308c, BIT(31));
+	udelay(10);
+	clrbits_le32(0x310308c, BIT(31));
+	udelay(10);
+	setbits_le32(0x3102014, BIT(31));
 	udelay(10);
 
-	val = readl(0x310308c);
-	val &= 0x7fffffff;
-	writel(val, 0x310308c);
+	clrbits_le32(0x310310c, 0x06000000);
 
-	udelay(10);
-
-	val = readl(0x3102014);
-	val |= 0x80000000;
-	writel(val, 0x3102014);
-
-	udelay(10);
-
-	val = readl(0x310310c);
-	val &= 0xf9ffffff;
-	writel(val, 0x310310c);
-
-	if (dqs_gating_mode == 1) {
-		val = readl(0x310311c);
-		val &= 0xffffff3f;
-		val |= 0x00000040;
-		writel(val, 0x310311c);
-	}
+	if (dqs_gating_mode == 1)
+		clrsetbits_le32(0x310311c, 0xc0, 0x40);
 
 	return 1;
 }
