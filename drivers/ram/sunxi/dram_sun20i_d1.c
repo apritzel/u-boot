@@ -83,7 +83,7 @@ static void dram_voltage_set(dram_para_t *para)
 
 static void dram_enable_all_master(void)
 {
-	writel(-1, 0x3102020);
+	writel(~0, 0x3102020);
 	writel(0xff, 0x3102024);
 	writel(0xffff, 0x3102028);
 	udelay(10);
