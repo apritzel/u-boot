@@ -5,6 +5,8 @@
 #include <common.h>
 #include <linux/delay.h>
 
+#define write32(addr, val) writel((val), (addr))
+
 #else						/* !__UBOOT__ => awboot */
 
 #include <stdint.h>
