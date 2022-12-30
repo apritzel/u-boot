@@ -16,6 +16,8 @@
 #define udelay(c)		sdelay(c)
 #define printf			debug
 
+#define CONFIG_SYS_SDRAM_BASE	SDRAM_BASE
+
 #endif
 
 static char *memcpy_self(char *dst, char *src, int len)
@@ -1224,13 +1226,13 @@ static int dramc_simple_wr_test(uint mem_mb, int len)
 	unsigned int  patt2 = 0xfedcba98;
 	unsigned int *addr, v1, v2, i;
 
-	addr = (unsigned int *)SDRAM_BASE;
+	addr = (unsigned int *)CONFIG_SYS_SDRAM_BASE;
 	for (i = 0; i != len; i++, addr++) {
 		write32((virtual_addr_t)addr, patt1 + i);
 		write32((virtual_addr_t)(addr + offs), patt2 + i);
 	}
 
-	addr = (unsigned int *)SDRAM_BASE;
+	addr = (unsigned int *)CONFIG_SYS_SDRAM_BASE;
 	for (i = 0; i != len; i++) {
 		v1 = readl((virtual_addr_t)(addr + i));
 		v2 = patt1 + i;
@@ -1313,7 +1315,7 @@ static int auto_scan_dram_size(dram_para_t *para) // s7
 	offs		 = 0;
 
 	// write test pattern
-	for (i = 0, ptr = SDRAM_BASE; i < 64; i++, ptr += 4) {
+	for (i = 0, ptr = CONFIG_SYS_SDRAM_BASE; i < 64; i++, ptr += 4) {
 		write32(ptr, (i & 1) ? ptr : ~ptr);
 	}
 
@@ -1329,8 +1331,8 @@ static int auto_scan_dram_size(dram_para_t *para) // s7
 
 		// Scan per address line, until address wraps (i.e. see shadow)
 		for (i = 11; i < 17; i++) {
-			chk = SDRAM_BASE + (1 << (i + 11));
-			ptr = SDRAM_BASE;
+			chk = CONFIG_SYS_SDRAM_BASE + (1 << (i + 11));
+			ptr = CONFIG_SYS_SDRAM_BASE;
 			for (j = 0; j < 64; j++) {
 				if (readl(chk) != ((j & 1) ? ptr : ~ptr))
 					goto out1;
@@ -1368,8 +1370,8 @@ static int auto_scan_dram_size(dram_para_t *para) // s7
 			;
 
 		// Test if bit A23 is BA2 or mirror XXX A22?
-		chk = SDRAM_BASE + (1 << 22);
-		ptr = SDRAM_BASE;
+		chk = CONFIG_SYS_SDRAM_BASE + (1 << 22);
+		ptr = CONFIG_SYS_SDRAM_BASE;
 		for (i = 0, j = 0; i < 64; i++) {
 			if (readl(chk) != ((i & 1) ? ptr : ~ptr)) {
 				j = 1;
@@ -1406,8 +1408,8 @@ static int auto_scan_dram_size(dram_para_t *para) // s7
 
 		// Scan per address line, until address wraps (i.e. see shadow)
 		for (i = 9; i < 14; i++) {
-			chk = SDRAM_BASE + (1 << i);
-			ptr = SDRAM_BASE;
+			chk = CONFIG_SYS_SDRAM_BASE + (1 << i);
+			ptr = CONFIG_SYS_SDRAM_BASE;
 			for (j = 0; j < 64; j++) {
 				if (readl(chk) != ((j & 1) ? ptr : ~ptr))
 					goto out2;
