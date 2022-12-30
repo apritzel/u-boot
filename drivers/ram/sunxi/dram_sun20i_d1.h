@@ -55,4 +55,13 @@ typedef struct dram_para {
 	u32	dram_tpr13;
 } dram_para_t;
 
+static inline int ns_to_t(int nanoseconds)
+{
+	const unsigned int ctrl_freq = CONFIG_DRAM_CLK / 2;
+
+	return DIV_ROUND_UP(ctrl_freq * nanoseconds, 1000);
+}
+
+void mctl_set_timing_params(struct dram_para *para);
+
 #endif /* _SUNXI_DRAM_SUN20I_D1_H */
