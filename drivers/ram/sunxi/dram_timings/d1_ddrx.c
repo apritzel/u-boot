@@ -14,7 +14,6 @@
 void mctl_set_timing_params(dram_para_t *para)
 {
 	unsigned int type; // s8
-	unsigned int tpr13; // 80(sp)
 	unsigned int reg_val;
 
 	unsigned char  tccd; // 88(sp)
@@ -32,10 +31,8 @@ void mctl_set_timing_params(dram_para_t *para)
 	unsigned short trfc; // a5 / 8(sp)
 
 	type  = para->dram_type;
-	tpr13 = para->dram_tpr13;
 
 	// trace("type  = %d\r\n", type);
-	// trace("tpr13 = %p\r\n", tpr13);
 
 	if (para->dram_tpr13 & 0x2) {
 		// dram_tpr0
@@ -276,7 +273,7 @@ void mctl_set_timing_params(dram_para_t *para)
 			tdinit2 = 200 * CONFIG_DRAM_CLK + 1; // 200 us
 			tdinit3 = 1 * CONFIG_DRAM_CLK + 1; //   1 us
 
-			if (((tpr13 >> 2) & 0x03) == 0x01 || CONFIG_DRAM_CLK < 912) {
+			if (((para->dram_tpr13 >> 2) & 0x03) == 0x01 || CONFIG_DRAM_CLK < 912) {
 				mr1		   = dmr1;
 				t_rdata_en = tcwl; // a5 <- a4
 				tcksrx	   = 5;
