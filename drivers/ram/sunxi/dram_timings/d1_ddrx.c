@@ -32,6 +32,32 @@ void mctl_set_timing_params(dram_para_t *para)
 	u16 trefi;
 	u16 trfc;
 
+	u8 tcksrx;
+	u8 tckesr;
+	u8 trd2wr;
+	u8 twr2rd;
+	u8 trasmax;
+	u8 twtp;
+	u8 tcke;
+	u8 tmod;
+	u8 tmrd;
+	u8 tmrw;
+
+	u8 tcl;
+	u8 tcwl;
+	u8 t_rdata_en;
+	u8 wr_latency;
+
+	u32 mr0;
+	u32 mr1;
+	u32 mr2;
+	u32 mr3;
+
+	u32 tdinit0;
+	u32 tdinit1;
+	u32 tdinit2;
+	u32 tdinit3;
+
 	if (para->dram_tpr13 & 0x2) {
 		// dram_tpr0
 		tccd = ((para->dram_tpr0 >> 21) & 0x7); // [23:21]
@@ -167,30 +193,6 @@ void mctl_set_timing_params(dram_para_t *para)
 		tccd			= 2;
 		trtp			= 4; // not in .S ?
 	}
-
-	unsigned int tcksrx; // t1
-	unsigned int tckesr; // t4;
-	unsigned int trd2wr; // t6
-	unsigned int trasmax; // t3;
-	unsigned int twtp; // s6 (was twr!)
-	unsigned int tcke; // s8
-	unsigned int tmod; // t0
-	unsigned int tmrd; // t5
-	unsigned int tmrw; // a1
-	unsigned int t_rdata_en; // a4 (was tcwl!)
-	unsigned int tcl; // a0
-	unsigned int wr_latency; // a7
-	unsigned int tcwl; // first a4, then a5
-	unsigned int mr3; // s0
-	unsigned int mr2; // t2
-	unsigned int mr1; // s1
-	unsigned int mr0; // a3
-	// unsigned int trtp;	// 64(sp)
-	unsigned int twr2rd; // 48(sp)
-	unsigned int tdinit3; // 40(sp)
-	unsigned int tdinit2; // 32(sp)
-	unsigned int tdinit1; // 24(sp)
-	unsigned int tdinit0; // 16(sp)
 
 	switch (para->dram_type) {
 #if 1
