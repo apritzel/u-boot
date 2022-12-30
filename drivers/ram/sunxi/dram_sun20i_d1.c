@@ -28,6 +28,7 @@
 	write32((addr), read32(addr) & ~(clear))
 
 #define CONFIG_SYS_SDRAM_BASE	SDRAM_BASE
+#define CONFIG_DRAM_CLK		156
 
 static int ns_to_t(int nanoseconds)
 {

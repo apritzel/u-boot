@@ -7,13 +7,6 @@
 #include <common.h>
 #include "../dram_sun20i_d1.h"
 
-static int auto_cal_timing(unsigned int time, unsigned int freq)
-{
-	unsigned int t = time * freq;
-
-	return (t / 1000) + (((t % 1000) != 0) ? 1 : 0);
-}
-
 // Main purpose of the auto_set_timing routine seems to be to calculate all
 // timing settings for the specific type of sdram used. Read together with
 // an sdram datasheet for context on the various variables.
@@ -64,14 +57,12 @@ void mctl_set_timing_params(dram_para_t *para)
 		trfc  = ((para->dram_tpr2 >> 12) & 0x1ff); // [20:12]
 		trefi = ((para->dram_tpr2 >> 0) & 0xfff); // [11:0 ]
 	} else {
-		unsigned int frq2 = freq >> 1; // s0
-
 		if (type == 3) {
 			// DDR3
-			trfc  = auto_cal_timing(350, frq2);
-			trefi = auto_cal_timing(7800, frq2) / 32 + 1; // XXX
-			twr	  = auto_cal_timing(8, frq2);
-			trcd  = auto_cal_timing(15, frq2);
+			trfc  = ns_to_t(350);
+			trefi = ns_to_t(7800) / 32 + 1; // XXX
+			twr	  = ns_to_t(8);
+			trcd  = ns_to_t(15);
 			twtr  = twr + 2; // + 2 ? XXX
 			if (twr < 2)
 				twtr = 2;
@@ -79,52 +70,52 @@ void mctl_set_timing_params(dram_para_t *para)
 			if (trcd < 2)
 				twr = 2;
 			if (freq <= 800) {
-				tfaw = auto_cal_timing(50, frq2);
-				trrd = auto_cal_timing(10, frq2);
+				tfaw = ns_to_t(50);
+				trrd = ns_to_t(10);
 				if (trrd < 2)
 					trrd = 2;
-				trc	 = auto_cal_timing(53, frq2);
-				tras = auto_cal_timing(38, frq2);
+				trc	 = ns_to_t(53);
+				tras = ns_to_t(38);
 				txp	 = trrd; // 10
 				trp	 = trcd; // 15
 			} else {
-				tfaw = auto_cal_timing(35, frq2);
-				trrd = auto_cal_timing(10, frq2);
+				tfaw = ns_to_t(35);
+				trrd = ns_to_t(10);
 				if (trrd < 2)
 					trrd = 2;
-				trcd = auto_cal_timing(14, frq2);
-				trc	 = auto_cal_timing(48, frq2);
-				tras = auto_cal_timing(34, frq2);
+				trcd = ns_to_t(14);
+				trc	 = ns_to_t(48);
+				tras = ns_to_t(34);
 				txp	 = trrd; // 10
 				trp	 = trcd; // 14
 			}
 #if 1
 		} else if (type == 2) {
 			// DDR2
-			tfaw  = auto_cal_timing(50, frq2);
-			trrd  = auto_cal_timing(10, frq2);
-			trcd  = auto_cal_timing(20, frq2);
-			trc	  = auto_cal_timing(65, frq2);
-			twtr  = auto_cal_timing(8, frq2);
-			trp	  = auto_cal_timing(15, frq2);
-			tras  = auto_cal_timing(45, frq2);
-			trefi = auto_cal_timing(7800, frq2) / 32;
-			trfc  = auto_cal_timing(328, frq2);
+			tfaw  = ns_to_t(50);
+			trrd  = ns_to_t(10);
+			trcd  = ns_to_t(20);
+			trc	  = ns_to_t(65);
+			twtr  = ns_to_t(8);
+			trp	  = ns_to_t(15);
+			tras  = ns_to_t(45);
+			trefi = ns_to_t(7800) / 32;
+			trfc  = ns_to_t(328);
 			txp	  = 2;
 			twr	  = trp; // 15
 		} else if (type == 6) {
 			// LPDDR2
-			tfaw = auto_cal_timing(50, frq2);
+			tfaw = ns_to_t(50);
 			if (tfaw < 4)
 				tfaw = 4;
-			trrd = auto_cal_timing(10, frq2);
+			trrd = ns_to_t(10);
 			if (trrd == 0)
 				trrd = 1;
-			trcd = auto_cal_timing(24, frq2);
+			trcd = ns_to_t(24);
 			if (trcd < 2)
 				trcd = 2;
-			trc = auto_cal_timing(70, frq2);
-			txp = auto_cal_timing(8, frq2);
+			trc = ns_to_t(70);
+			txp = ns_to_t(8);
 			if (txp == 0) {
 				txp	 = 1;
 				twtr = 2;
@@ -135,35 +126,35 @@ void mctl_set_timing_params(dram_para_t *para)
 					twtr = 2;
 				}
 			}
-			twr = auto_cal_timing(15, frq2);
+			twr = ns_to_t(15);
 			if (twr < 2)
 				twr = 2;
-			trp	  = auto_cal_timing(17, frq2);
-			tras  = auto_cal_timing(42, frq2);
-			trefi = auto_cal_timing(3900, frq2) / 32;
-			trfc  = auto_cal_timing(210, frq2);
+			trp	  = ns_to_t(17);
+			tras  = ns_to_t(42);
+			trefi = ns_to_t(3900) / 32;
+			trfc  = ns_to_t(210);
 		} else if (type == 7) {
 			// LPDDR3
-			tfaw = auto_cal_timing(50, frq2);
+			tfaw = ns_to_t(50);
 			if (tfaw < 4)
 				tfaw = 4;
-			trrd = auto_cal_timing(10, frq2);
+			trrd = ns_to_t(10);
 			if (trrd == 0)
 				trrd = 1;
-			trcd = auto_cal_timing(24, frq2);
+			trcd = ns_to_t(24);
 			if (trcd < 2)
 				trcd = 2;
-			trc	 = auto_cal_timing(70, frq2);
-			twtr = auto_cal_timing(8, frq2);
+			trc	 = ns_to_t(70);
+			twtr = ns_to_t(8);
 			if (twtr < 2)
 				twtr = 2;
-			twr = auto_cal_timing(15, frq2);
+			twr = ns_to_t(15);
 			if (twr < 2)
 				twr = 2;
-			trp	  = auto_cal_timing(17, frq2);
-			tras  = auto_cal_timing(42, frq2);
-			trefi = auto_cal_timing(3900, frq2) / 32;
-			trfc  = auto_cal_timing(210, frq2);
+			trp	  = ns_to_t(17);
+			tras  = ns_to_t(42);
+			trefi = ns_to_t(3900) / 32;
+			trfc  = ns_to_t(210);
 			txp	  = twtr;
 #endif
 		} else {
