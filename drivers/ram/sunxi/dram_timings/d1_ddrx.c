@@ -186,17 +186,12 @@ void mctl_set_timing_params(dram_para_t *para)
 	unsigned int mr2; // t2
 	unsigned int mr1; // s1
 	unsigned int mr0; // a3
-	unsigned int dmr3; // 72(sp)
 	// unsigned int trtp;	// 64(sp)
-	unsigned int dmr1; // 56(sp)
 	unsigned int twr2rd; // 48(sp)
 	unsigned int tdinit3; // 40(sp)
 	unsigned int tdinit2; // 32(sp)
 	unsigned int tdinit1; // 24(sp)
 	unsigned int tdinit0; // 16(sp)
-
-	dmr1 = para->dram_mr1;
-	dmr3 = para->dram_mr3;
 
 	switch (type) {
 #if 1
@@ -229,7 +224,7 @@ void mctl_set_timing_params(dram_para_t *para)
 			tmrw	   = 0;
 			twr2rd	   = twtr + 5;
 			tcwl	   = 0;
-			mr1		   = dmr1;
+			mr1		   = para->dram_mr1;
 			break;
 		}
 #endif
@@ -260,13 +255,13 @@ void mctl_set_timing_params(dram_para_t *para)
 			tdinit3 = 1 * CONFIG_DRAM_CLK + 1; //   1 us
 
 			if (((para->dram_tpr13 >> 2) & 0x03) == 0x01 || CONFIG_DRAM_CLK < 912) {
-				mr1		   = dmr1;
+				mr1		   = para->dram_mr1;
 				t_rdata_en = tcwl; // a5 <- a4
 				tcksrx	   = 5;
 				tckesr	   = 4;
 				trd2wr	   = 5;
 			} else {
-				mr1		   = dmr1;
+				mr1		   = para->dram_mr1;
 				t_rdata_en = tcwl; // a5 <- a4
 				tcksrx	   = 5;
 				tckesr	   = 4;
@@ -283,7 +278,7 @@ void mctl_set_timing_params(dram_para_t *para)
 		case 6: // LPDDR2
 		{
 			trasmax	   = CONFIG_DRAM_CLK / 60;
-			mr3		   = dmr3;
+			mr3		   = para->dram_mr3;
 			twtp	   = twr + 5;
 			mr2		   = 6;
 			mr1		   = 5;
@@ -325,7 +320,7 @@ void mctl_set_timing_params(dram_para_t *para)
 			}
 			twtp	= tcwl + 5;
 			tcl		= 7;
-			mr3		= dmr3;
+			mr3		= para->dram_mr3;
 			tcksrx	= 5;
 			tckesr	= 5;
 			trd2wr	= 13;
