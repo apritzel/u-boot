@@ -167,15 +167,6 @@ void mctl_set_timing_params(dram_para_t *para)
 		}
 		tccd			= 2;
 		trtp			= 4; // not in .S ?
-
-		uint32_t tref = (para->dram_tpr4 << 0x10) >> 0x1c;
-		if (tref == 1) {
-			debug("trefi:3.9ms\n");
-		} else if (tref == 2) {
-			debug("trefi:1.95ms\n");
-		} else {
-			debug("trefi:7.8ms\n");
-		}
 	}
 
 	unsigned int tcksrx; // t1
