@@ -3,6 +3,7 @@
 #ifdef __UBOOT__
 #include <asm/io.h>
 #include <common.h>
+#include <linux/delay.h>
 
 #else						/* !__UBOOT__ => awboot */
 
@@ -12,6 +13,7 @@
 #include "main.h"
 
 #define readl(addr)		read32(addr)
+#define udelay(c)		sdelay(c)
 
 #endif
 
@@ -73,7 +75,7 @@ void dram_vol_set(dram_para_t *para)
 	*/
 	write32(0x3000150, reg);
 
-	sdelay(1);
+	udelay(1);
 
 	sid_read_ldoB_cal(para);
 }
@@ -83,7 +85,7 @@ void dram_enable_all_master(void)
 	write32(0x3102020, -1);
 	write32(0x3102024, 0xff);
 	write32(0x3102028, 0xffff);
-	sdelay(10);
+	udelay(10);
 }
 
 void dram_disable_all_master(void)
@@ -91,7 +93,7 @@ void dram_disable_all_master(void)
 	write32(0x3102020, 1);
 	write32(0x3102024, 0);
 	write32(0x3102028, 0);
-	sdelay(10);
+	udelay(10);
 }
 
 void eye_delay_compensation(dram_para_t *para) // s1
@@ -153,7 +155,7 @@ void eye_delay_compensation(dram_para_t *para) // s1
 	val |= 0x04000000;
 	write32(0x3103100, val);
 
-	sdelay(1);
+	udelay(1);
 
 	for (ptr = 0x3103240; ptr != 0x310327c; ptr += 4) {
 		val = readl(ptr);
@@ -648,7 +650,7 @@ int ccu_set_pll_ddr_clk(int index, dram_para_t *para)
 		;
 	}
 
-	sdelay(20);
+	udelay(20);
 
 	// enable PLL output
 	val = readl(0x2001000);
@@ -679,12 +681,12 @@ void mctl_sys_init(dram_para_t *para)
 	// turn off sdram clock gate, assert sdram reset
 	write32(0x200180c, readl(0x200180c) & 0xfffefffe);
 	write32(0x2001800, (readl(0x2001800) & 0x3fffffff) | 0x8000000);
-	sdelay(10);
+	udelay(10);
 
 	// set ddr pll clock
 	val			   = ccu_set_pll_ddr_clk(0, para);
 	para->dram_clk = val >> 1;
-	sdelay(100);
+	udelay(100);
 	dram_disable_all_master();
 
 	// release sdram reset
@@ -694,18 +696,18 @@ void mctl_sys_init(dram_para_t *para)
 	write32(0x2001540, readl(0x2001540) | 0x40000000);
 	write32(0x2001800, readl(0x2001800) | 0x40000000);
 
-	sdelay(5);
+	udelay(5);
 
 	// turn on sdram clock gate
 	write32(0x200180c, readl(0x200180c) | 0x1);
 
 	// turn dram clock gate on, trigger sdr clock update
 	write32(0x2001800, readl(0x2001800) | 0x88000000);
-	sdelay(5);
+	udelay(5);
 
 	// mCTL clock enable
 	write32(0x310300c, 0x8000);
-	sdelay(10);
+	udelay(10);
 }
 
 // The main purpose of this routine seems to be to copy an address configuration
@@ -937,7 +939,7 @@ unsigned int mctl_channel_init(unsigned int ch_index, dram_para_t *para)
 		val &= ~(0x40);
 		write32(0x3103108, val);
 
-		sdelay(10);
+		udelay(10);
 
 		val = readl(0x3103108);
 		val |= 0xc0;
@@ -966,7 +968,7 @@ unsigned int mctl_channel_init(unsigned int ch_index, dram_para_t *para)
 		val &= 0xfffffffd;
 		write32(0x7010250, val);
 
-		sdelay(10);
+		udelay(10);
 	}
 
 	// Set ZQ config
@@ -982,7 +984,7 @@ unsigned int mctl_channel_init(unsigned int ch_index, dram_para_t *para)
 
 		while ((readl(0x3103010) & 0x1) == 0) {
 		} // wait for IDONE
-		sdelay(10);
+		udelay(10);
 
 		// 0x520 = prep DQS gating + DRAM init + d-cal
 		//		val = (para->dram_type == 3) ? 0x5a0	// + DRAM reset
@@ -1018,7 +1020,7 @@ unsigned int mctl_channel_init(unsigned int ch_index, dram_para_t *para)
 
 	write32(0x3103000, readl(0x3103000) | 1); // GO
 
-	sdelay(10);
+	udelay(10);
 	while ((readl(0x3103010) & 0x1) == 0) {
 	} // wait for IDONE
 
@@ -1028,7 +1030,7 @@ unsigned int mctl_channel_init(unsigned int ch_index, dram_para_t *para)
 		val |= 0x04000000;
 		write32(0x310310c, val);
 
-		sdelay(10);
+		udelay(10);
 
 		val = readl(0x3103004);
 		val |= 0x1;
@@ -1041,7 +1043,7 @@ unsigned int mctl_channel_init(unsigned int ch_index, dram_para_t *para)
 		val &= 0xfffffffe;
 		write32(0x7010250, val);
 
-		sdelay(10);
+		udelay(10);
 
 		val = readl(0x3103004);
 		val &= 0xfffffffe;
@@ -1050,7 +1052,7 @@ unsigned int mctl_channel_init(unsigned int ch_index, dram_para_t *para)
 		while ((readl(0x3103018) & 0x7) != 0x1) {
 		}
 
-		sdelay(15);
+		udelay(15);
 
 		if (dqs_gating_mode == 1) {
 			val = readl(0x3103108);
@@ -1062,7 +1064,7 @@ unsigned int mctl_channel_init(unsigned int ch_index, dram_para_t *para)
 			val |= 0x02000000;
 			write32(0x310310c, val);
 
-			sdelay(1);
+			udelay(1);
 			write32(0x3103000, 0x401);
 
 			while ((readl(0x3103010) & 0x1) == 0) {
@@ -1097,19 +1099,19 @@ unsigned int mctl_channel_init(unsigned int ch_index, dram_para_t *para)
 	val |= 0x80000000;
 	write32(0x310308c, val);
 
-	sdelay(10);
+	udelay(10);
 
 	val = readl(0x310308c);
 	val &= 0x7fffffff;
 	write32(0x310308c, val);
 
-	sdelay(10);
+	udelay(10);
 
 	val = readl(0x3102014);
 	val |= 0x80000000;
 	write32(0x3102014, val);
 
-	sdelay(10);
+	udelay(10);
 
 	val = readl(0x310310c);
 	val &= 0xf9ffffff;
@@ -1519,15 +1521,15 @@ int init_DRAM(int type, dram_para_t *para) // s0
 		trace("DRAM only have internal ZQ!!\r\n");
 		write32(0x3000160, readl(0x3000160) | 0x100);
 		write32(0x3000168, 0);
-		sdelay(10);
+		udelay(10);
 	} else {
 		write32(0x3000160, readl(0x3000160) & 0xfffffffc);
 		write32(0x7010254, para->dram_tpr13 & 0x10000);
-		sdelay(10);
+		udelay(10);
 		write32(0x3000160, (readl(0x3000160) & 0xfffffef7) | 2);
-		sdelay(10);
+		udelay(10);
 		write32(0x3000160, readl(0x3000160) | 0x001);
-		sdelay(20);
+		udelay(20);
 		trace("ZQ value = 0x%x\r\n", read32(0x300016c));
 	}
 
