@@ -58,7 +58,8 @@ void mctl_set_timing_params(dram_para_t *para)
 	u32 tdinit2;
 	u32 tdinit3;
 
-	if (para->dram_type == 2) {			// DDR2
+	switch (para->dram_type) {
+	case SUNXI_DRAM_TYPE_DDR2:
 		tfaw  = ns_to_t(50);
 		trrd  = ns_to_t(10);
 		trcd  = ns_to_t(20);
@@ -70,7 +71,9 @@ void mctl_set_timing_params(dram_para_t *para)
 		trfc  = ns_to_t(328);
 		txp	  = 2;
 		twr	  = trp; // 15
-	} else if (para->dram_type == 3) {		// DDR3
+
+		break;
+	case SUNXI_DRAM_TYPE_DDR3:
 		trfc  = ns_to_t(350);
 		trefi = ns_to_t(7800) / 32 + 1; // XXX
 		twr	  = ns_to_t(8);
@@ -101,8 +104,9 @@ void mctl_set_timing_params(dram_para_t *para)
 			txp	 = trrd; // 10
 			trp	 = trcd; // 14
 		}
-	} else if (para->dram_type == 6) {
-		// LPDDR2
+
+		break;
+	case SUNXI_DRAM_TYPE_LPDDR2:
 		tfaw = ns_to_t(50);
 		if (tfaw < 4)
 			tfaw = 4;
@@ -131,8 +135,9 @@ void mctl_set_timing_params(dram_para_t *para)
 		tras  = ns_to_t(42);
 		trefi = ns_to_t(3900) / 32;
 		trfc  = ns_to_t(210);
-	} else if (para->dram_type == 7) {
-		// LPDDR3
+
+		break;
+	case SUNXI_DRAM_TYPE_LPDDR3:
 		tfaw = ns_to_t(50);
 		if (tfaw < 4)
 			tfaw = 4;
@@ -154,8 +159,9 @@ void mctl_set_timing_params(dram_para_t *para)
 		trefi = ns_to_t(3900) / 32;
 		trfc  = ns_to_t(210);
 		txp	  = twtr;
-	} else {
-		// default
+
+		break;
+	default:
 		trfc  = 128;
 		trp	  = 6;
 		trefi = 98;
@@ -167,6 +173,8 @@ void mctl_set_timing_params(dram_para_t *para)
 		trc	  = 20;
 		trcd  = 6;
 		trrd  = 3;
+
+		break;
 	}
 
 	switch (para->dram_type) {
