@@ -13,19 +13,24 @@
 //
 void mctl_set_timing_params(dram_para_t *para)
 {
-	unsigned char  tccd; // 88(sp)
-	unsigned char  trrd; // s7
-	unsigned char  trcd; // s3
-	unsigned char  trc; // s9
-	unsigned char  tfaw; // s10
-	unsigned char  tras; // s11
-	unsigned char  trp; // 0(sp)
-	unsigned char  twtr; // s1
-	unsigned char  twr; // s6
-	unsigned char  trtp; // 64(sp)
-	unsigned char  txp; // a6
-	unsigned short trefi; // s2
-	unsigned short trfc; // a5 / 8(sp)
+	/* DRAM_TPR0 */
+	u8 tccd;
+	u8 tfaw;
+	u8 trrd;
+	u8 trcd;
+	u8 trc;
+
+	/* DRAM_TPR1 */
+	u8 txp;
+	u8 twtr;
+	u8 trtp;
+	u8 twr;
+	u8 trp;
+	u8 tras;
+
+	/* DRAM_TPR2 */
+	u16 trefi;
+	u16 trfc;
 
 	if (para->dram_tpr13 & 0x2) {
 		// dram_tpr0
