@@ -101,7 +101,8 @@ static void dram_disable_all_master(void)
 
 static void eye_delay_compensation(dram_para_t *para) // s1
 {
-	unsigned int val, ptr;
+	unsigned int val;
+	unsigned long ptr;
 
 	// DATn0IOCR, n =  0...7
 	for (ptr = 0x3103310; ptr != 0x3103334; ptr += 4) {
@@ -720,7 +721,8 @@ static void mctl_sys_init(dram_para_t *para)
 //
 static void mctl_com_init(dram_para_t *para)
 {
-	unsigned int val, end, ptr;
+	unsigned int val, end;
+	unsigned long ptr;
 	int			 i;
 
 	// purpose ??
@@ -1302,8 +1304,9 @@ static int mctl_core_init(dram_para_t *para)
 //
 static int auto_scan_dram_size(dram_para_t *para) // s7
 {
-	unsigned int rval, i, j, rank, maxrank, offs, mc_work_mode;
-	unsigned int chk, ptr, shft;
+	unsigned int rval, i, j, rank, maxrank, offs;
+	unsigned int shft;
+	unsigned long ptr, mc_work_mode, chk;
 
 	if (mctl_core_init(para) == 0) {
 		printf("DRAM initialisation error : 0\n");
