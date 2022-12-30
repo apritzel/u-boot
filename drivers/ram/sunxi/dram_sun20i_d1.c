@@ -1228,20 +1228,20 @@ static int dramc_simple_wr_test(uint mem_mb, int len)
 
 	addr = (unsigned int *)CONFIG_SYS_SDRAM_BASE;
 	for (i = 0; i != len; i++, addr++) {
-		write32((virtual_addr_t)addr, patt1 + i);
-		write32((virtual_addr_t)(addr + offs), patt2 + i);
+		write32((unsigned long)addr, patt1 + i);
+		write32((unsigned long)(addr + offs), patt2 + i);
 	}
 
 	addr = (unsigned int *)CONFIG_SYS_SDRAM_BASE;
 	for (i = 0; i != len; i++) {
-		v1 = readl((virtual_addr_t)(addr + i));
+		v1 = readl((unsigned long)(addr + i));
 		v2 = patt1 + i;
 		if (v1 != v2) {
 			printf("DRAM: simple test FAIL\n");
 			printf("%x != %x at address %p\n", v1, v2, addr + i);
 			return 1;
 		}
-		v1 = readl((virtual_addr_t)(addr + offs + i));
+		v1 = readl((unsigned long)(addr + offs + i));
 		v2 = patt2 + i;
 		if (v1 != v2) {
 			printf("DRAM: simple test FAIL\n");
