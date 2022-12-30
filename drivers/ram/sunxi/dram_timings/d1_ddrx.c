@@ -13,7 +13,6 @@
 //
 void mctl_set_timing_params(dram_para_t *para)
 {
-	unsigned int freq; // s4
 	unsigned int type; // s8
 	unsigned int tpr13; // 80(sp)
 	unsigned int reg_val;
@@ -32,7 +31,6 @@ void mctl_set_timing_params(dram_para_t *para)
 	unsigned short trefi; // s2
 	unsigned short trfc; // a5 / 8(sp)
 
-	freq  = para->dram_clk;
 	type  = para->dram_type;
 	tpr13 = para->dram_tpr13;
 
@@ -69,7 +67,7 @@ void mctl_set_timing_params(dram_para_t *para)
 			twr = trcd;
 			if (trcd < 2)
 				twr = 2;
-			if (freq <= 800) {
+			if (CONFIG_DRAM_CLK <= 800) {
 				tfaw = ns_to_t(50);
 				trrd = ns_to_t(10);
 				if (trrd < 2)
@@ -221,8 +219,8 @@ void mctl_set_timing_params(dram_para_t *para)
 #if 1
 		case 2: // DDR2
 		{
-			trasmax = freq / 30;
-			if (freq < 409) {
+			trasmax = CONFIG_DRAM_CLK / 30;
+			if (CONFIG_DRAM_CLK < 409) {
 				tcl		   = 3;
 				t_rdata_en = 1;
 				mr0		   = 0x06a3;
@@ -241,10 +239,10 @@ void mctl_set_timing_params(dram_para_t *para)
 			wr_latency = 1;
 			mr3		   = 0;
 			mr2		   = 0;
-			tdinit0	   = 200 * freq + 1;
-			tdinit1	   = 100 * freq / 1000 + 1;
-			tdinit2	   = 200 * freq + 1;
-			tdinit3	   = 1 * freq + 1;
+			tdinit0	   = 200 * CONFIG_DRAM_CLK + 1;
+			tdinit1	   = 100 * CONFIG_DRAM_CLK / 1000 + 1;
+			tdinit2	   = 200 * CONFIG_DRAM_CLK + 1;
+			tdinit3	   = 1 * CONFIG_DRAM_CLK + 1;
 			tmrw	   = 0;
 			twr2rd	   = twtr + 5;
 			tcwl	   = 0;
@@ -254,8 +252,8 @@ void mctl_set_timing_params(dram_para_t *para)
 #endif
 		case 3: // DDR3
 		{
-			trasmax = freq / 30;
-			if (freq <= 800) {
+			trasmax = CONFIG_DRAM_CLK / 30;
+			if (CONFIG_DRAM_CLK <= 800) {
 				mr0		   = 0x1c70;
 				tcl		   = 6;
 				wr_latency = 2;
@@ -273,12 +271,12 @@ void mctl_set_timing_params(dram_para_t *para)
 			trd2wr = tcwl + 2 + twr; // WL+BL/2+tWR
 			twr2rd = tcwl + twtr; // WL+tWTR
 
-			tdinit0 = 500 * freq + 1; // 500 us
-			tdinit1 = 360 * freq / 1000 + 1; // 360 ns
-			tdinit2 = 200 * freq + 1; // 200 us
-			tdinit3 = 1 * freq + 1; //   1 us
+			tdinit0 = 500 * CONFIG_DRAM_CLK + 1; // 500 us
+			tdinit1 = 360 * CONFIG_DRAM_CLK / 1000 + 1; // 360 ns
+			tdinit2 = 200 * CONFIG_DRAM_CLK + 1; // 200 us
+			tdinit3 = 1 * CONFIG_DRAM_CLK + 1; //   1 us
 
-			if (((tpr13 >> 2) & 0x03) == 0x01 || freq < 912) {
+			if (((tpr13 >> 2) & 0x03) == 0x01 || CONFIG_DRAM_CLK < 912) {
 				mr1		   = dmr1;
 				t_rdata_en = tcwl; // a5 <- a4
 				tcksrx	   = 5;
@@ -301,7 +299,7 @@ void mctl_set_timing_params(dram_para_t *para)
 #if 1
 		case 6: // LPDDR2
 		{
-			trasmax	   = freq / 60;
+			trasmax	   = CONFIG_DRAM_CLK / 60;
 			mr3		   = dmr3;
 			twtp	   = twr + 5;
 			mr2		   = 6;
@@ -316,10 +314,10 @@ void mctl_set_timing_params(dram_para_t *para)
 			tcl		   = 4;
 			wr_latency = 1;
 			t_rdata_en = 1;
-			tdinit0	   = 200 * freq + 1;
-			tdinit1	   = 100 * freq / 1000 + 1;
-			tdinit2	   = 11 * freq + 1;
-			tdinit3	   = 1 * freq + 1;
+			tdinit0	   = 200 * CONFIG_DRAM_CLK + 1;
+			tdinit1	   = 100 * CONFIG_DRAM_CLK / 1000 + 1;
+			tdinit2	   = 11 * CONFIG_DRAM_CLK + 1;
+			tdinit3	   = 1 * CONFIG_DRAM_CLK + 1;
 			twr2rd	   = twtr + 5;
 			tcwl	   = 2;
 			mr1		   = 195;
@@ -329,8 +327,8 @@ void mctl_set_timing_params(dram_para_t *para)
 
 		case 7: // LPDDR3
 		{
-			trasmax = freq / 60;
-			if (freq < 800) {
+			trasmax = CONFIG_DRAM_CLK / 60;
+			if (CONFIG_DRAM_CLK < 800) {
 				tcwl	   = 4;
 				wr_latency = 3;
 				t_rdata_en = 6;
@@ -350,10 +348,10 @@ void mctl_set_timing_params(dram_para_t *para)
 			trd2wr	= 13;
 			tcke	= 3;
 			tmod	= 12;
-			tdinit0 = 400 * freq + 1;
-			tdinit1 = 500 * freq / 1000 + 1;
-			tdinit2 = 11 * freq + 1;
-			tdinit3 = 1 * freq + 1;
+			tdinit0 = 400 * CONFIG_DRAM_CLK + 1;
+			tdinit1 = 500 * CONFIG_DRAM_CLK / 1000 + 1;
+			tdinit2 = 11 * CONFIG_DRAM_CLK + 1;
+			tdinit3 = 1 * CONFIG_DRAM_CLK + 1;
 			tmrd	= 5;
 			tmrw	= 5;
 			twr2rd	= tcwl + twtr + 5;
@@ -426,7 +424,7 @@ void mctl_set_timing_params(dram_para_t *para)
 	// Set two rank timing
 	reg_val = readl(0x3103078);
 	reg_val &= 0x0fff0000;
-	reg_val |= (para->dram_clk < 800) ? 0xf0006600 : 0xf0007600;
+	reg_val |= (CONFIG_DRAM_CLK < 800) ? 0xf0006600 : 0xf0007600;
 	reg_val |= 0x10;
 	writel(reg_val, 0x3103078);
 
