@@ -1,0 +1,36 @@
+config DRAM_SUN8I_R528
+	bool "DRAM driver support for Allwinner R528/T113s"
+	default y if MACH_SUN8I_R528
+	help
+	  Select this DRAM controller driver for the R528/T113s SoCs.
+
+config DRAM_SUNXI_ODT_EN
+	hex "DRAM ODT EN parameter"
+	default 0x1
+	help
+	  ODT EN value from vendor DRAM settings.
+
+config DRAM_SUNXI_TPR0
+	hex "DRAM TPR0 parameter"
+	default 0x0
+	help
+	  TPR0 value from vendor DRAM settings.
+
+config DRAM_SUNXI_TPR11
+	hex "DRAM TPR11 parameter"
+	default 0x0
+	help
+	  TPR11 value from vendor DRAM settings.
+
+config DRAM_SUNXI_TPR12
+	hex "DRAM TPR12 parameter"
+	default 0x0
+	help
+	  TPR12 value from vendor DRAM settings.
+
+config DRAM_SUNXI_TPR13
+	hex "DRAM TPR13 parameter"
+	default 0x0
+	help
+	  TPR13 value from vendor DRAM settings. It tells which features
+	  should be configured.
