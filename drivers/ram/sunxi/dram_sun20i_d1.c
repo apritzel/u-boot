@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 
-#include <inttypes.h>
+#include <stdint.h>
 #include "dram.h"
 #include "debug.h"
 #include "main.h"
