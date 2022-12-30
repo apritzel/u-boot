@@ -90,7 +90,6 @@ void mctl_set_timing_params(dram_para_t *para)
 				txp	 = trrd; // 10
 				trp	 = trcd; // 14
 			}
-#if 1
 		} else if (para->dram_type == 2) {
 			// DDR2
 			tfaw  = ns_to_t(50);
@@ -157,7 +156,6 @@ void mctl_set_timing_params(dram_para_t *para)
 			trefi = ns_to_t(3900) / 32;
 			trfc  = ns_to_t(210);
 			txp	  = twtr;
-#endif
 		} else {
 			// default
 			trfc  = 128;
@@ -174,7 +172,6 @@ void mctl_set_timing_params(dram_para_t *para)
 		}
 
 	switch (para->dram_type) {
-#if 1
 		case 2: // DDR2
 		{
 			trasmax = CONFIG_DRAM_CLK / 30;
@@ -207,7 +204,6 @@ void mctl_set_timing_params(dram_para_t *para)
 			mr1		   = para->dram_mr1;
 			break;
 		}
-#endif
 		case 3: // DDR3
 		{
 			trasmax = CONFIG_DRAM_CLK / 30;
@@ -254,7 +250,6 @@ void mctl_set_timing_params(dram_para_t *para)
 			mr3	 = 0;
 			break;
 		}
-#if 1
 		case 6: // LPDDR2
 		{
 			trasmax	   = CONFIG_DRAM_CLK / 60;
@@ -317,7 +312,6 @@ void mctl_set_timing_params(dram_para_t *para)
 			mr0		= 0;
 			break;
 		}
-#endif
 		default:
 			twr2rd	   = 8; // 48(sp)
 			tcksrx	   = 4; // t1
