@@ -166,12 +166,8 @@ void mctl_set_timing_params(dram_para_t *para)
 			trcd  = 6;
 			trrd  = 3;
 		}
-		// assign the value back to the DRAM structure
 		tccd			= 2;
 		trtp			= 4; // not in .S ?
-		para->dram_tpr0 = (trc << 0) | (trcd << 6) | (trrd << 11) | (tfaw << 15) | (tccd << 21);
-		para->dram_tpr1 = (tras << 0) | (trp << 6) | (twr << 11) | (trtp << 15) | (twtr << 20) | (txp << 23);
-		para->dram_tpr2 = (trefi << 0) | (trfc << 12);
 
 		uint32_t tref = (para->dram_tpr4 << 0x10) >> 0x1c;
 		if (tref == 1) {
@@ -387,21 +383,11 @@ void mctl_set_timing_params(dram_para_t *para)
 	}
 	trtp = 4;
 
-	// Update mode block when permitted
-	if ((para->dram_mr0 & 0xffff0000) == 0)
-		para->dram_mr0 = mr0;
-	if ((para->dram_mr1 & 0xffff0000) == 0)
-		para->dram_mr1 = mr1;
-	if ((para->dram_mr2 & 0xffff0000) == 0)
-		para->dram_mr2 = mr2;
-	if ((para->dram_mr3 & 0xffff0000) == 0)
-		para->dram_mr3 = mr3;
-
 	// Set mode registers
-	writel(para->dram_mr0, 0x3103030);
-	writel(para->dram_mr1, 0x3103034);
-	writel(para->dram_mr2, 0x3103038);
-	writel(para->dram_mr3, 0x310303c);
+	writel(mr0, 0x3103030);
+	writel(mr1, 0x3103034);
+	writel(mr2, 0x3103038);
+	writel(mr3, 0x310303c);
 	writel((para->dram_odt_en >> 4) & 0x3, 0x310302c); // ??
 
 	// Set dram timing DRAMTMG0 - DRAMTMG5
