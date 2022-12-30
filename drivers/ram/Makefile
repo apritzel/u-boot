@@ -23,5 +23,6 @@ obj-$(CONFIG_RAM_SIFIVE) += sifive/
 
 obj-$(CONFIG_DRAM_SUN8I_R528) += sunxi/
 obj-$(CONFIG_DRAM_SUN50I_H616) += sunxi/
+obj-$(CONFIG_MACH_SUN8I_H3) += sunxi/
 
 obj-$(CONFIG_ARCH_OCTEON) += octeon/
