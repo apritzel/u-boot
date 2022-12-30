@@ -13,8 +13,6 @@
 //
 void mctl_set_timing_params(dram_para_t *para)
 {
-	unsigned int type; // s8
-
 	unsigned char  tccd; // 88(sp)
 	unsigned char  trrd; // s7
 	unsigned char  trcd; // s3
@@ -28,10 +26,6 @@ void mctl_set_timing_params(dram_para_t *para)
 	unsigned char  txp; // a6
 	unsigned short trefi; // s2
 	unsigned short trfc; // a5 / 8(sp)
-
-	type  = para->dram_type;
-
-	// trace("type  = %d\r\n", type);
 
 	if (para->dram_tpr13 & 0x2) {
 		// dram_tpr0
@@ -51,7 +45,7 @@ void mctl_set_timing_params(dram_para_t *para)
 		trfc  = ((para->dram_tpr2 >> 12) & 0x1ff); // [20:12]
 		trefi = ((para->dram_tpr2 >> 0) & 0xfff); // [11:0 ]
 	} else {
-		if (type == 3) {
+		if (para->dram_type == 3) {
 			// DDR3
 			trfc  = ns_to_t(350);
 			trefi = ns_to_t(7800) / 32 + 1; // XXX
@@ -84,7 +78,7 @@ void mctl_set_timing_params(dram_para_t *para)
 				trp	 = trcd; // 14
 			}
 #if 1
-		} else if (type == 2) {
+		} else if (para->dram_type == 2) {
 			// DDR2
 			tfaw  = ns_to_t(50);
 			trrd  = ns_to_t(10);
@@ -97,7 +91,7 @@ void mctl_set_timing_params(dram_para_t *para)
 			trfc  = ns_to_t(328);
 			txp	  = 2;
 			twr	  = trp; // 15
-		} else if (type == 6) {
+		} else if (para->dram_type == 6) {
 			// LPDDR2
 			tfaw = ns_to_t(50);
 			if (tfaw < 4)
@@ -127,7 +121,7 @@ void mctl_set_timing_params(dram_para_t *para)
 			tras  = ns_to_t(42);
 			trefi = ns_to_t(3900) / 32;
 			trfc  = ns_to_t(210);
-		} else if (type == 7) {
+		} else if (para->dram_type == 7) {
 			// LPDDR3
 			tfaw = ns_to_t(50);
 			if (tfaw < 4)
@@ -193,7 +187,7 @@ void mctl_set_timing_params(dram_para_t *para)
 	unsigned int tdinit1; // 24(sp)
 	unsigned int tdinit0; // 16(sp)
 
-	switch (type) {
+	switch (para->dram_type) {
 #if 1
 		case 2: // DDR2
 		{
