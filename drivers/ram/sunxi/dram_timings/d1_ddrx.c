@@ -58,7 +58,19 @@ void mctl_set_timing_params(dram_para_t *para)
 	u32 tdinit2;
 	u32 tdinit3;
 
-	if (para->dram_type == 3) {			// DDR3
+	if (para->dram_type == 2) {			// DDR2
+		tfaw  = ns_to_t(50);
+		trrd  = ns_to_t(10);
+		trcd  = ns_to_t(20);
+		trc	  = ns_to_t(65);
+		twtr  = ns_to_t(8);
+		trp	  = ns_to_t(15);
+		tras  = ns_to_t(45);
+		trefi = ns_to_t(7800) / 32;
+		trfc  = ns_to_t(328);
+		txp	  = 2;
+		twr	  = trp; // 15
+	} else if (para->dram_type == 3) {		// DDR3
 		trfc  = ns_to_t(350);
 		trefi = ns_to_t(7800) / 32 + 1; // XXX
 		twr	  = ns_to_t(8);
@@ -89,19 +101,6 @@ void mctl_set_timing_params(dram_para_t *para)
 			txp	 = trrd; // 10
 			trp	 = trcd; // 14
 		}
-	} else if (para->dram_type == 2) {
-		// DDR2
-		tfaw  = ns_to_t(50);
-		trrd  = ns_to_t(10);
-		trcd  = ns_to_t(20);
-		trc	  = ns_to_t(65);
-		twtr  = ns_to_t(8);
-		trp	  = ns_to_t(15);
-		tras  = ns_to_t(45);
-		trefi = ns_to_t(7800) / 32;
-		trfc  = ns_to_t(328);
-		txp	  = 2;
-		twr	  = trp; // 15
 	} else if (para->dram_type == 6) {
 		// LPDDR2
 		tfaw = ns_to_t(50);
