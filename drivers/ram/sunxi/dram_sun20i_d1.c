@@ -14,6 +14,7 @@
 
 #define readl(addr)		read32(addr)
 #define udelay(c)		sdelay(c)
+#define printf			debug
 
 #endif
 
@@ -364,11 +365,11 @@ static void auto_set_timing_para(dram_para_t *para) // s5
 
 		uint32_t tref = (para->dram_tpr4 << 0x10) >> 0x1c;
 		if (tref == 1) {
-			trace("trefi:3.9ms\r\n");
+			debug("trefi:3.9ms\n");
 		} else if (tref == 2) {
-			trace("trefi:1.95ms\r\n");
+			debug("trefi:1.95ms\n");
 		} else {
-			trace("trefi:7.8ms\r\n");
+			debug("trefi:7.8ms\n");
 		}
 	}
 
@@ -810,10 +811,10 @@ static void mctl_phy_ac_remapping(dram_para_t *para)
 	unsigned int fuse, val;
 
 	fuse = (readl(0x3006228) << 0x14) >> 0x1c;
-	trace("ddr_efuse_type: 0x%x\r\n", fuse);
+	debug("ddr_efuse_type: 0x%x\n", fuse);
 
 	val = (unsigned int)(readl(0x03006200) << 0x10) >> 0x18;
-	trace("mark_id: 0x%x\r\n", val);
+	debug("mark_id: 0x%x\n", val);
 
 	if ((para->dram_tpr13 >> 18) & 0x3) {
 		memcpy_self(cfg0, cfg7, 22);
@@ -1076,7 +1077,7 @@ static unsigned int mctl_channel_init(unsigned int ch_index, dram_para_t *para)
 	// Check for training error
 	/*	val = readl(0x3103010);
 		if (((val >> 20) & 0xff) && (val & 0x100000)) {
-			trace("ZQ calibration error, check external 240 ohm resistor.\r\n");
+			printf("ZQ calibration error, check external 240 ohm resistor.\r\n");
 			return 0;
 		}
 	*/
@@ -1087,7 +1088,7 @@ static unsigned int mctl_channel_init(unsigned int ch_index, dram_para_t *para)
 		val = (readl(0x3103010) & 0x100000);
 
 		if (val != 0) {
-			debug("ZQ calibration error, check external 240 ohm resistor.\r\n");
+			printf("ZQ calibration error, check external 240 ohm resistor\n");
 			return 0;
 		}
 	}
@@ -1185,10 +1186,10 @@ static int dqs_gate_detect(dram_para_t *para)
 
 			if (u2 == 2) {
 				para->dram_para2 = u1;
-				trace("[AUTO DEBUG] single rank and full DQ!\r\n");
+				debug("single rank and full DQ\n");
 			} else {
 				para->dram_para2 = u1 | 1;
-				trace("[AUTO DEBUG] single rank and half DQ!\r\n");
+				debug("single rank and half DQ\n");
 			}
 
 		} else {
@@ -1197,18 +1198,18 @@ static int dqs_gate_detect(dram_para_t *para)
 					return 0;
 				}
 
-				trace("DX0 state: %d\r\n", u1);
-				trace("DX1 state: %d\r\n", u2);
+				debug("DX0 state: %d\n", u1);
+				debug("DX1 state: %d\n", u2);
 				return 0;
 			}
 
 			para->dram_para2 = (para->dram_para2 & 0xfffffff0) | 0x1001;
-			trace("[AUTO DEBUG] dual rank and half DQ!\r\n");
+			debug("dual rank and half DQ\n");
 		}
 
 	} else {
 		para->dram_para2 = (para->dram_para2 & 0xfffffff0) | 0x1000;
-		trace("[AUTO DEBUG] two rank and full DQ!\r\n");
+		debug("two rank and full DQ\n");
 	}
 
 	return 1;
@@ -1234,19 +1235,19 @@ static int dramc_simple_wr_test(uint mem_mb, int len)
 		v1 = readl((virtual_addr_t)(addr + i));
 		v2 = patt1 + i;
 		if (v1 != v2) {
-			debug("DRAM: simple test FAIL.\r\n");
-			trace("%x != %x at address %x\r\n", v1, v2, addr + i);
+			printf("DRAM: simple test FAIL\n");
+			printf("%x != %x at address %p\n", v1, v2, addr + i);
 			return 1;
 		}
 		v1 = readl((virtual_addr_t)(addr + offs + i));
 		v2 = patt2 + i;
 		if (v1 != v2) {
-			debug("DRAM: simple test FAIL.\r\n");
-			trace("%x != %x at address %x\r\n", v1, v2, addr + offs + i);
+			printf("DRAM: simple test FAIL\n");
+			printf("%x != %x at address %p\n", v1, v2, addr + offs + i);
 			return 1;
 		}
 	}
-	debug("DRAM: simple test OK.\r\n");
+	debug("DRAM: simple test OK\n");
 	return 0;
 }
 
@@ -1303,7 +1304,7 @@ static int auto_scan_dram_size(dram_para_t *para) // s7
 	unsigned int chk, ptr, shft;
 
 	if (mctl_core_init(para) == 0) {
-		debug("[ERROR DEBUG] DRAM initialisation error : 0!\r\n");
+		printf("DRAM initialisation error : 0\n");
 		return 0;
 	}
 
@@ -1323,7 +1324,7 @@ static int auto_scan_dram_size(dram_para_t *para) // s7
 		rval |= 0x000006f0;
 		write32(mc_work_mode, rval);
 		while (readl(mc_work_mode) != rval) {
-			debug("read\r\n");
+			debug("read\n");
 		}
 
 		// Scan per address line, until address wraps (i.e. see shadow)
@@ -1341,7 +1342,7 @@ static int auto_scan_dram_size(dram_para_t *para) // s7
 		}
 		if (i > 16)
 			i = 16;
-		trace("[AUTO DEBUG] rank %d row = %d\r\n", rank, i);
+		debug("rank %d row = %d\n", rank, i);
 
 		// Store rows in para 1
 		shft = 4 + offs;
@@ -1378,7 +1379,7 @@ static int auto_scan_dram_size(dram_para_t *para) // s7
 			chk += 4;
 		}
 
-		trace("[AUTO DEBUG] rank %d bank = %d\r\n", rank, (j + 1) << 2); // 4 or 8
+		debug("rank %d bank = %d\n", rank, (j + 1) << 2); // 4 or 8
 
 		// Store banks in para 1
 		shft = 12 + offs;
@@ -1419,7 +1420,7 @@ static int auto_scan_dram_size(dram_para_t *para) // s7
 		if (i > 13)
 			i = 13;
 		int pgsize = (i == 9) ? 0 : (1 << (i - 10));
-		trace("[AUTO DEBUG] rank %d page size = %d KB\r\n", rank, pgsize);
+		debug("rank %d page size = %d KB\n", rank, pgsize);
 
 		// Store page size
 		shft = offs;
@@ -1450,10 +1451,10 @@ static int auto_scan_dram_size(dram_para_t *para) // s7
 		para->dram_para2 &= 0xfffff0ff;
 		// note: rval is equal to para->dram_para1 here
 		if ((rval & 0xffff) == ((rval >> 16) & 0xffff)) {
-			trace("rank1 config same as rank0\r\n");
+			debug("rank1 config same as rank0\n");
 		} else {
 			para->dram_para2 |= 0x00000100;
-			trace("rank1 config different from rank0\r\n");
+			debug("rank1 config different from rank0\n");
 		}
 	}
 	return 1;
@@ -1500,11 +1501,11 @@ static int auto_scan_dram_rank_width(dram_para_t *para)
 static int auto_scan_dram_config(dram_para_t *para)
 {
 	if (((para->dram_tpr13 & (1 << 14)) == 0) && (auto_scan_dram_rank_width(para) == 0)) {
-		debug("[ERROR DEBUG] auto scan dram rank & width failed !\r\n");
+		printf("ERROR: auto scan dram rank & width failed\n");
 		return 0;
 	}
 	if (((para->dram_tpr13 & (1 << 0)) == 0) && (auto_scan_dram_size(para) == 0)) {
-		debug("[ERROR DEBUG] auto scan dram size failed !\r\n");
+		printf("ERROR: auto scan dram size failed\n");
 		return 0;
 	}
 	if ((para->dram_tpr13 & (1 << 15)) == 0) {
@@ -1519,7 +1520,7 @@ int init_DRAM(int type, dram_para_t *para)
 
 	// Test ZQ status
 	if (para->dram_tpr13 & 0x10000) {
-		trace("DRAM only have internal ZQ!!\r\n");
+		debug("DRAM only have internal ZQ\n");
 		write32(0x3000160, readl(0x3000160) | 0x100);
 		write32(0x3000168, 0);
 		udelay(10);
@@ -1531,7 +1532,7 @@ int init_DRAM(int type, dram_para_t *para)
 		udelay(10);
 		write32(0x3000160, readl(0x3000160) | 0x001);
 		udelay(20);
-		trace("ZQ value = 0x%x\r\n", read32(0x300016c));
+		debug("ZQ value = 0x%x\n", readl(0x300016c));
 	}
 
 	// Set voltage
@@ -1540,32 +1541,30 @@ int init_DRAM(int type, dram_para_t *para)
 	// Set SDRAM controller auto config
 	if ((para->dram_tpr13 & 0x1) == 0) {
 		if (auto_scan_dram_config(para) == 0) {
-			debug("auto_scan_dram_config() FAILED\r\n");
+			printf("auto_scan_dram_config() FAILED\n");
 			return 0;
 		}
 	}
 
 	// Print header message (too late)
-	trace("DRAM BOOT DRIVE INFO: %s\r\n", "V0.24");
-	trace("DRAM CLK = %d MHz\r\n", para->dram_clk);
-	trace("DRAM Type = %d (2:DDR2,3:DDR3)\r\n", para->dram_type);
-	if ((para->dram_odt_en & 0x1) == 0) {
-		trace("DRAMC read ODT off.\r\n");
-	} else {
-		trace("DRAMC ZQ value: 0x%x\r\n", para->dram_zq);
-	}
+	debug("DRAM BOOT DRIVE INFO: %s\n", "V0.24");
+	debug("DRAM CLK = %d MHz\n", para->dram_clk);
+	debug("DRAM Type = %d (2:DDR2,3:DDR3)\n", para->dram_type);
+	if ((para->dram_odt_en & 0x1) == 0)
+		debug("DRAMC read ODT off\n");
+	else
+		debug("DRAMC ZQ value: 0x%x\n", para->dram_zq);
 
 	// report ODT
 	rc = para->dram_mr1;
-	if ((rc & 0x44) == 0) {
-		trace("DRAM ODT off.\r\n");
-	} else {
-		trace("DRAM ODT value: 0x%x.\r\n", rc);
-	}
+	if ((rc & 0x44) == 0)
+		debug("DRAM ODT off\n");
+	else
+		debug("DRAM ODT value: 0x%x\n", rc);
 
 	// Init core, final run
 	if (mctl_core_init(para) == 0) {
-		trace("DRAM initialisation error : 1 !\r\n");
+		printf("DRAM initialisation error: 1\n");
 		return 0;
 	}
 
@@ -1575,7 +1574,7 @@ int init_DRAM(int type, dram_para_t *para)
 		rc = (rc & 0x7fff0000U) >> 16;
 	} else {
 		rc = DRAMC_get_dram_size();
-		debug("DRAM: size=%dMB\r\n", rc);
+		debug("DRAM: size = %dMB\n", rc);
 		para->dram_para2 = (para->dram_para2 & 0xffffu) | rc << 16;
 	}
 	mem_size = rc;
@@ -1590,7 +1589,7 @@ int init_DRAM(int type, dram_para_t *para)
 		write32(0x31030a0, rc);
 		write32(0x310309c, 0x40a);
 		write32(0x3103004, readl(0x3103004) | 1);
-		trace("Enable Auto SR");
+		debug("Enable Auto SR\n");
 	} else {
 #endif
 	write32(0x31030a0, readl(0x31030a0) & 0xffff0000);
