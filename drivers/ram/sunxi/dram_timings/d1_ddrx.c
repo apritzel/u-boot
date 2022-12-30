@@ -58,118 +58,117 @@ void mctl_set_timing_params(dram_para_t *para)
 	u32 tdinit2;
 	u32 tdinit3;
 
-		if (para->dram_type == 3) {
-			// DDR3
-			trfc  = ns_to_t(350);
-			trefi = ns_to_t(7800) / 32 + 1; // XXX
-			twr	  = ns_to_t(8);
-			trcd  = ns_to_t(15);
-			twtr  = twr + 2; // + 2 ? XXX
-			if (twr < 2)
-				twtr = 2;
-			twr = trcd;
-			if (trcd < 2)
-				twr = 2;
-			if (CONFIG_DRAM_CLK <= 800) {
-				tfaw = ns_to_t(50);
-				trrd = ns_to_t(10);
-				if (trrd < 2)
-					trrd = 2;
-				trc	 = ns_to_t(53);
-				tras = ns_to_t(38);
-				txp	 = trrd; // 10
-				trp	 = trcd; // 15
-			} else {
-				tfaw = ns_to_t(35);
-				trrd = ns_to_t(10);
-				if (trrd < 2)
-					trrd = 2;
-				trcd = ns_to_t(14);
-				trc	 = ns_to_t(48);
-				tras = ns_to_t(34);
-				txp	 = trrd; // 10
-				trp	 = trcd; // 14
-			}
-		} else if (para->dram_type == 2) {
-			// DDR2
-			tfaw  = ns_to_t(50);
-			trrd  = ns_to_t(10);
-			trcd  = ns_to_t(20);
-			trc	  = ns_to_t(65);
-			twtr  = ns_to_t(8);
-			trp	  = ns_to_t(15);
-			tras  = ns_to_t(45);
-			trefi = ns_to_t(7800) / 32;
-			trfc  = ns_to_t(328);
-			txp	  = 2;
-			twr	  = trp; // 15
-		} else if (para->dram_type == 6) {
-			// LPDDR2
+	if (para->dram_type == 3) {			// DDR3
+		trfc  = ns_to_t(350);
+		trefi = ns_to_t(7800) / 32 + 1; // XXX
+		twr	  = ns_to_t(8);
+		trcd  = ns_to_t(15);
+		twtr  = twr + 2; // + 2 ? XXX
+		if (twr < 2)
+			twtr = 2;
+		twr = trcd;
+		if (trcd < 2)
+			twr = 2;
+		if (CONFIG_DRAM_CLK <= 800) {
 			tfaw = ns_to_t(50);
-			if (tfaw < 4)
-				tfaw = 4;
 			trrd = ns_to_t(10);
-			if (trrd == 0)
-				trrd = 1;
-			trcd = ns_to_t(24);
-			if (trcd < 2)
-				trcd = 2;
-			trc = ns_to_t(70);
-			txp = ns_to_t(8);
-			if (txp == 0) {
-				txp	 = 1;
-				twtr = 2;
-			} else {
-				twtr = txp;
-				if (txp < 2) {
-					txp	 = 2;
-					twtr = 2;
-				}
-			}
-			twr = ns_to_t(15);
-			if (twr < 2)
-				twr = 2;
-			trp	  = ns_to_t(17);
-			tras  = ns_to_t(42);
-			trefi = ns_to_t(3900) / 32;
-			trfc  = ns_to_t(210);
-		} else if (para->dram_type == 7) {
-			// LPDDR3
-			tfaw = ns_to_t(50);
-			if (tfaw < 4)
-				tfaw = 4;
-			trrd = ns_to_t(10);
-			if (trrd == 0)
-				trrd = 1;
-			trcd = ns_to_t(24);
-			if (trcd < 2)
-				trcd = 2;
-			trc	 = ns_to_t(70);
-			twtr = ns_to_t(8);
-			if (twtr < 2)
-				twtr = 2;
-			twr = ns_to_t(15);
-			if (twr < 2)
-				twr = 2;
-			trp	  = ns_to_t(17);
-			tras  = ns_to_t(42);
-			trefi = ns_to_t(3900) / 32;
-			trfc  = ns_to_t(210);
-			txp	  = twtr;
+			if (trrd < 2)
+				trrd = 2;
+			trc	 = ns_to_t(53);
+			tras = ns_to_t(38);
+			txp	 = trrd; // 10
+			trp	 = trcd; // 15
 		} else {
-			// default
-			trfc  = 128;
-			trp	  = 6;
-			trefi = 98;
-			txp	  = 10;
-			twr	  = 8;
-			twtr  = 3;
-			tras  = 14;
-			tfaw  = 16;
-			trc	  = 20;
-			trcd  = 6;
-			trrd  = 3;
+			tfaw = ns_to_t(35);
+			trrd = ns_to_t(10);
+			if (trrd < 2)
+				trrd = 2;
+			trcd = ns_to_t(14);
+			trc	 = ns_to_t(48);
+			tras = ns_to_t(34);
+			txp	 = trrd; // 10
+			trp	 = trcd; // 14
 		}
+	} else if (para->dram_type == 2) {
+		// DDR2
+		tfaw  = ns_to_t(50);
+		trrd  = ns_to_t(10);
+		trcd  = ns_to_t(20);
+		trc	  = ns_to_t(65);
+		twtr  = ns_to_t(8);
+		trp	  = ns_to_t(15);
+		tras  = ns_to_t(45);
+		trefi = ns_to_t(7800) / 32;
+		trfc  = ns_to_t(328);
+		txp	  = 2;
+		twr	  = trp; // 15
+	} else if (para->dram_type == 6) {
+		// LPDDR2
+		tfaw = ns_to_t(50);
+		if (tfaw < 4)
+			tfaw = 4;
+		trrd = ns_to_t(10);
+		if (trrd == 0)
+			trrd = 1;
+		trcd = ns_to_t(24);
+		if (trcd < 2)
+			trcd = 2;
+		trc = ns_to_t(70);
+		txp = ns_to_t(8);
+		if (txp == 0) {
+			txp	 = 1;
+			twtr = 2;
+		} else {
+			twtr = txp;
+			if (txp < 2) {
+				txp	 = 2;
+				twtr = 2;
+			}
+		}
+		twr = ns_to_t(15);
+		if (twr < 2)
+			twr = 2;
+		trp	  = ns_to_t(17);
+		tras  = ns_to_t(42);
+		trefi = ns_to_t(3900) / 32;
+		trfc  = ns_to_t(210);
+	} else if (para->dram_type == 7) {
+		// LPDDR3
+		tfaw = ns_to_t(50);
+		if (tfaw < 4)
+			tfaw = 4;
+		trrd = ns_to_t(10);
+		if (trrd == 0)
+			trrd = 1;
+		trcd = ns_to_t(24);
+		if (trcd < 2)
+			trcd = 2;
+		trc	 = ns_to_t(70);
+		twtr = ns_to_t(8);
+		if (twtr < 2)
+			twtr = 2;
+		twr = ns_to_t(15);
+		if (twr < 2)
+			twr = 2;
+		trp	  = ns_to_t(17);
+		tras  = ns_to_t(42);
+		trefi = ns_to_t(3900) / 32;
+		trfc  = ns_to_t(210);
+		txp	  = twtr;
+	} else {
+		// default
+		trfc  = 128;
+		trp	  = 6;
+		trefi = 98;
+		txp	  = 10;
+		twr	  = 8;
+		twtr  = 3;
+		tras  = 14;
+		tfaw  = 16;
+		trc	  = 20;
+		trcd  = 6;
+		trrd  = 3;
+	}
 
 	switch (para->dram_type) {
 		case 2: // DDR2
