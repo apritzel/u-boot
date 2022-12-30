@@ -1646,8 +1646,43 @@ int init_DRAM(int type, dram_para_t *para)
 	return mem_size;
 }
 
+#ifdef __UBOOT__
+
+unsigned long sunxi_dram_init(void)
+{
+	dram_para_t para = {
+		.dram_clk	= 792,
+		.dram_type	= 3, // SUNXI_DRAM_TYPE_DDR3
+		.dram_zq	= 0x007b7bfb,
+		.dram_odt_en	= 0,
+		.dram_para1	= 0x000010d2,
+		.dram_para2	= 0,
+		.dram_mr0	= 0x1c70,
+		.dram_mr1	= 0x42,
+		.dram_mr2	= 0x18,
+		.dram_mr3	= 0,
+		.dram_tpr0	= 0x004a2195,
+		.dram_tpr1	= 0x02423190,
+		.dram_tpr2	= 0x0008b061,
+		.dram_tpr3	= 0xb4787896, // unused
+		.dram_tpr4	= 0,
+		.dram_tpr5	= 0x48484848,
+		.dram_tpr6	= 0x00000048,
+		.dram_tpr7	= 0x1620121e, // unused
+		.dram_tpr8	= 0,
+		.dram_tpr9	= 0, // clock?
+		.dram_tpr10	= 0,
+		.dram_tpr11	= 0x00340000,
+		.dram_tpr12	= 0x00000046,
+		.dram_tpr13	= 0x34000100,
+	};
+
+	return init_DRAM(0, &para) * 1024UL * 1024;
+};
+#else				/* __UBOOT__ */
 void abort(void)
 {
 	while (1)
 		;
 }
+#endif
