@@ -58,24 +58,6 @@ void mctl_set_timing_params(dram_para_t *para)
 	u32 tdinit2;
 	u32 tdinit3;
 
-	if (para->dram_tpr13 & 0x2) {
-		// dram_tpr0
-		tccd = ((para->dram_tpr0 >> 21) & 0x7); // [23:21]
-		tfaw = ((para->dram_tpr0 >> 15) & 0x3f); // [20:15]
-		trrd = ((para->dram_tpr0 >> 11) & 0xf); // [14:11]
-		trcd = ((para->dram_tpr0 >> 6) & 0x1f); // [10:6 ]
-		trc	 = ((para->dram_tpr0 >> 0) & 0x3f); // [ 5:0 ]
-		// dram_tpr1
-		txp	 = ((para->dram_tpr1 >> 23) & 0x1f); // [27:23]
-		twtr = ((para->dram_tpr1 >> 20) & 0x7); // [22:20]
-		trtp = ((para->dram_tpr1 >> 15) & 0x1f); // [19:15]
-		twr	 = ((para->dram_tpr1 >> 11) & 0xf); // [14:11]
-		trp	 = ((para->dram_tpr1 >> 6) & 0x1f); // [10:6 ]
-		tras = ((para->dram_tpr1 >> 0) & 0x3f); // [ 5:0 ]
-		// dram_tpr2
-		trfc  = ((para->dram_tpr2 >> 12) & 0x1ff); // [20:12]
-		trefi = ((para->dram_tpr2 >> 0) & 0xfff); // [11:0 ]
-	} else {
 		if (para->dram_type == 3) {
 			// DDR3
 			trfc  = ns_to_t(350);
@@ -190,7 +172,6 @@ void mctl_set_timing_params(dram_para_t *para)
 			trcd  = 6;
 			trrd  = 3;
 		}
-	}
 
 	switch (para->dram_type) {
 #if 1
