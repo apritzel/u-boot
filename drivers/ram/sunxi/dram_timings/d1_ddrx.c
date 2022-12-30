@@ -14,7 +14,6 @@
 void mctl_set_timing_params(dram_para_t *para)
 {
 	unsigned int type; // s8
-	unsigned int reg_val;
 
 	unsigned char  tccd; // 88(sp)
 	unsigned char  trrd; // s7
@@ -383,43 +382,39 @@ void mctl_set_timing_params(dram_para_t *para)
 	}
 	trtp = 4;
 
-	// Set mode registers
+	/* Set mode registers */
 	writel(mr0, 0x3103030);
 	writel(mr1, 0x3103034);
 	writel(mr2, 0x3103038);
 	writel(mr3, 0x310303c);
+	/* TODO: dram_odt_en is either 0x0 or 0x1, so right shift looks weird */
 	writel((para->dram_odt_en >> 4) & 0x3, 0x310302c); // ??
 
-	// Set dram timing DRAMTMG0 - DRAMTMG5
-	reg_val = (twtp << 24) | (tfaw << 16) | (trasmax << 8) | (tras << 0);
-	writel(reg_val, 0x3103058);
-	reg_val = (txp << 16) | (trtp << 8) | (trc << 0);
-	writel(reg_val, 0x310305c);
-	reg_val = (tcwl << 24) | (tcl << 16) | (trd2wr << 8) | (twr2rd << 0);
-	writel(reg_val, 0x3103060);
-	reg_val = (tmrw << 16) | (tmrd << 12) | (tmod << 0);
-	writel(reg_val, 0x3103064);
-	reg_val = (trcd << 24) | (tccd << 16) | (trrd << 8) | (trp << 0);
-	writel(reg_val, 0x3103068);
-	reg_val = (tcksrx << 24) | (tcksrx << 16) | (tckesr << 8) | (tcke << 0);
-	writel(reg_val, 0x310306c);
+	/* Set dram timing DRAMTMG0 - DRAMTMG5 */
+	writel((twtp << 24) | (tfaw << 16) | (trasmax << 8) | (tras << 0),
+		0x3103058);
+	writel((txp << 16) | (trtp << 8) | (trc << 0),
+		0x310305c);
+	writel((tcwl << 24) | (tcl << 16) | (trd2wr << 8) | (twr2rd << 0),
+		0x3103060);
+	writel((tmrw << 16) | (tmrd << 12) | (tmod << 0),
+		0x3103064);
+	writel((trcd << 24) | (tccd << 16) | (trrd << 8) | (trp << 0),
+		0x3103068);
+	writel((tcksrx << 24) | (tcksrx << 16) | (tckesr << 8) | (tcke << 0),
+		0x310306c);
 
-	// Set two rank timing
-	reg_val = readl(0x3103078);
-	reg_val &= 0x0fff0000;
-	reg_val |= (CONFIG_DRAM_CLK < 800) ? 0xf0006600 : 0xf0007600;
-	reg_val |= 0x10;
-	writel(reg_val, 0x3103078);
+	/* Set dual rank timing */
+	clrsetbits_le32(0x3103078, 0xf000ffff,
+			(CONFIG_DRAM_CLK < 800) ? 0xf0006610 : 0xf0007610);
 
-	// Set phy interface time PITMG0, PTR3, PTR4
-	reg_val = (0x2 << 24) | (t_rdata_en << 16) | BIT(8) | (wr_latency << 0);
-	writel(reg_val, 0x3103080);
+	/* Set phy interface time PITMG0, PTR3, PTR4 */
+	writel((0x2 << 24) | (t_rdata_en << 16) | BIT(8) | (wr_latency << 0),
+		0x3103080);
 	writel(((tdinit0 << 0) | (tdinit1 << 20)), 0x3103050);
 	writel(((tdinit2 << 0) | (tdinit3 << 20)), 0x3103054);
 
-	// Set refresh timing and mode
-	reg_val = (trefi << 16) | (trfc << 0);
-	writel(reg_val, 0x3103090);
-	reg_val = 0x0fff0000 & (trefi << 15);
-	writel(reg_val, 0x3103094);
+	/* Set refresh timing and mode */
+	writel((trefi << 16) | (trfc << 0), 0x3103090);
+	writel((trefi << 15) & 0x0fff0000, 0x3103094);
 }
