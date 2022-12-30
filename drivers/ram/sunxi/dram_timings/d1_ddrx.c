@@ -14,7 +14,7 @@
 void mctl_set_timing_params(dram_para_t *para)
 {
 	/* DRAM_TPR0 */
-	u8 tccd;
+	u8 tccd		= 2;
 	u8 tfaw;
 	u8 trrd;
 	u8 trcd;
@@ -23,7 +23,7 @@ void mctl_set_timing_params(dram_para_t *para)
 	/* DRAM_TPR1 */
 	u8 txp;
 	u8 twtr;
-	u8 trtp;
+	u8 trtp		= 4;
 	u8 twr;
 	u8 trp;
 	u8 tras;
@@ -190,8 +190,6 @@ void mctl_set_timing_params(dram_para_t *para)
 			trcd  = 6;
 			trrd  = 3;
 		}
-		tccd			= 2;
-		trtp			= 4; // not in .S ?
 	}
 
 	switch (para->dram_type) {
@@ -364,10 +362,6 @@ void mctl_set_timing_params(dram_para_t *para)
 			tdinit0	   = 0; // 16(sp)
 			break;
 	}
-	if (trtp < tcl - trp + 2) {
-		trtp = tcl - trp + 2;
-	}
-	trtp = 4;
 
 	/* Set mode registers */
 	writel(mr0, 0x3103030);
