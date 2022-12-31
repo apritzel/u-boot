@@ -133,12 +133,14 @@ void mctl_set_timing_params(dram_para_t *para)
 			wr_latency	= 2;
 			tcwl		= 4;
 			mr2		= 24;
+			t_rdata_en	= 4;
 		} else {
 			mr0		= 0x1e14;
 			tcl		= 7;
 			wr_latency	= 3;
 			tcwl		= 5;
 			mr2		= 32;
+			t_rdata_en	= 5;
 		}
 
 		twtp		= tcwl + 2 + twtr;		// WL+BL/2+tWTR
@@ -153,13 +155,11 @@ void mctl_set_timing_params(dram_para_t *para)
 
 		if (((para->dram_tpr13 >> 2) & 0x03) == 0x01 || CONFIG_DRAM_CLK < 912) {
 			mr1		   = para->dram_mr1;
-			t_rdata_en = tcwl; // a5 <- a4
 			tcksrx	   = 5;
 			tckesr	   = 4;
 			trd2wr	   = 5;
 		} else {
 			mr1		   = para->dram_mr1;
-			t_rdata_en = tcwl; // a5 <- a4
 			tcksrx	   = 5;
 			tckesr	   = 4;
 			trd2wr	   = 6;
