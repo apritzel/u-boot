@@ -115,15 +115,15 @@ void mctl_set_timing_params(dram_para_t *para)
 		if (CONFIG_DRAM_CLK <= 800) {
 			tfaw		= ns_to_t(50);
 			trcd		= ns_to_t(15);
+			trp		= ns_to_t(15);
 			trc		= ns_to_t(53);
 			tras		= ns_to_t(38);
-			trp		= trcd; // 15
 		} else {
 			tfaw		= ns_to_t(35);
 			trcd		= ns_to_t(14);
+			trp		= ns_to_t(14);
 			trc		= ns_to_t(48);
 			tras		= ns_to_t(34);
-			trp		= trcd; // 14
 		}
 
 		trasmax		= CONFIG_DRAM_CLK / 30;
