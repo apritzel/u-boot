@@ -21,4 +21,6 @@ obj-$(CONFIG_IMXRT_SDRAM) += imxrt_sdram.o
 
 obj-$(CONFIG_RAM_SIFIVE) += sifive/
 
+obj-$(CONFIG_DRAM_SUN8I_R528) += sunxi/
+
 obj-$(CONFIG_ARCH_OCTEON) += octeon/
