@@ -118,16 +118,7 @@ void mctl_set_timing_params(dram_para_t *para)
 			trp		= ns_to_t(15);
 			trc		= ns_to_t(53);
 			tras		= ns_to_t(38);
-		} else {
-			tfaw		= ns_to_t(35);
-			trcd		= ns_to_t(14);
-			trp		= ns_to_t(14);
-			trc		= ns_to_t(48);
-			tras		= ns_to_t(34);
-		}
 
-		trasmax		= CONFIG_DRAM_CLK / 30;
-		if (CONFIG_DRAM_CLK <= 800) {
 			mr0		= 0x1c70;
 			mr2		= 0x18;
 			tcl		= 6;
@@ -135,6 +126,12 @@ void mctl_set_timing_params(dram_para_t *para)
 			tcwl		= 4;
 			t_rdata_en	= 4;
 		} else {
+			tfaw		= ns_to_t(35);
+			trcd		= ns_to_t(14);
+			trp		= ns_to_t(14);
+			trc		= ns_to_t(48);
+			tras		= ns_to_t(34);
+
 			mr0		= 0x1e14;
 			mr2		= 0x20;
 			tcl		= 7;
@@ -143,6 +140,7 @@ void mctl_set_timing_params(dram_para_t *para)
 			t_rdata_en	= 5;
 		}
 
+		trasmax		= CONFIG_DRAM_CLK / 30;
 		twtp		= tcwl + 2 + twtr;		// WL+BL/2+tWTR
 		/* Gets overwritten below */
 //		trd2wr		= tcwl + 2 + twr;		// WL+BL/2+tWR
