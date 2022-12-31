@@ -151,15 +151,12 @@ void mctl_set_timing_params(dram_para_t *para)
 		tdinit2		= 200 * CONFIG_DRAM_CLK + 1;	// 200 us
 		tdinit3		= 1 * CONFIG_DRAM_CLK + 1;	//   1 us
 
+		mr1		= para->dram_mr1;
+		tcksrx		= 5;
+		tckesr		= 4;
 		if (((para->dram_tpr13 >> 2) & 0x03) == 0x01 || CONFIG_DRAM_CLK < 912) {
-			mr1		   = para->dram_mr1;
-			tcksrx	   = 5;
-			tckesr	   = 4;
 			trd2wr	   = 5;
 		} else {
-			mr1		   = para->dram_mr1;
-			tcksrx	   = 5;
-			tckesr	   = 4;
 			trd2wr	   = 6;
 		}
 		tcke		= 3;
