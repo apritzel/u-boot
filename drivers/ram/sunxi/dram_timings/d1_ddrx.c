@@ -152,17 +152,18 @@ void mctl_set_timing_params(dram_para_t *para)
 		tdinit3		= 1 * CONFIG_DRAM_CLK + 1;	//   1 us
 
 		mr1		= para->dram_mr1;
+		mr3		= 0;
+		tcke		= 3;
 		tcksrx		= 5;
 		tckesr		= 4;
 		if (((para->dram_tpr13 & 0xc) == 0x04) || CONFIG_DRAM_CLK < 912)
 			trd2wr	   = 5;
 		else
 			trd2wr	   = 6;
-		tcke		= 3;
+
 		tmod		= 12;
 		tmrd		= 4;
 		tmrw		= 0;
-		mr3		= 0;
 
 		break;
 	case SUNXI_DRAM_TYPE_LPDDR2:
