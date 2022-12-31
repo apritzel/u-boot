@@ -60,46 +60,52 @@ void mctl_set_timing_params(dram_para_t *para)
 
 	switch (para->dram_type) {
 	case SUNXI_DRAM_TYPE_DDR2:
-		tfaw  = ns_to_t(50);
-		trrd  = ns_to_t(10);
-		trcd  = ns_to_t(20);
-		trc	  = ns_to_t(65);
-		twtr  = ns_to_t(8);
-		trp	  = ns_to_t(15);
-		tras  = ns_to_t(45);
-		trefi = ns_to_t(7800) / 32;
-		trfc  = ns_to_t(328);
-		txp	  = 2;
-		twr	  = trp; // 15
+		/* DRAM_TPR0 */
+		tfaw		= ns_to_t(50);
+		trrd		= ns_to_t(10);
+		trcd		= ns_to_t(20);
+		trc		= ns_to_t(65);
 
-		trasmax = CONFIG_DRAM_CLK / 30;
+		/* DRAM_TPR1 */
+		twtr		= ns_to_t(8);
+		trp		= ns_to_t(15);
+		tras		= ns_to_t(45);
+
+		/* DRAM_TRP2 */
+		trefi		= ns_to_t(7800) / 32;
+		trfc		= ns_to_t(328);
+
+		txp		= 2;
+		twr		= ns_to_t(15);
+
+		trasmax		= CONFIG_DRAM_CLK / 30;
 		if (CONFIG_DRAM_CLK < 409) {
-			tcl		   = 3;
-			t_rdata_en = 1;
-			mr0		   = 0x06a3;
+			tcl		= 3;
+			t_rdata_en	= 1;
+			mr0		= 0x06a3;
 		} else {
-			t_rdata_en = 2;
-			tcl		   = 4;
-			mr0		   = 0x0e73;
+			t_rdata_en	= 2;
+			tcl		= 4;
+			mr0		= 0x0e73;
 		}
-		tmrd	   = 2;
-		twtp	   = twr + 5;
-		tcksrx	   = 5;
-		tckesr	   = 4;
-		trd2wr	   = 4;
-		tcke	   = 3;
-		tmod	   = 12;
-		wr_latency = 1;
-		mr3		   = 0;
-		mr2		   = 0;
-		tdinit0	   = 200 * CONFIG_DRAM_CLK + 1;
-		tdinit1	   = 100 * CONFIG_DRAM_CLK / 1000 + 1;
-		tdinit2	   = 200 * CONFIG_DRAM_CLK + 1;
-		tdinit3	   = 1 * CONFIG_DRAM_CLK + 1;
-		tmrw	   = 0;
-		twr2rd	   = twtr + 5;
-		tcwl	   = 0;
-		mr1		   = para->dram_mr1;
+		tmrd		= 2;
+		twtp		= twr + 5;
+		tcksrx		= 5;
+		tckesr		= 4;
+		trd2wr		= 4;
+		tcke		= 3;
+		tmod		= 12;
+		wr_latency	= 1;
+		mr3		= 0;
+		mr2		= 0;
+		tdinit0		= 200 * CONFIG_DRAM_CLK + 1;
+		tdinit1		= 100 * CONFIG_DRAM_CLK / 1000 + 1;
+		tdinit2		= 200 * CONFIG_DRAM_CLK + 1;
+		tdinit3		= 1 * CONFIG_DRAM_CLK + 1;
+		tmrw		= 0;
+		twr2rd		= twtr + 5;
+		tcwl		= 0;
+		mr1		= para->dram_mr1;
 
 		break;
 	case SUNXI_DRAM_TYPE_DDR3:
