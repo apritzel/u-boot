@@ -58,7 +58,7 @@ void mctl_set_timing_params(dram_para_t *para)
 	u32 tdinit2;
 	u32 tdinit3;
 
-	switch (para->dram_type) {
+	switch (CONFIG_SUNXI_DRAM_TYPE) {
 	case SUNXI_DRAM_TYPE_DDR2:
 		/* DRAM_TPR0 */
 		tfaw		= ns_to_t(50);

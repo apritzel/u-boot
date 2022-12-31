@@ -29,6 +29,7 @@
 
 #define CONFIG_SYS_SDRAM_BASE	SDRAM_BASE
 #define CONFIG_DRAM_CLK		156
+#define CONFIG_SUNXI_DRAM_TYPE	SUNXI_DRAM_TYPE_DDR3
 
 static int ns_to_t(int nanoseconds)
 {
@@ -1029,7 +1030,7 @@ unsigned long sunxi_dram_init(void)
 {
 	dram_para_t para = {
 		.dram_clk	= CONFIG_DRAM_CLK,
-		.dram_type	= SUNXI_DRAM_TYPE_DDR3,	// 3
+		.dram_type	= CONFIG_SUNXI_DRAM_TYPE,
 		.dram_zq	= CONFIG_DRAM_ZQ,
 		.dram_odt_en	= CONFIG_DRAM_SUNXI_ODT_EN,
 		.dram_para1	= 0x000010d2,
