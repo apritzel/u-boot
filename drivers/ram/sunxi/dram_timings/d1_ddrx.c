@@ -67,21 +67,20 @@ void mctl_set_timing_params(dram_para_t *para)
 		trc		= ns_to_t(65);
 
 		/* DRAM_TPR1 */
+		txp		= 2;
 		twtr		= ns_to_t(8);
+		twr		= ns_to_t(15);
 		trp		= ns_to_t(15);
 		tras		= ns_to_t(45);
 
 		/* DRAM_TRP2 */
-		trefi		= ns_to_t(7800) / 32;
 		trfc		= ns_to_t(328);
-
-		txp		= 2;
-		twr		= ns_to_t(15);
+		trefi		= ns_to_t(7800) / 32;
 
 		trasmax		= CONFIG_DRAM_CLK / 30;
 		if (CONFIG_DRAM_CLK < 409) {
-			tcl		= 3;
 			t_rdata_en	= 1;
+			tcl		= 3;
 			mr0		= 0x06a3;
 		} else {
 			t_rdata_en	= 2;
@@ -96,16 +95,18 @@ void mctl_set_timing_params(dram_para_t *para)
 		tcke		= 3;
 		tmod		= 12;
 		wr_latency	= 1;
-		mr3		= 0;
+		tmrw		= 0;
+		twr2rd		= twtr + 5;
+		tcwl		= 0;
+
+		mr1		= para->dram_mr1;
 		mr2		= 0;
+		mr3		= 0;
+
 		tdinit0		= 200 * CONFIG_DRAM_CLK + 1;
 		tdinit1		= 100 * CONFIG_DRAM_CLK / 1000 + 1;
 		tdinit2		= 200 * CONFIG_DRAM_CLK + 1;
 		tdinit3		= 1 * CONFIG_DRAM_CLK + 1;
-		tmrw		= 0;
-		twr2rd		= twtr + 5;
-		tcwl		= 0;
-		mr1		= para->dram_mr1;
 
 		break;
 	case SUNXI_DRAM_TYPE_DDR3:
