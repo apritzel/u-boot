@@ -218,22 +218,12 @@ void mctl_set_timing_params(dram_para_t *para)
 
 		break;
 	case SUNXI_DRAM_TYPE_LPDDR3:
-		tfaw		= ns_to_t(50);
-		if (tfaw < 4)
-			tfaw = 4;
-		trrd		= ns_to_t(10);
-		if (trrd == 0)
-			trrd = 1;
-		trcd		= ns_to_t(24);
-		if (trcd < 2)
-			trcd = 2;
+		tfaw		= max(ns_to_t(50), 4);
+		trrd		= max(ns_to_t(10), 1);
+		trcd		= max(ns_to_t(24), 2);
 		trc		= ns_to_t(70);
-		twtr		= ns_to_t(8);
-		if (twtr < 2)
-			twtr = 2;
-		twr		= ns_to_t(15);
-		if (twr < 2)
-			twr = 2;
+		twtr		= max(ns_to_t(8), 2);
+		twr		= max(ns_to_t(15), 2);
 		trp		= ns_to_t(17);
 		tras		= ns_to_t(42);
 		trefi		= ns_to_t(3900) / 32;
