@@ -129,17 +129,17 @@ void mctl_set_timing_params(dram_para_t *para)
 		trasmax		= CONFIG_DRAM_CLK / 30;
 		if (CONFIG_DRAM_CLK <= 800) {
 			mr0		= 0x1c70;
+			mr2		= 0x18;
 			tcl		= 6;
 			wr_latency	= 2;
 			tcwl		= 4;
-			mr2		= 24;
 			t_rdata_en	= 4;
 		} else {
 			mr0		= 0x1e14;
+			mr2		= 0x20;
 			tcl		= 7;
 			wr_latency	= 3;
 			tcwl		= 5;
-			mr2		= 32;
 			t_rdata_en	= 5;
 		}
 
