@@ -105,20 +105,16 @@ void mctl_set_timing_params(dram_para_t *para)
 	case SUNXI_DRAM_TYPE_DDR3:
 		trfc		= ns_to_t(350);
 		trefi		= ns_to_t(7800) / 32 + 1;	// XXX
-		twr		= ns_to_t(8);
-		trcd		= ns_to_t(15);
-		twtr		= twr + 2;			// + 2 ? XXX
-		if (twr < 2)
-			twtr = 2;
-		twr		= trcd;
-		if (trcd < 2)
-			twr = 2;
 
-		trrd	= max(ns_to_t(10), 2);
-		txp	= max(ns_to_t(10), 2);
+		twtr		= ns_to_t(8) + 2;		// + 2 ? XXX
+		/* Only used by trd2wr calculation, which gets discard below */
+//		twr		= max(ns_to_t(15), 2);
+		trrd		= max(ns_to_t(10), 2);
+		txp		= max(ns_to_t(10), 2);
 
 		if (CONFIG_DRAM_CLK <= 800) {
 			tfaw		= ns_to_t(50);
+			trcd		= ns_to_t(15);
 			trc		= ns_to_t(53);
 			tras		= ns_to_t(38);
 			trp		= trcd; // 15
@@ -130,7 +126,7 @@ void mctl_set_timing_params(dram_para_t *para)
 			trp		= trcd; // 14
 		}
 
-		trasmax	= CONFIG_DRAM_CLK / 30;
+		trasmax		= CONFIG_DRAM_CLK / 30;
 		if (CONFIG_DRAM_CLK <= 800) {
 			mr0		= 0x1c70;
 			tcl		= 6;
@@ -146,7 +142,8 @@ void mctl_set_timing_params(dram_para_t *para)
 		}
 
 		twtp		= tcwl + 2 + twtr;		// WL+BL/2+tWTR
-		trd2wr		= tcwl + 2 + twr;		// WL+BL/2+tWR
+		/* Gets overwritten below */
+//		trd2wr		= tcwl + 2 + twr;		// WL+BL/2+tWR
 		twr2rd		= tcwl + twtr;			// WL+tWTR
 
 		tdinit0		= 500 * CONFIG_DRAM_CLK + 1;	// 500 us
