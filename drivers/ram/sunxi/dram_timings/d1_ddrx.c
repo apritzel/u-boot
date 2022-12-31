@@ -174,84 +174,85 @@ void mctl_set_timing_params(dram_para_t *para)
 
 		break;
 	case SUNXI_DRAM_TYPE_LPDDR2:
-		tfaw = ns_to_t(50);
+		tfaw		= ns_to_t(50);
 		if (tfaw < 4)
 			tfaw = 4;
-		trrd = ns_to_t(10);
+		trrd		= ns_to_t(10);
 		if (trrd == 0)
 			trrd = 1;
-		trcd = ns_to_t(24);
+		trcd		= ns_to_t(24);
 		if (trcd < 2)
 			trcd = 2;
-		trc = ns_to_t(70);
-		txp = ns_to_t(8);
+		trc		= ns_to_t(70);
+		txp		= ns_to_t(8);
 		if (txp == 0) {
-			txp	 = 1;
-			twtr = 2;
+			txp	= 1;
+			twtr	= 2;
 		} else {
-			twtr = txp;
+			twtr	= txp;
 			if (txp < 2) {
-				txp	 = 2;
-				twtr = 2;
+				txp	= 2;
+				twtr	= 2;
 			}
 		}
-		twr = ns_to_t(15);
+		twr		= ns_to_t(15);
 		if (twr < 2)
 			twr = 2;
-		trp	  = ns_to_t(17);
-		tras  = ns_to_t(42);
-		trefi = ns_to_t(3900) / 32;
-		trfc  = ns_to_t(210);
+		trp		= ns_to_t(17);
+		tras		= ns_to_t(42);
+		trefi		= ns_to_t(3900) / 32;
+		trfc		= ns_to_t(210);
 
-		trasmax	   = CONFIG_DRAM_CLK / 60;
-		mr3		   = para->dram_mr3;
-		twtp	   = twr + 5;
-		mr2		   = 6;
-		mr1		   = 5;
-		tcksrx	   = 5;
-		tckesr	   = 5;
-		trd2wr	   = 10;
-		tcke	   = 2;
-		tmod	   = 5;
-		tmrd	   = 5;
-		tmrw	   = 3;
-		tcl		   = 4;
-		wr_latency = 1;
-		t_rdata_en = 1;
-		tdinit0	   = 200 * CONFIG_DRAM_CLK + 1;
-		tdinit1	   = 100 * CONFIG_DRAM_CLK / 1000 + 1;
-		tdinit2	   = 11 * CONFIG_DRAM_CLK + 1;
-		tdinit3	   = 1 * CONFIG_DRAM_CLK + 1;
-		twr2rd	   = twtr + 5;
-		tcwl	   = 2;
-		mr1		   = 195;
-		mr0		   = 0;
+		trasmax		= CONFIG_DRAM_CLK / 60;
+		mr3		= para->dram_mr3;
+		twtp		= twr + 5;
+		mr2		= 6;
+		mr1		= 5;
+		tcksrx		= 5;
+		tckesr		= 5;
+		trd2wr		= 10;
+		tcke		= 2;
+		tmod		= 5;
+		tmrd		= 5;
+		tmrw		= 3;
+		tcl		= 4;
+		wr_latency	= 1;
+		t_rdata_en	= 1;
+
+		tdinit0		= 200 * CONFIG_DRAM_CLK + 1;
+		tdinit1		= 100 * CONFIG_DRAM_CLK / 1000 + 1;
+		tdinit2		= 11 * CONFIG_DRAM_CLK + 1;
+		tdinit3		= 1 * CONFIG_DRAM_CLK + 1;
+		twr2rd		= twtr + 5;
+		tcwl		= 2;
+		mr1		= 195;
+		mr0		= 0;
 
 		break;
 	case SUNXI_DRAM_TYPE_LPDDR3:
-		tfaw = ns_to_t(50);
+		tfaw		= ns_to_t(50);
 		if (tfaw < 4)
 			tfaw = 4;
-		trrd = ns_to_t(10);
+		trrd		= ns_to_t(10);
 		if (trrd == 0)
 			trrd = 1;
-		trcd = ns_to_t(24);
+		trcd		= ns_to_t(24);
 		if (trcd < 2)
 			trcd = 2;
-		trc	 = ns_to_t(70);
-		twtr = ns_to_t(8);
+		trc		= ns_to_t(70);
+		twtr		= ns_to_t(8);
 		if (twtr < 2)
 			twtr = 2;
-		twr = ns_to_t(15);
+		twr		= ns_to_t(15);
 		if (twr < 2)
 			twr = 2;
-		trp	  = ns_to_t(17);
-		tras  = ns_to_t(42);
-		trefi = ns_to_t(3900) / 32;
-		trfc  = ns_to_t(210);
-		txp	  = twtr;
+		trp		= ns_to_t(17);
+		tras		= ns_to_t(42);
+		trefi		= ns_to_t(3900) / 32;
+		trfc		= ns_to_t(210);
+		txp		= twtr;
 
-		trasmax = CONFIG_DRAM_CLK / 60;
+		trasmax		= CONFIG_DRAM_CLK / 60;
 		if (CONFIG_DRAM_CLK < 800) {
 			tcwl	   = 4;
 			wr_latency = 3;
@@ -264,60 +265,60 @@ void mctl_set_timing_params(dram_para_t *para)
 			t_rdata_en = 5;
 			mr2		   = 10;
 		}
-		twtp	= tcwl + 5;
+		twtp		= tcwl + 5;
 		tcl		= 7;
 		mr3		= para->dram_mr3;
-		tcksrx	= 5;
-		tckesr	= 5;
-		trd2wr	= 13;
-		tcke	= 3;
-		tmod	= 12;
-		tdinit0 = 400 * CONFIG_DRAM_CLK + 1;
-		tdinit1 = 500 * CONFIG_DRAM_CLK / 1000 + 1;
-		tdinit2 = 11 * CONFIG_DRAM_CLK + 1;
-		tdinit3 = 1 * CONFIG_DRAM_CLK + 1;
-		tmrd	= 5;
-		tmrw	= 5;
-		twr2rd	= tcwl + twtr + 5;
+		tcksrx		= 5;
+		tckesr		= 5;
+		trd2wr		= 13;
+		tcke		= 3;
+		tmod		= 12;
+		tdinit0		= 400 * CONFIG_DRAM_CLK + 1;
+		tdinit1		= 500 * CONFIG_DRAM_CLK / 1000 + 1;
+		tdinit2		= 11 * CONFIG_DRAM_CLK + 1;
+		tdinit3		= 1 * CONFIG_DRAM_CLK + 1;
+		tmrd		= 5;
+		tmrw		= 5;
+		twr2rd		= tcwl + twtr + 5;
 		mr1		= 195;
 		mr0		= 0;
 
 		break;
 	default:
-		trfc  = 128;
-		trp	  = 6;
-		trefi = 98;
-		txp	  = 10;
-		twr	  = 8;
-		twtr  = 3;
-		tras  = 14;
-		tfaw  = 16;
-		trc	  = 20;
-		trcd  = 6;
-		trrd  = 3;
+		trfc		= 128;
+		trp		= 6;
+		trefi		= 98;
+		txp		= 10;
+		twr		= 8;
+		twtr		= 3;
+		tras		= 14;
+		tfaw		= 16;
+		trc		= 20;
+		trcd		= 6;
+		trrd		= 3;
 
-		twr2rd	   = 8; // 48(sp)
-		tcksrx	   = 4; // t1
-		tckesr	   = 3; // t4
-		trd2wr	   = 4; // t6
-		trasmax	   = 27; // t3
-		twtp	   = 12; // s6
-		tcke	   = 2; // s8
-		tmod	   = 6; // t0
-		tmrd	   = 2; // t5
-		tmrw	   = 0; // a1
-		tcwl	   = 3; // a5
-		tcl		   = 3; // a0
-		wr_latency = 1; // a7
-		t_rdata_en = 1; // a4
-		mr3		   = 0; // s0
-		mr2		   = 0; // t2
-		mr1		   = 0; // s1
-		mr0		   = 0; // a3
-		tdinit3	   = 0; // 40(sp)
-		tdinit2	   = 0; // 32(sp)
-		tdinit1	   = 0; // 24(sp)
-		tdinit0	   = 0; // 16(sp)
+		twr2rd		= 8; // 48(sp)
+		tcksrx		= 4; // t1
+		tckesr		= 3; // t4
+		trd2wr		= 4; // t6
+		trasmax		= 27; // t3
+		twtp		= 12; // s6
+		tcke		= 2; // s8
+		tmod		= 6; // t0
+		tmrd		= 2; // t5
+		tmrw		= 0; // a1
+		tcwl		= 3; // a5
+		tcl		= 3; // a0
+		wr_latency	= 1; // a7
+		t_rdata_en	= 1; // a4
+		mr3		= 0; // s0
+		mr2		= 0; // t2
+		mr1		= 0; // s1
+		mr0		= 0; // a3
+		tdinit3		= 0; // 40(sp)
+		tdinit2		= 0; // 32(sp)
+		tdinit1		= 0; // 24(sp)
+		tdinit0		= 0; // 16(sp)
 
 		break;
 	}
