@@ -34,3 +34,29 @@ config DRAM_SUNXI_TPR13
 	help
 	  TPR13 value from vendor DRAM settings. It tells which features
 	  should be configured.
+
+choice
+	prompt "DRAM chip type"
+	default SUNXI_DRAM_DDR3 if DRAM_SUN8I_R528
+	default SUNXI_DRAM_DDR3 if MACH_SUN50I_H616
+	default SUNXI_DRAM_DDR3
+
+config SUNXI_DRAM_DDR2
+        bool "DDR2 chips"
+
+config SUNXI_DRAM_DDR3
+        bool "DDR3 chips"
+
+config SUNXI_DRAM_LPDDR2
+        bool "LPDDR2 chips"
+
+config SUNXI_DRAM_LPDDR3
+        bool "LPDDR3 chips"
+endchoice
+
+config SUNXI_DRAM_TYPE
+	int
+	default 2 if SUNXI_DRAM_DDR2
+	default 3 if SUNXI_DRAM_DDR3
+	default 6 if SUNXI_DRAM_LPDDR2
+	default 7 if SUNXI_DRAM_LPDDR3
