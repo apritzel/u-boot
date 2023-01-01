@@ -1142,15 +1142,18 @@ static int mctl_core_init(dram_para_t *para)
 	return mctl_channel_init(0, para);
 }
 
-// Autoscan sizes a dram device by cycling through address lines and figuring
-// out if it is connected to a real address line, or if the address is a mirror.
-// First the column and bank bit allocations are set to low values (2 and 9 address
-// lines. Then a maximum allocation (16 lines) is set for rows and this is tested.
-// Next the BA2 line is checked. This seems to be placed above the column, BA0-1 and
-// row addresses. Finally, the column address is allocated 13 lines and these are
-// tested. The results are placed in dram_para1 and dram_para2.
-//
-static int auto_scan_dram_size(dram_para_t *para) // s7
+/*
+ * This routine sizes a DRAM device by cycling through address lines and
+ * figuring out if they are connected to a real address line, or if the
+ * address is a mirror.
+ * First the column and bank bit allocations are set to low values (2 and 9
+ * address lines). Then a maximum allocation (16 lines) is set for rows and
+ * this is tested.
+ * Next the BA2 line is checked. This seems to be placed above the column,
+ * BA0-1 and row addresses. Finally, the column address is allocated 13 lines
+ * and these are tested. The results are placed in dram_para1 and dram_para2.
+ */
+static int auto_scan_dram_size(dram_para_t *para)
 {
 	unsigned int rval, i, j, rank, maxrank, offs;
 	unsigned int shft;
@@ -1161,24 +1164,18 @@ static int auto_scan_dram_size(dram_para_t *para) // s7
 		return 0;
 	}
 
-	maxrank		 = (para->dram_para2 & 0xf000) ? 2 : 1;
+	maxrank	= (para->dram_para2 & 0xf000) ? 2 : 1;
 	mc_work_mode = 0x3102000;
-	offs		 = 0;
+	offs = 0;
 
-	// write test pattern
-	for (i = 0, ptr = CONFIG_SYS_SDRAM_BASE; i < 64; i++, ptr += 4) {
-		writel((i & 1) ? ptr : ~ptr, ptr);
-	}
+	/* write test pattern */
+	for (i = 0, ptr = CONFIG_SYS_SDRAM_BASE; i < 64; i++, ptr += 4)
+		writel((i & 0x1) ? ptr : ~ptr, ptr);
 
 	for (rank = 0; rank < maxrank;) {
-		// Set row mode
-		rval = readl(mc_work_mode);
-		rval &= 0xfffff0f3;
-		rval |= 0x000006f0;
-		writel(rval, mc_work_mode);
-		while (readl(mc_work_mode) != rval) {
-			debug("read\n");
-		}
+		/* set row mode */
+		clrsetbits_le32(mc_work_mode, 0xf0c, 0x6f0);
+		udelay(1);
 
 		// Scan per address line, until address wraps (i.e. see shadow)
 		for (i = 11; i < 17; i++) {
@@ -1186,39 +1183,30 @@ static int auto_scan_dram_size(dram_para_t *para) // s7
 			ptr = CONFIG_SYS_SDRAM_BASE;
 			for (j = 0; j < 64; j++) {
 				if (readl(chk) != ((j & 1) ? ptr : ~ptr))
-					goto out1;
+					break;
 				ptr += 4;
 				chk += 4;
 			}
-			break;
-		out1:;
+			if (j == 64)
+				break;
 		}
 		if (i > 16)
 			i = 16;
 		debug("rank %d row = %d\n", rank, i);
 
-		// Store rows in para 1
-		shft = 4 + offs;
+		/* Store rows in para 1 */
+		shft = offs + 4;
 		rval = para->dram_para1;
 		rval &= ~(0xff << shft);
 		rval |= i << shft;
 		para->dram_para1 = rval;
 
-		if (rank == 1) {
-			// Set bank mode for rank0
-			rval = readl(0x3102000);
-			rval &= 0xfffff003;
-			rval |= 0x000006a4;
-			writel(rval, 0x3102000);
-		}
+		if (rank == 1)		/* Set bank mode for rank0 */
+			clrsetbits_le32(0x3102000, 0xffc, 0x6a4);
 
-		// Set bank mode for current rank
-		rval = readl(mc_work_mode);
-		rval &= 0xfffff003;
-		rval |= 0x000006a4;
-		writel(rval, mc_work_mode);
-		while (readl(mc_work_mode) != rval)
-			;
+		/* Set bank mode for current rank */
+		clrsetbits_le32(mc_work_mode, 0xffc, 0x6a4);
+		udelay(1);
 
 		// Test if bit A23 is BA2 or mirror XXX A22?
 		chk = CONFIG_SYS_SDRAM_BASE + (1 << 22);
@@ -1232,30 +1220,21 @@ static int auto_scan_dram_size(dram_para_t *para) // s7
 			chk += 4;
 		}
 
-		debug("rank %d bank = %d\n", rank, (j + 1) << 2); // 4 or 8
+		debug("rank %d bank = %d\n", rank, (j + 1) << 2); /* 4 or 8 */
 
-		// Store banks in para 1
+		/* Store banks in para 1 */
 		shft = 12 + offs;
 		rval = para->dram_para1;
 		rval &= ~(0xf << shft);
 		rval |= j << shft;
 		para->dram_para1 = rval;
 
-		if (rank == 1) {
-			// Set page mode for rank0
-			rval = readl(0x3102000);
-			rval &= 0xfffff003;
-			rval |= 0x00000aa0;
-			writel(rval, 0x3102000);
-		}
+		if (rank == 1)		/* Set page mode for rank0 */
+			clrsetbits_le32(0x3102000, 0xffc, 0xaa0);
 
-		// Set page mode for current rank
-		rval = readl(mc_work_mode);
-		rval &= 0xfffff003;
-		rval |= 0x00000aa0;
-		writel(rval, mc_work_mode);
-		while (readl(mc_work_mode) != rval)
-			;
+		/* Set page mode for current rank */
+		clrsetbits_le32(mc_work_mode, 0xffc, 0xaa0);
+		udelay(1);
 
 		// Scan per address line, until address wraps (i.e. see shadow)
 		for (i = 9; i < 14; i++) {
@@ -1263,19 +1242,20 @@ static int auto_scan_dram_size(dram_para_t *para) // s7
 			ptr = CONFIG_SYS_SDRAM_BASE;
 			for (j = 0; j < 64; j++) {
 				if (readl(chk) != ((j & 1) ? ptr : ~ptr))
-					goto out2;
+					break;
 				ptr += 4;
 				chk += 4;
 			}
-			break;
-		out2:;
+			if (j == 64)
+				break;
 		}
 		if (i > 13)
 			i = 13;
-		int pgsize = (i == 9) ? 0 : (1 << (i - 10));
+
+		unsigned int pgsize = (i == 9) ? 0 : (1 << (i - 10));
 		debug("rank %d page size = %d KB\n", rank, pgsize);
 
-		// Store page size
+		/* Store page size */
 		shft = offs;
 		rval = para->dram_para1;
 		rval &= ~(0xf << shft);
@@ -1286,30 +1266,28 @@ static int auto_scan_dram_size(dram_para_t *para) // s7
 		rank++;
 		if (rank != maxrank) {
 			if (rank == 1) {
-				rval = readl(0x3202000); // MC_WORK_MODE
-				rval &= 0xfffff003;
-				rval |= 0x000006f0;
-				writel(rval, 0x3202000);
+				/* MC_WORK_MODE */
+				clrsetbits_le32(0x3202000, 0xffc, 0x6f0);
 
-				rval = readl(0x3202004); // MC_WORK_MODE2
-				rval &= 0xfffff003;
-				rval |= 0x000006f0;
-				writel(rval, 0x3202004);
+				/* MC_WORK_MODE2 */
+				clrsetbits_le32(0x3202004, 0xffc, 0x6f0);
 			}
-			offs += 16; // store rank1 config in upper half of para1
-			mc_work_mode += 4; // move to MC_WORK_MODE2
+			/* store rank1 config in upper half of para1 */
+			offs += 16;
+			mc_work_mode += 4;	/* move to MC_WORK_MODE2 */
 		}
 	}
 	if (maxrank == 2) {
 		para->dram_para2 &= 0xfffff0ff;
-		// note: rval is equal to para->dram_para1 here
-		if ((rval & 0xffff) == ((rval >> 16) & 0xffff)) {
+		/* note: rval is equal to para->dram_para1 here */
+		if ((rval & 0xffff) == (rval >> 16)) {
 			debug("rank1 config same as rank0\n");
 		} else {
-			para->dram_para2 |= 0x00000100;
+			para->dram_para2 |= BIT(8);
 			debug("rank1 config different from rank0\n");
 		}
 	}
+
 	return 1;
 }
 
