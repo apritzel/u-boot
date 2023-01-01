@@ -987,41 +987,39 @@ static unsigned int mctl_channel_init(unsigned int ch_index, dram_para_t *para)
 	return 1;
 }
 
-// The below routine reads the dram config registers and extracts
-// the number of address bits in each rank available. It then calculates
-// total memory size in MB.
-//
-static int DRAMC_get_dram_size(void)
+static unsigned int calculate_rank_size(uint32_t regval)
 {
-	unsigned int rval, temp, size0, size1;
+	unsigned int bits;
 
-	rval = readl(0x3102000); // MC_WORK_MODE0
+	bits = (regval >> 8) & 0xf;	/* page size - 3 */
+	bits += (regval >> 4) & 0xf;	/* row width - 1 */
+	bits += (regval >> 2) & 0x3;	/* bank count - 2 */
+	bits -= 14;			/* 1MB = 20 bits, minus above 6 = 14 */
 
-	temp = (rval >> 8) & 0xf; // page size - 3
-	temp += (rval >> 4) & 0xf; // row width - 1
-	temp += (rval >> 2) & 0x3; // bank count - 2
-	temp -= 14; // 1MB = 20 bits, minus above 6 = 14
-	size0 = 1 << temp;
+	return 1U << bits;
+}
 
-	temp = rval & 0x3; // rank count = 0? -> done
-	if (temp == 0) {
-		return size0;
-	}
+/*
+ * The below routine reads the dram config registers and extracts
+ * the number of address bits in each rank available. It then calculates
+ * total memory size in MB.
+ */
+static unsigned int DRAMC_get_dram_size(void)
+{
+	uint32_t val;
+	unsigned int size;
 
-	rval = readl(0x3102004); // MC_WORK_MODE1
+	val = readl(0x3102000);		/* MC_WORK_MODE0 */
+	size = calculate_rank_size(val);
+	if ((val & 0x3) == 0)		/* single rank? */
+		return size;
 
-	temp = rval & 0x3;
-	if (temp == 0) { // two identical ranks
-		return 2 * size0;
-	}
+	val = readl(0x3102004);		/* MC_WORK_MODE1 */
+	if ((val & 0x3) == 0)		/* two identical ranks? */
+		return size * 2;
 
-	temp = (rval >> 8) & 0xf; // page size - 3
-	temp += (rval >> 4) & 0xf; // row width - 1
-	temp += (rval >> 2) & 0x3; // bank number - 2
-	temp -= 14; // 1MB = 20 bits, minus above 6 = 14
-	size1 = 1 << temp;
-
-	return size0 + size1; // add size of each rank
+	/* add sizes of both ranks */
+	return size + calculate_rank_size(val);
 }
 
 /*
