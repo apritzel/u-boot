@@ -1291,36 +1291,34 @@ static int auto_scan_dram_size(dram_para_t *para)
 	return 1;
 }
 
-// This routine sets up parameters with dqs_gating_mode equal to 1 and two
-// ranks enabled. It then configures the core and tests for 1 or 2 ranks and
-// full or half DQ width. it then resets the parameters to the original values.
-// dram_para2 is updated with the rank & width findings.
-//
+/*
+ * This routine sets up parameters with dqs_gating_mode equal to 1 and two
+ * ranks enabled. It then configures the core and tests for 1 or 2 ranks and
+ * full or half DQ width. It then resets the parameters to the original values.
+ * dram_para2 is updated with the rank and width findings.
+ */
 static int auto_scan_dram_rank_width(dram_para_t *para)
 {
 	unsigned int s1 = para->dram_tpr13;
 	unsigned int s2 = para->dram_para1;
-	unsigned int v;
 
 	para->dram_para1 = 0x00b000b0;
-	v				 = (para->dram_para2 & 0xfffffff0) | 0x1000;
-	para->dram_para2 = v;
+	para->dram_para2 = (para->dram_para2 & ~0xf) | BIT(12);
 
-	v				 = (s1 & 0xfffffff7) | 0x5; // set DQS probe mode
-	para->dram_tpr13 = v;
+	/* set DQS probe mode */
+	para->dram_tpr13 = (para->dram_tpr13 & ~0x8) | BIT(2) | BIT(0);
 
 	mctl_core_init(para);
 
-	if (readl(0x3103010) & (1 << 20)) {
+	if (readl(0x3103010) & BIT(20))
 		return 0;
-	}
 
-	if (dqs_gate_detect(para) == 0) {
+	if (dqs_gate_detect(para) == 0)
 		return 0;
-	}
 
 	para->dram_tpr13 = s1;
 	para->dram_para1 = s2;
+
 	return 1;
 }
 
