@@ -1322,24 +1322,29 @@ static int auto_scan_dram_rank_width(dram_para_t *para)
 	return 1;
 }
 
-// This routine determines the sdram topology. It first establishes the number
-// of ranks and the DQ width. Then it scans the sdram address lines to establish
-// the size of each rank. It then updates dram_tpr13 to reflect that the sizes
-// are now known: a re-init will not repeat the autoscan.
-//
+/*
+ * This routine determines the SDRAM topology. It first establishes the number
+ * of ranks and the DQ width. Then it scans the SDRAM address lines to establish
+ * the size of each rank. It then updates dram_tpr13 to reflect that the sizes
+ * are now known: a re-init will not repeat the autoscan.
+ */
 static int auto_scan_dram_config(dram_para_t *para)
 {
-	if (((para->dram_tpr13 & (1 << 14)) == 0) && (auto_scan_dram_rank_width(para) == 0)) {
+	if (((para->dram_tpr13 & BIT(14)) == 0) &&
+	    (auto_scan_dram_rank_width(para) == 0)) {
 		printf("ERROR: auto scan dram rank & width failed\n");
 		return 0;
 	}
-	if (((para->dram_tpr13 & (1 << 0)) == 0) && (auto_scan_dram_size(para) == 0)) {
+
+	if (((para->dram_tpr13 & BIT(0)) == 0) &&
+	    (auto_scan_dram_size(para) == 0)) {
 		printf("ERROR: auto scan dram size failed\n");
 		return 0;
 	}
-	if ((para->dram_tpr13 & (1 << 15)) == 0) {
-		para->dram_tpr13 |= 0x6003;
-	}
+
+	if ((para->dram_tpr13 & BIT(15)) == 0)
+		para->dram_tpr13 |= BIT(14) | BIT(13) | BIT(1) | BIT(0);
+
 	return 1;
 }
 
