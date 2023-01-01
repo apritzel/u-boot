@@ -1348,7 +1348,7 @@ static int auto_scan_dram_config(dram_para_t *para)
 
 int init_DRAM(int type, dram_para_t *para)
 {
-	int rc, mem_size;
+	u32 rc, mem_size_mb;
 
 	debug("DRAM BOOT DRIVE INFO: %s\n", "V0.24");
 	debug("DRAM CLK = %d MHz\n", para->dram_clk);
@@ -1399,15 +1399,16 @@ int init_DRAM(int type, dram_para_t *para)
 	}
 
 	/* Get SDRAM size */
+	/* TODO: who ever puts a negative number in the top half? */
 	rc = para->dram_para2;
-	if (rc < 0) {
-		rc = (rc >> 16) & ~0x8000;
+	if (rc & BIT(31)) {
+		rc = (rc >> 16) & ~BIT(15);
 	} else {
 		rc = DRAMC_get_dram_size();
 		debug("DRAM: size = %dMB\n", rc);
 		para->dram_para2 = (para->dram_para2 & 0xffffU) | rc << 16;
 	}
-	mem_size = rc;
+	mem_size_mb = rc;
 
 	/* Purpose ?? */
 	if (para->dram_tpr13 & BIT(30)) {
@@ -1449,11 +1450,11 @@ int init_DRAM(int type, dram_para_t *para)
 	dram_enable_all_master();
 	if (para->dram_tpr13 & BIT(28)) {
 		if ((readl(0x70005d4) & BIT(16)) ||
-		    dramc_simple_wr_test(mem_size, 4096))
+		    dramc_simple_wr_test(mem_size_mb, 4096))
 			return 0;
 	}
 
-	return mem_size;
+	return mem_size_mb;
 }
 
 #ifdef __UBOOT__
