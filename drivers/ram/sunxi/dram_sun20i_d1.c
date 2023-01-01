@@ -1350,35 +1350,6 @@ int init_DRAM(int type, dram_para_t *para)
 {
 	int rc, mem_size;
 
-	// Test ZQ status
-	if (para->dram_tpr13 & 0x10000) {
-		debug("DRAM only have internal ZQ\n");
-		writel(readl(0x3000160) | 0x100, 0x3000160);
-		writel(0, 0x3000168);
-		udelay(10);
-	} else {
-		writel(readl(0x3000160) & 0xfffffffc, 0x3000160);
-		writel(para->dram_tpr13 & 0x10000, 0x7010254);
-		udelay(10);
-		writel((readl(0x3000160) & 0xfffffef7) | 2, 0x3000160);
-		udelay(10);
-		writel(readl(0x3000160) | 0x001, 0x3000160);
-		udelay(20);
-		debug("ZQ value = 0x%x\n", readl(0x300016c));
-	}
-
-	// Set voltage
-	dram_voltage_set(para);
-
-	// Set SDRAM controller auto config
-	if ((para->dram_tpr13 & 0x1) == 0) {
-		if (auto_scan_dram_config(para) == 0) {
-			printf("auto_scan_dram_config() FAILED\n");
-			return 0;
-		}
-	}
-
-	// Print header message (too late)
 	debug("DRAM BOOT DRIVE INFO: %s\n", "V0.24");
 	debug("DRAM CLK = %d MHz\n", para->dram_clk);
 	debug("DRAM Type = %d (2:DDR2,3:DDR3)\n", para->dram_type);
@@ -1387,83 +1358,99 @@ int init_DRAM(int type, dram_para_t *para)
 	else
 		debug("DRAMC ZQ value: 0x%x\n", para->dram_zq);
 
-	// report ODT
+	/* Test ZQ status */
+	if (para->dram_tpr13 & BIT(16)) {
+		debug("DRAM only have internal ZQ\n");
+		setbits_le32(0x3000160, BIT(8));
+		writel(0, 0x3000168);
+		udelay(10);
+	} else {
+		clrbits_le32(0x3000160, 0x3);
+		writel(para->dram_tpr13 & BIT(16), 0x7010254);
+		udelay(10);
+		clrsetbits_le32(0x3000160, 0x108, BIT(1));
+		udelay(10);
+		setbits_le32(0x3000160, BIT(0));
+		udelay(20);
+		debug("ZQ value = 0x%x\n", readl(0x300016c));
+	}
+
+	dram_voltage_set(para);
+
+	/* Set SDRAM controller auto config */
+	if ((para->dram_tpr13 & BIT(0)) == 0) {
+		if (auto_scan_dram_config(para) == 0) {
+			printf("auto_scan_dram_config() FAILED\n");
+			return 0;
+		}
+	}
+
+	/* report ODT */
 	rc = para->dram_mr1;
 	if ((rc & 0x44) == 0)
 		debug("DRAM ODT off\n");
 	else
 		debug("DRAM ODT value: 0x%x\n", rc);
 
-	// Init core, final run
+	/* Init core, final run */
 	if (mctl_core_init(para) == 0) {
 		printf("DRAM initialisation error: 1\n");
 		return 0;
 	}
 
-	// Get sdram size
+	/* Get SDRAM size */
 	rc = para->dram_para2;
 	if (rc < 0) {
-		rc = (rc & 0x7fff0000U) >> 16;
+		rc = (rc >> 16) & ~0x8000;
 	} else {
 		rc = DRAMC_get_dram_size();
 		debug("DRAM: size = %dMB\n", rc);
-		para->dram_para2 = (para->dram_para2 & 0xffffu) | rc << 16;
+		para->dram_para2 = (para->dram_para2 & 0xffffU) | rc << 16;
 	}
 	mem_size = rc;
 
-#if 0
-	// Purpose ??
-	if (para->dram_tpr13 & (1 << 30)) {
+	/* Purpose ?? */
+	if (para->dram_tpr13 & BIT(30)) {
 		rc = para->dram_tpr8;
-		if (rc == 0) {
+		if (rc == 0)
 			rc = 0x10000200;
-		}
 		writel(rc, 0x31030a0);
 		writel(0x40a, 0x310309c);
-		writel(readl(0x3103004) | 1, 0x3103004);
+		setbits_le32(0x3103004, BIT(0));
 		debug("Enable Auto SR\n");
 	} else {
-#endif
-	writel(readl(0x31030a0) & 0xffff0000, 0x31030a0);
-	writel(readl(0x3103004) & (~0x1), 0x3103004);
-	//	}
-
-	// Pupose ??
-	rc = readl(0x3103100) & ~(0xf000);
-	if ((para->dram_tpr13 & 0x200) == 0) {
-		if (para->dram_type != 6) {
-			writel(rc, 0x3103100);
-		}
-	} else {
-		writel(rc | 0x5000, 0x3103100);
+		clrbits_le32(0x31030a0, 0xffff);
+		clrbits_le32(0x3103004, 0x1);
 	}
 
-	writel(readl(0x3103140) | (1 << 31), 0x3103140);
-	if (para->dram_tpr13 & (1 << 8)) {
+	/* Purpose ?? */
+	if (para->dram_tpr13 & BIT(9)) {
+		clrsetbits_le32(0x3103100, 0xf000, 0x5000);
+	} else {
+		if (para->dram_type != SUNXI_DRAM_TYPE_LPDDR2)
+			clrbits_le32(0x3103100, 0xf000);
+	}
+
+	setbits_le32(0x3103140, BIT(31));
+
+	/* CHECK: is that really writing to a different register? */
+	if (para->dram_tpr13 & BIT(8))
 		writel(readl(0x3103140) | 0x300, 0x31030b8);
-	}
 
-	rc = readl(0x3103108);
-	if (para->dram_tpr13 & (1 << 16)) {
-		rc &= 0xffffdfff;
-	} else {
-		rc |= 0x00002000;
-	}
-	writel(rc, 0x3103108);
+	if (para->dram_tpr13 & BIT(16))
+		clrbits_le32(0x3103108, BIT(13));
+	else
+		setbits_le32(0x3103108, BIT(13));
 
-	// Purpose ??
-	if (para->dram_type == 7) {
-		rc = readl(0x310307c) & 0xfff0ffff;
-		rc |= 0x0001000;
-		writel(rc, 0x310307c);
-	}
+	/* Purpose ?? */
+	if (para->dram_type == SUNXI_DRAM_TYPE_LPDDR3)
+		clrsetbits_le32(0x310307c, 0xf0000, 0x1000);
 
 	dram_enable_all_master();
-	if (para->dram_tpr13 & (1 << 28)) {
-		rc = readl(0x70005d4);
-		if ((rc & (1 << 16)) || dramc_simple_wr_test(mem_size, 4096)) {
+	if (para->dram_tpr13 & BIT(28)) {
+		if ((readl(0x70005d4) & BIT(16)) ||
+		    dramc_simple_wr_test(mem_size, 4096))
 			return 0;
-		}
 	}
 
 	return mem_size;
