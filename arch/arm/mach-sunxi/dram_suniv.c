@@ -54,20 +54,6 @@ struct dram_para {
 	u8 cas;			/* DRAM CAS */
 };
 
-struct dram_para suniv_dram_para = {
-	.size = 32,
-	.clk = CONFIG_DRAM_CLK,
-	.access_mode = 1,
-	.cs_num = 1,
-	.ddr8_remap = 0,
-	.sdr_ddr = DRAM_TYPE_DDR,
-	.bwidth = 16,
-	.col_width = 10,
-	.row_width = 13,
-	.bank_size = 4,
-	.cas = 0x3,
-};
-
 static bool set_bit_and_wait(unsigned long addr, int bit)
 {
 	setbits_le32(addr, BIT(bit));
@@ -395,7 +381,21 @@ static void do_dram_init(struct dram_para *para)
 
 unsigned long sunxi_dram_init(void)
 {
-	do_dram_init(&suniv_dram_para);
+	struct dram_para para = {
+		.size = 32,
+		.clk = CONFIG_DRAM_CLK,
+		.access_mode = 1,
+		.cs_num = 1,
+		.ddr8_remap = 0,
+		.sdr_ddr = DRAM_TYPE_DDR,
+		.bwidth = 16,
+		.col_width = 10,
+		.row_width = 13,
+		.bank_size = 4,
+		.cas = 0x3,
+	};
 
-	return suniv_dram_para.size * 1024 * 1024;
+	do_dram_init(&para);
+
+	return para.size * 1024UL * 1024;
 }
