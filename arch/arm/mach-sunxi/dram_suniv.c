@@ -314,6 +314,9 @@ static void simple_dram_check(void)
 	}
 }
 
+#define PIO_SDR_PAD_DRV	0x2c0
+#define PIO_SDR_PAD_PULL	0x2c4
+
 static void do_dram_init(struct dram_para *para)
 {
 	struct sunxi_ccm_reg * const ccm =
@@ -321,16 +324,20 @@ static void do_dram_init(struct dram_para *para)
 	u32 val;
 	u8 m; /* PLL_DDR clock factor */
 
+	/* Make sure DDR_REF_D multiplex is not selected. */
 	sunxi_gpio_set_cfgpin(SUNXI_GPB(3), 0x7);
 	mdelay(5);
-	/* TODO: dig out what's them... some analog register? */
-	if ((para->cas >> 3) & 0x1)
-		setbits_le32(SUNXI_PIO_BASE + 0x2c4, (0x1 << 23) | (0x20 << 17));
 
-	if (para->clk >= 144 && para->clk <= 180)
-		writel(0xaaa, SUNXI_PIO_BASE + 0x2c0);
+	/* Enable and set internal reference configuration factor to 1/2 VDDQ */
+	if (para->cas & BIT(3))
+		setbits_le32(SUNXI_PIO_BASE + PIO_SDR_PAD_PULL,
+			     BIT(23) | (0x20 << 17));
+
+	/* Set drive level of all DRAM pins (except ODT) */
+	if (para->clk >= 144 && para->clk < 180)
+		writel(0xaaa, SUNXI_PIO_BASE + PIO_SDR_PAD_DRV); /* level 2 */
 	if (para->clk >= 180)
-		writel(0xfff, SUNXI_PIO_BASE + 0x2c0);
+		writel(0xfff, SUNXI_PIO_BASE + PIO_SDR_PAD_DRV); /* level 3 */
 
 	if (para->cas & BIT(4))
 		writel(0xd1303333, &ccm->pll5_pattern_cfg);
