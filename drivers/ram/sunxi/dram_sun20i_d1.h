@@ -62,6 +62,6 @@ static inline int ns_to_t(int nanoseconds)
 	return DIV_ROUND_UP(ctrl_freq * nanoseconds, 1000);
 }
 
-void mctl_set_timing_params(struct dram_para *para);
+//static void mctl_set_timing_params(struct dram_para *para);
 
 #endif /* _SUNXI_DRAM_SUN20I_D1_H */
