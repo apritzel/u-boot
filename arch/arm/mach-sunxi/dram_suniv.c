@@ -41,17 +41,17 @@ enum dram_type {
 };
 
 struct dram_para {
-	u32 size;		/* dram size (unit: MByte) */
-	u32 clk;		/* dram work clock (unit: MHz) */
-	u32 access_mode;	/* 0: interleave mode 1: sequence mode */
-	u32 cs_num;		/* dram chip count  1: one chip  2: two chip */
-	u32 ddr8_remap;		/* for 8bits data width DDR 0: normal  1: 8bits */
+	u32 size;		/* DRAM size (unit: MByte) */
+	u32 clk;		/* DRAM work clock (unit: MHz) */
 	enum dram_type sdr_ddr;
-	u32 bwidth;		/* dram bus width */
-	u32 col_width;		/* column address width */
-	u32 row_width;		/* row address width */
-	u32 bank_size;		/* dram bank count */
-	u32 cas;		/* dram cas */
+	u8 access_mode;		/* 0: interleave mode 1: sequence mode */
+	u8 cs_num;		/* DRAM chip count  1: one chip  2: two chips */
+	u8 ddr8_remap;		/* for 8bits data width DDR 0: normal  1: 8bits */
+	u8 bwidth;		/* DRAM bus width */
+	u8 col_width;		/* column address width */
+	u8 row_width;		/* row address width */
+	u8 bank_size;		/* DRAM bank count */
+	u8 cas;			/* DRAM CAS */
 };
 
 struct dram_para suniv_dram_para = {
