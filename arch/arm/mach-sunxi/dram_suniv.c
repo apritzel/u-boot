@@ -298,7 +298,8 @@ static void simple_dram_check(void)
 
 	for (i = 0; i < 0x40; i++) {
 		if (dram[i] != i) {
-			printf("DRAM initialization failed: dram[0x%x] != 0x%x.", i, dram[i]);
+			printf("initialization failed: DRAM[0x%x] != 0x%x.",
+			       i, dram[i]);
 			hang();
 		}
 	}
@@ -308,7 +309,8 @@ static void simple_dram_check(void)
 
 	for (i = 0; i < 0x10000; i += 0x40) {
 		if (dram[i] != i) {
-			printf("DRAM initialization failed: dram[0x%x] != 0x%x.", i, dram[i]);
+			printf("initialization failed: DRAM[0x%x] != 0x%x.",
+			       i, dram[i]);
 			hang();
 		}
 	}
