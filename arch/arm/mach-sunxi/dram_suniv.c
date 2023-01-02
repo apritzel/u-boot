@@ -128,28 +128,16 @@ static int dram_para_setup(struct dram_para *para)
 
 static u32 dram_check_delay(u32 bwidth)
 {
-	u32 dsize;
-	int i, j;
+	int i;
 	u32 num = 0;
-	u32 dflag = 0;
+	u32 dflag;
 
-	dsize = ((bwidth == 16) ? 4 : 2);
-	for (i = 0; i < dsize; i++) {
-		if (i == 0)
-			dflag = readl(SUNXI_DRAMC_BASE + DRAM_DRPTR0);
-		else if (i == 1)
-			dflag = readl(SUNXI_DRAMC_BASE + DRAM_DRPTR1);
-		else if (i == 2)
-			dflag = readl(SUNXI_DRAMC_BASE + DRAM_DRPTR2);
-		else if (i == 3)
-			dflag = readl(SUNXI_DRAMC_BASE + DRAM_DRPTR3);
-
-		for (j = 0; j < 32; j++) {
-			if (dflag & 0x1)
-				num++;
-			dflag >>= 1;
-		}
+	/* For each 8-bit lane */
+	for (i = 0; i < bwidth / BITS_PER_BYTE; i++) {
+		dflag = readl(SUNXI_DRAMC_BASE + DRAM_DRPTR0 + i * 4);
+		num += hweight32(dflag);
 	}
+
 	return num;
 }
 
