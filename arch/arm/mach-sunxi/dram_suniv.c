@@ -17,6 +17,7 @@
 #include <linux/bitops.h>
 #include <linux/delay.h>
 #include <hang.h>
+#include <wait_bit.h>
 
 #define SDR_T_CAS			(0x2)
 #define SDR_T_RAS			(0x8)
@@ -67,28 +68,10 @@ struct dram_para suniv_dram_para = {
 	.cas = 0x3,
 };
 
-static int dram_initial(void)
+static bool set_bit_and_wait(unsigned long addr, int bit)
 {
-	unsigned int time = 0xffffff;
-
-	setbits_le32(SUNXI_DRAMC_BASE + DRAM_SCTLR, 0x1);
-	while ((readl(SUNXI_DRAMC_BASE + DRAM_SCTLR) & 0x1) && time--) {
-		if (time == 0)
-			return 0;
-	}
-	return 1;
-}
-
-static int dram_delay_scan(void)
-{
-	unsigned int time = 0xffffff;
-
-	setbits_le32(SUNXI_DRAMC_BASE + DRAM_DDLYR, 0x1);
-	while ((readl(SUNXI_DRAMC_BASE + DRAM_DDLYR) & 0x1) && time--) {
-		if (time == 0)
-			return 0;
-	}
-	return 1;
+	setbits_le32(addr, BIT(bit));
+	return !wait_for_bit_le32((void *)addr, BIT(bit), 0, 1000, false);
 }
 
 static void dram_set_autofresh_cycle(u32 clk)
@@ -139,8 +122,8 @@ static int dram_para_setup(struct dram_para *para)
 	      (para->sdr_ddr << 16);
 
 	writel(val, SUNXI_DRAMC_BASE + DRAM_SCONR);
-	setbits_le32(SUNXI_DRAMC_BASE + DRAM_SCTLR, 0x1 << 19);
-	return dram_initial();
+	setbits_le32(SUNXI_DRAMC_BASE + DRAM_SCTLR, BIT(19));
+	return set_bit_and_wait(SUNXI_DRAMC_BASE + DRAM_SCTLR, 0);
 }
 
 static u32 dram_check_delay(u32 bwidth)
@@ -207,7 +190,7 @@ static u32 dram_check_type(struct dram_para *para)
 	for (i = 0; i < 8; i++) {
 		clrsetbits_le32(SUNXI_DRAMC_BASE + DRAM_SCTLR,
 				0x7 << 6, i << 6);
-		dram_delay_scan();
+		set_bit_and_wait(SUNXI_DRAMC_BASE + DRAM_DDLYR, 0);
 		if (readl(SUNXI_DRAMC_BASE + DRAM_DDLYR) & 0x30)
 			times++;
 	}
@@ -230,7 +213,7 @@ static u32 dram_scan_readpipe(struct dram_para *para)
 		for (i = 0; i < 8; i++) {
 			clrsetbits_le32(SUNXI_DRAMC_BASE + DRAM_SCTLR,
 					0x7 << 6, i << 6);
-			dram_delay_scan();
+			set_bit_and_wait(SUNXI_DRAMC_BASE + DRAM_DDLYR, 0);
 			readpipe[i] = 0;
 			if ((((readl(SUNXI_DRAMC_BASE + DRAM_DDLYR) >> 4) & 0x3) == 0x0) &&
 			    (((readl(SUNXI_DRAMC_BASE + DRAM_DDLYR) >> 4) & 0x1) == 0x0))
@@ -242,7 +225,7 @@ static u32 dram_scan_readpipe(struct dram_para *para)
 		}
 		clrsetbits_le32(SUNXI_DRAMC_BASE + DRAM_SCTLR,
 				0x7 << 6, rp_best << 6);
-		dram_delay_scan();
+		set_bit_and_wait(SUNXI_DRAMC_BASE + DRAM_DDLYR, 0);
 	} else {
 		clrbits_le32(SUNXI_DRAMC_BASE + DRAM_SCONR,
 			     (0x1 << 16) | (0x3 << 13));
@@ -382,7 +365,8 @@ static void do_dram_init(struct dram_para *para)
 		val |= CCM_PLL5_CTRL_SIGMA_DELTA_EN;
 	writel(val, &ccm->pll5_cfg);
 	setbits_le32(&ccm->pll5_cfg, CCM_PLL5_CTRL_UPD);
-	mctl_await_completion(&ccm->pll5_cfg, BIT(28), BIT(28));
+	if (wait_for_bit_le32(&ccm->pll5_cfg, BIT(28), BIT(28), 1000, false))
+		panic("PLL_DDR not locking\n");
 	mdelay(5);
 
 	setbits_le32(&ccm->ahb_gate0, (1 << AHB_GATE_OFFSET_MCTL));
