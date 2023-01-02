@@ -1,6 +1,17 @@
 // SPDX-License-Identifier: GPL-2.0+
+/*
+ * Allwinner D1/D1s/R528/T113-sx DRAM initialisation
+ *
+ * As usual there is no documentation for the memory controller or PHY IP
+ * used here. The baseline of this code was lifted from awboot[1], which
+ * seems to be based on some form of de-compilation of some original Allwinner
+ * code bits (with a GPL2 license tag from the very beginning).
+ * This version here is a reworked version, to match the U-Boot coding style
+ * and style of the other Allwinner DRAM drivers.
+ *
+ * [1] https://github.com/szemzoa/awboot.git
+ */
 
-#ifdef __UBOOT__
 #include <asm/io.h>
 #include <common.h>
 #ifdef CONFIG_RAM
@@ -10,39 +21,6 @@
 #include <linux/delay.h>
 
 #include "dram_sun20i_d1.h"
-
-#else						/* !__UBOOT__ => awboot */
-
-#include <stdint.h>
-#include "dram.h"
-#include "debug.h"
-#include "main.h"
-
-#define readl(addr)		read32(addr)
-#define writel(val, addr)	write32((addr), (val))
-#define udelay(c)		sdelay(c)
-#define printf			debug
-#define DIV_ROUND_UP(a, b)	(((a) + (b) - 1) / (b))
-
-#define clrsetbits_le32(addr, clear, set)			\
-	write32((addr), (read32(addr) & ~(clear)) | (set))
-#define setbits_le32(addr, set)					\
-	write32((addr), read32(addr) | (set))
-#define clrbits_le32(addr, clear)				\
-	write32((addr), read32(addr) & ~(clear))
-
-#define CONFIG_SYS_SDRAM_BASE	SDRAM_BASE
-#define CONFIG_DRAM_CLK		156
-#define CONFIG_SUNXI_DRAM_TYPE	SUNXI_DRAM_TYPE_DDR3
-
-static int ns_to_t(int nanoseconds)
-{
-	const unsigned int ctrl_freq = CONFIG_DRAM_CLK / 2;
-
-	return DIV_ROUND_UP(ctrl_freq * nanoseconds, 1000);
-}
-
-#endif
 
 #ifndef SUNXI_SID_BASE
 #define SUNXI_SID_BASE	0x3006200
@@ -1360,8 +1338,6 @@ int init_DRAM(int type, dram_para_t *para)
 	return mem_size_mb;
 }
 
-#ifdef __UBOOT__
-
 unsigned long sunxi_dram_init(void)
 {
 	dram_para_t para = {
@@ -1447,12 +1423,3 @@ U_BOOT_DRIVER(sunxi_ram) = {
 	.priv_auto = sizeof(struct sunxi_ram_priv),
 };
 #endif				/* CONFIG_RAM (using driver model) */
-
-#else				/* __UBOOT__ */
-
-void abort(void)
-{
-	while (1)
-		;
-}
-#endif
