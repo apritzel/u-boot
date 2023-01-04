@@ -17,7 +17,6 @@
 #include <linux/bitops.h>
 #include <linux/delay.h>
 #include <hang.h>
-#include <wait_bit.h>
 
 #define SDR_T_CAS			(0x2)
 #define SDR_T_RAS			(0x8)
@@ -354,8 +353,9 @@ static void do_dram_init(struct dram_para *para)
 		val |= CCM_PLL5_CTRL_SIGMA_DELTA_EN;
 	writel(val, &ccm->pll5_cfg);
 	setbits_le32(&ccm->pll5_cfg, CCM_PLL5_CTRL_UPD);
-	if (wait_for_bit_le32(&ccm->pll5_cfg, BIT(28), BIT(28), 1000, false))
-		panic("PLL_DDR not locking\n");
+	mctl_await_completion(&ccm->pll5_cfg, BIT(28), BIT(28));
+//	if (wait_for_bit_le32(&ccm->pll5_cfg, BIT(28), BIT(28), 1000, false))
+//		panic("PLL_DDR not locking\n");
 	mdelay(5);
 
 	setbits_le32(&ccm->ahb_gate0, (1 << AHB_GATE_OFFSET_MCTL));
