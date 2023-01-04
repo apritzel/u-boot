@@ -272,7 +272,7 @@ static u32 dram_get_dram_size(struct dram_para *para)
 		para->size = 64;
 	else
 		para->size = 32;
-	dram_set_autofresh_cycle(para->clk);
+	dram_set_autofresh_cycle(CONFIG_DRAM_CLK);
 	para->access_mode = 0;
 	dram_para_setup(para);
 
