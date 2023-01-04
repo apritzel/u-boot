@@ -56,8 +56,13 @@ struct dram_para {
 
 static bool set_bit_and_wait(unsigned long addr, int bit)
 {
+	unsigned int tries = 0x10000;
+
 	setbits_le32(addr, BIT(bit));
-	return !wait_for_bit_le32((void *)addr, BIT(bit), 0, 1000, false);
+	while ((readl(addr) & BIT(bit)) && --tries)
+		;
+
+	return tries > 0;
 }
 
 static void dram_set_autofresh_cycle(u32 clk)
