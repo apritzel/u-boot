@@ -212,14 +212,14 @@ static void dram_scan_readpipe(struct dram_para *para)
 
 static u32 dram_get_dram_size(struct dram_para *para)
 {
-	u32 colflag = 10, rowflag = 13;
+	u32 col_width = 10, row_width = 13;
 	u32 val1 = 0;
 	u32 count = 0;
 	u32 addr1, addr2;
 	int i;
 
-	para->col_width = colflag;
-	para->row_width = rowflag;
+	para->col_width = col_width;
+	para->row_width = row_width;
 	dram_para_setup(para);
 	dram_scan_readpipe(para);
 	for (i = 0; i < 32; i++) {
@@ -232,14 +232,14 @@ static u32 dram_get_dram_size(struct dram_para *para)
 			count++;
 	}
 	if (count == 32)
-		colflag = 9;
+		col_width = 9;
 	else
-		colflag = 10;
+		col_width = 10;
 	count = 0;
-	para->col_width = colflag;
-	para->row_width = rowflag;
+	para->col_width = col_width;
+	para->row_width = row_width;
 	dram_para_setup(para);
-	if (colflag == 10) {
+	if (col_width == 10) {
 		addr1 = CFG_SYS_SDRAM_BASE + 0x400000;
 		addr2 = CFG_SYS_SDRAM_BASE + 0xc00000;
 	} else {
@@ -256,17 +256,18 @@ static u32 dram_get_dram_size(struct dram_para *para)
 			count++;
 	}
 	if (count == 32)
-		rowflag = 12;
+		row_width = 12;
 	else
-		rowflag = 13;
-	para->col_width = colflag;
-	para->row_width = rowflag;
+		row_width = 13;
+	para->col_width = col_width;
+	para->row_width = row_width;
 	if (para->row_width != 13)
 		para->size = 16;
 	else if (para->col_width == 10)
 		para->size = 64;
 	else
 		para->size = 32;
+
 	dram_set_refresh_cycle(CONFIG_DRAM_CLK);
 	para->access_mode = 0;
 	dram_para_setup(para);
