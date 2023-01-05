@@ -162,7 +162,7 @@ static u32 sdr_readpipe_select(void)
 	return value;
 }
 
-static u32 dram_check_type(struct dram_para *para)
+static void dram_set_type(struct dram_para *para)
 {
 	u32 times = 0;
 	int i;
@@ -175,12 +175,10 @@ static u32 dram_check_type(struct dram_para *para)
 			times++;
 	}
 
-	if (times == 8) {
+	if (times == 8)
 		para->type = DRAM_TYPE_SDR;
-		return 0;
-	}
-	para->type = DRAM_TYPE_DDR;
-	return 1;
+	else
+		para->type = DRAM_TYPE_DDR;
 }
 
 static u32 dram_scan_readpipe(struct dram_para *para)
@@ -376,7 +374,7 @@ static void do_dram_init(struct dram_para *para)
 	      (SDR_T_RRD << 22) | (SDR_T_XP << 25);
 	writel(val, SUNXI_DRAMC_BASE + DRAM_STMG1R);
 	dram_para_setup(para);
-	dram_check_type(para);
+	dram_set_type(para);
 
 	clrsetbits_le32(SUNXI_PIO_BASE + 0x2c4, (1 << 16),
 			para->type == DRAM_TYPE_DDR ? BIT(16) : 0);
