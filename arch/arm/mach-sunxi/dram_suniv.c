@@ -169,27 +169,35 @@ static void dram_set_type(struct dram_para *para)
 		para->type = DRAM_TYPE_DDR;
 }
 
-static u32 dram_scan_readpipe(struct dram_para *para)
+static unsigned int ddr_readpipe_select(struct dram_para *para)
 {
-	u32 rp_best = 0, rp_val = 0;
-	u32 delay;
+	unsigned int rp_best = 0;
+	u32 rp_val = 0, delay;
 	int i;
 
-	if (para->type == DRAM_TYPE_DDR) {
-		for (i = 0; i < 8; i++) {
-			clrsetbits_le32(SUNXI_DRAMC_BASE + DRAM_SCTLR,
-					0x7 << 6, i << 6);
-			set_bit_and_wait(SUNXI_DRAMC_BASE + DRAM_DDLYR, 0);
+	for (i = 0; i < 8; i++) {
+		clrsetbits_le32(SUNXI_DRAMC_BASE + DRAM_SCTLR,
+				0x7 << 6, i << 6);
+		set_bit_and_wait(SUNXI_DRAMC_BASE + DRAM_DDLYR, 0);
+		if (readl(SUNXI_DRAMC_BASE + DRAM_DDLYR) & 0x30)
+			continue;
 
-			if ((readl(SUNXI_DRAMC_BASE + DRAM_DDLYR) & 0x30))
-				continue;
-
-			delay = dram_check_delay(para->bwidth);
-			if (delay >= rp_val) {
-				rp_val = delay;
-				rp_best = i;
-			}
+		delay = dram_check_delay(para->bwidth);
+		if (delay >= rp_val) {
+			rp_val = delay;
+			rp_best = i;
 		}
+	}
+
+	return rp_best;
+}
+
+static u32 dram_scan_readpipe(struct dram_para *para)
+{
+	unsigned int rp_best;
+
+	if (para->type == DRAM_TYPE_DDR) {
+		rp_best = ddr_readpipe_select(para);
 		clrsetbits_le32(SUNXI_DRAMC_BASE + DRAM_SCTLR,
 				0x7 << 6, rp_best << 6);
 		set_bit_and_wait(SUNXI_DRAMC_BASE + DRAM_DDLYR, 0);
