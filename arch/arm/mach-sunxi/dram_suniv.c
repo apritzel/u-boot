@@ -64,38 +64,24 @@ static bool set_bit_and_wait(unsigned long addr, int bit)
 	return tries > 0;
 }
 
-static void dram_set_autofresh_cycle(u32 clk)
+static unsigned int ns_to_t(unsigned int ns_delay)
 {
-	u32 val = 0;
-	u32 row = 0;
-	u32 temp = 0;
+	return DIV_ROUND_UP(ns_delay * CONFIG_DRAM_CLK, 1000);
+}
 
-	row = readl(SUNXI_DRAMC_BASE + DRAM_SCONR);
-	row &= 0x1e0;
-	row >>= 0x5;
+/*
+ * Calculate the length of the refresh interval, in clock ticks.
+ * According to the JEDEC spec, for 256Mbit and bigger arrays, it's 7.8 us,
+ * for smaller ones 15.6 us.
+ */
+static void dram_set_refresh_cycle(u32 clk)
+{
+	u32 row_width = (readl(SUNXI_DRAMC_BASE + DRAM_SCONR) & 0x1e0) >> 5;
 
-	if (row == 0xc) {
-		if (clk >= 1000000) {
-			temp = clk + (clk >> 3) + (clk >> 4) + (clk >> 5);
-			while (temp >= (10000000 >> 6)) {
-				temp -= (10000000 >> 6);
-				val++;
-			}
-		} else {
-			val = (clk * 499) >> 6;
-		}
-	} else if (row == 0xb) {
-		if (clk >= 1000000) {
-			temp = clk + (clk >> 3) + (clk >> 4) + (clk >> 5);
-			while (temp >= (10000000 >> 7)) {
-				temp -= (10000000 >> 7);
-				val++;
-			}
-		} else {
-			val = (clk * 499) >> 5;
-		}
-	}
-	writel(val, SUNXI_DRAMC_BASE + DRAM_SREFR);
+	if (row_width == 12)
+		writel(ns_to_t(7800), SUNXI_DRAMC_BASE + DRAM_SREFR);
+	else if (row_width == 11)
+		writel(ns_to_t(15600), SUNXI_DRAMC_BASE + DRAM_SREFR);
 }
 
 static int dram_para_setup(struct dram_para *para)
@@ -274,7 +260,7 @@ static u32 dram_get_dram_size(struct dram_para *para)
 		para->size = 64;
 	else
 		para->size = 32;
-	dram_set_autofresh_cycle(CONFIG_DRAM_CLK);
+	dram_set_refresh_cycle(CONFIG_DRAM_CLK);
 	para->access_mode = 0;
 	dram_para_setup(para);
 
@@ -381,7 +367,7 @@ static void do_dram_init(struct dram_para *para)
 	clrsetbits_le32(SUNXI_PIO_BASE + 0x2c4, (1 << 16),
 			para->type == DRAM_TYPE_DDR ? BIT(16) : 0);
 
-	dram_set_autofresh_cycle(para->clk);
+	dram_set_refresh_cycle(para->clk);
 	dram_scan_readpipe(para);
 	dram_get_dram_size(para);
 	simple_dram_check();
