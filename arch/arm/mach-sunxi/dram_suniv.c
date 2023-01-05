@@ -164,7 +164,7 @@ static u32 sdr_readpipe_select(void)
 
 static void dram_set_type(struct dram_para *para)
 {
-	u32 times = 0;
+	u32 invalids = 0;
 	int i;
 
 	for (i = 0; i < 8; i++) {
@@ -172,10 +172,10 @@ static void dram_set_type(struct dram_para *para)
 				0x7 << 6, i << 6);
 		set_bit_and_wait(SUNXI_DRAMC_BASE + DRAM_DDLYR, 0);
 		if (readl(SUNXI_DRAMC_BASE + DRAM_DDLYR) & 0x30)
-			times++;
+			invalids++;
 	}
 
-	if (times == 8)
+	if (invalids == 8)
 		para->type = DRAM_TYPE_SDR;
 	else
 		para->type = DRAM_TYPE_DDR;
