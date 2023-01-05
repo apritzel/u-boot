@@ -35,14 +35,14 @@
 enum dram_type {
 	DRAM_TYPE_SDR	= 0,
 	DRAM_TYPE_DDR	= 1,
-	/* Not supported yet. */
+	/* Mobile DDR, older version of LPDDR. Not supported yet. */
 	DRAM_TYPE_MDDR	= 2,
 };
 
 struct dram_para {
 	u32 size;		/* DRAM size (unit: MByte) */
 	u32 clk;		/* DRAM work clock (unit: MHz) */
-	enum dram_type sdr_ddr;
+	enum dram_type type;
 	u8 access_mode;		/* 0: interleave mode 1: sequence mode */
 	u8 cs_num;		/* DRAM chip count  1: one chip  2: two chips */
 	u8 ddr8_remap;		/* for 8bits data width DDR 0: normal  1: 8bits */
@@ -107,9 +107,11 @@ static int dram_para_setup(struct dram_para *para)
 	      ((para->cs_num >> 1) << 4) |
 	      ((para->row_width - 1) << 5) |
 	      ((para->col_width - 1) << 9) |
-	      ((para->sdr_ddr ? (para->bwidth >> 4) : (para->bwidth >> 5)) << 13) |
+	      ((para->type == DRAM_TYPE_DDR ?
+			(para->bwidth >> 4) :
+			(para->bwidth >> 5)) << 13)	|
 	      (para->access_mode << 15) |
-	      (para->sdr_ddr << 16);
+	      (para->type << 16);
 
 	writel(val, SUNXI_DRAMC_BASE + DRAM_SCONR);
 	setbits_le32(SUNXI_DRAMC_BASE + DRAM_SCTLR, BIT(19));
@@ -174,10 +176,10 @@ static u32 dram_check_type(struct dram_para *para)
 	}
 
 	if (times == 8) {
-		para->sdr_ddr = DRAM_TYPE_SDR;
+		para->type = DRAM_TYPE_SDR;
 		return 0;
 	}
-	para->sdr_ddr = DRAM_TYPE_DDR;
+	para->type = DRAM_TYPE_DDR;
 	return 1;
 }
 
@@ -187,7 +189,7 @@ static u32 dram_scan_readpipe(struct dram_para *para)
 	u32 delay;
 	int i;
 
-	if (para->sdr_ddr == DRAM_TYPE_DDR) {
+	if (para->type == DRAM_TYPE_DDR) {
 		for (i = 0; i < 8; i++) {
 			clrsetbits_le32(SUNXI_DRAMC_BASE + DRAM_SCTLR,
 					0x7 << 6, i << 6);
@@ -364,7 +366,7 @@ static void do_dram_init(struct dram_para *para)
 	setbits_le32(&ccm->ahb_reset0_cfg, (1 << AHB_RESET_OFFSET_MCTL));
 
 	clrsetbits_le32(SUNXI_PIO_BASE + 0x2c4, (1 << 16),
-			((para->sdr_ddr == DRAM_TYPE_DDR) << 16));
+			para->type == DRAM_TYPE_DDR ?  BIT(16) : 0);
 
 	val = (SDR_T_CAS << 0) | (SDR_T_RAS << 3) | (SDR_T_RCD << 7) |
 	      (SDR_T_RP << 10) | (SDR_T_WR << 13) | (SDR_T_RFC << 15) |
@@ -377,7 +379,7 @@ static void do_dram_init(struct dram_para *para)
 	dram_check_type(para);
 
 	clrsetbits_le32(SUNXI_PIO_BASE + 0x2c4, (1 << 16),
-			((para->sdr_ddr == DRAM_TYPE_DDR) << 16));
+			para->type == DRAM_TYPE_DDR ? BIT(16) : 0);
 
 	dram_set_autofresh_cycle(para->clk);
 	dram_scan_readpipe(para);
@@ -393,7 +395,7 @@ unsigned long sunxi_dram_init(void)
 		.access_mode = 1,
 		.cs_num = 1,
 		.ddr8_remap = 0,
-		.sdr_ddr = DRAM_TYPE_DDR,
+		.type = DRAM_TYPE_DDR,
 		.bwidth = 16,
 		.col_width = 10,
 		.row_width = 13,
