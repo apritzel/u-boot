@@ -192,7 +192,7 @@ static unsigned int ddr_readpipe_select(struct dram_para *para)
 	return rp_best;
 }
 
-static u32 dram_scan_readpipe(struct dram_para *para)
+static void dram_scan_readpipe(struct dram_para *para)
 {
 	unsigned int rp_best;
 
@@ -208,7 +208,6 @@ static u32 dram_scan_readpipe(struct dram_para *para)
 		clrsetbits_le32(SUNXI_DRAMC_BASE + DRAM_SCTLR,
 				0x7 << 6, rp_best << 6);
 	}
-	return 0;
 }
 
 static u32 dram_get_dram_size(struct dram_para *para)
