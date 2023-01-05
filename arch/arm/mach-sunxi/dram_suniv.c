@@ -102,18 +102,20 @@ static int dram_para_setup(struct dram_para *para)
 {
 	u32 val = 0;
 
-	val = (para->ddr8_remap) | (0x1 << 1) |
-	      ((para->bank_size >> 2) << 3) |
-	      ((para->cs_num >> 1) << 4) |
-	      ((para->row_width - 1) << 5) |
-	      ((para->col_width - 1) << 9) |
+	val = (para->ddr8_remap 		<< 0)	|
+	      BIT(1)					|
+	      ((para->bank_size >> 2) 		<< 3)	|
+	      ((para->cs_num >> 1) 		<< 4)	|
+	      ((para->row_width - 1)		<< 5)	|
+	      ((para->col_width - 1)		<< 9)	|
 	      ((para->type == DRAM_TYPE_DDR ?
 			(para->bwidth >> 4) :
-			(para->bwidth >> 5)) << 13)	|
-	      (para->access_mode << 15) |
-	      (para->type << 16);
+			(para->bwidth >> 5))	<< 13)	|
+	      (para->access_mode		<< 15)	|
+	      (para->type 			<< 16);
 
 	writel(val, SUNXI_DRAMC_BASE + DRAM_SCONR);
+
 	setbits_le32(SUNXI_DRAMC_BASE + DRAM_SCTLR, BIT(19));
 	return set_bit_and_wait(SUNXI_DRAMC_BASE + DRAM_SCTLR, 0);
 }
