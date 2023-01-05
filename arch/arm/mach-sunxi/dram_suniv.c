@@ -18,20 +18,6 @@
 #include <linux/delay.h>
 #include <hang.h>
 
-#define SDR_T_CAS			(0x2)
-#define SDR_T_RAS			(0x8)
-#define SDR_T_RCD			(0x3)
-#define SDR_T_RP			(0x3)
-#define SDR_T_WR			(0x3)
-#define SDR_T_RFC			(0xd)
-#define SDR_T_XSR			(0xf9)
-#define SDR_T_RC			(0xb)
-#define SDR_T_INIT			(0x8)
-#define SDR_T_INIT_REF			(0x7)
-#define SDR_T_WTR			(0x2)
-#define SDR_T_RRD			(0x2)
-#define SDR_T_XP			(0x0)
-
 enum dram_type {
 	DRAM_TYPE_SDR	= 0,
 	DRAM_TYPE_DDR	= 1,
@@ -303,6 +289,59 @@ static void simple_dram_check(void)
 	}
 }
 
+/*
+ * The timing values below are from the JEDS79C (DDR SDRAM spec) document,
+ * for DDR-333 and DDR-400, respectively. Some parameters are not mentioned,
+ * but some Mobile DDR SDRAM datasheet mentions additionally:
+ * tXP:Exit Power Down to next valid Command= tIS + 1tCK (+2tCK for DDR-400)
+ * tIS=1.1ns for DDR-333, 0.9ns for DDR-400
+ * tXSR:Self Refresh Exit to next valid Command Delay: 120ns
+ */
+static void mctl_set_timing_params(unsigned int clkrate)
+{
+	u8 cas		= 2;		// CAS latency aka CL=2?
+	u8 ras;
+	u8 rcd;
+	u8 rp;
+	u8 wr;
+	u8 rfc;
+	u16 xsr		= 249;		// JEDEC XSRD: 200 tCK
+	u8 rc;
+	u16 init	= 8;
+	u8 init_ref	= 7;
+	u8 wtr;
+	u8 rrd;
+	u8 xp		= 0;		// JEDEC tXP: 1.1ns+1 tCK => 1.17
+	u32 val;
+
+	if (clkrate < 168) {		/* DDR-333 JEDEC timings */
+		ras	= ns_to_t(42);
+		rcd	= ns_to_t(18);
+		rp	= ns_to_t(18);
+		wr	= ns_to_t(15);
+		rfc	= ns_to_t(72);
+		rc	= ns_to_t(60);
+		wtr	= 1;
+		rrd	= ns_to_t(12);
+	} else {			/* original legacy timings */
+		ras	= 8;
+		rcd	= 3;
+		rp	= 3;
+		wr	= 3;
+		rfc	= 13;
+		rc	= 11;
+		wtr	= 2;
+		rrd	= 2;
+	}
+
+	val = (cas << 0) | (ras << 3) | (rcd << 7) | (rp << 10) |
+	      (wr << 13) | (rfc << 15) | (xsr << 19) | (rc << 28);
+	writel(val, SUNXI_DRAMC_BASE + DRAM_STMG0R);
+	val = (init << 0) | (init_ref << 16) | (wtr << 20) |
+	      (rrd << 22) | (xp << 25);
+	writel(val, SUNXI_DRAMC_BASE + DRAM_STMG1R);
+}
+
 #define PIO_SDR_PAD_DRV	0x2c0
 #define PIO_SDR_PAD_PULL	0x2c4
 
@@ -362,13 +401,7 @@ static void do_dram_init(struct dram_para *para)
 	clrsetbits_le32(SUNXI_PIO_BASE + 0x2c4, (1 << 16),
 			para->type == DRAM_TYPE_DDR ?  BIT(16) : 0);
 
-	val = (SDR_T_CAS << 0) | (SDR_T_RAS << 3) | (SDR_T_RCD << 7) |
-	      (SDR_T_RP << 10) | (SDR_T_WR << 13) | (SDR_T_RFC << 15) |
-	      (SDR_T_XSR << 19) | (SDR_T_RC << 28);
-	writel(val, SUNXI_DRAMC_BASE + DRAM_STMG0R);
-	val = (SDR_T_INIT << 0) | (SDR_T_INIT_REF << 16) | (SDR_T_WTR << 20) |
-	      (SDR_T_RRD << 22) | (SDR_T_XP << 25);
-	writel(val, SUNXI_DRAMC_BASE + DRAM_STMG1R);
+	mctl_set_timing_params(para->clk);
 	dram_para_setup(para);
 	dram_set_type(para);
 
