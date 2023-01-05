@@ -180,7 +180,7 @@ static u32 dram_check_type(struct dram_para *para)
 static u32 dram_scan_readpipe(struct dram_para *para)
 {
 	u32 rp_best = 0, rp_val = 0;
-	u32 readpipe[8];
+	u32 delay;
 	int i;
 
 	if (para->sdr_ddr == DRAM_TYPE_DDR) {
@@ -188,12 +188,13 @@ static u32 dram_scan_readpipe(struct dram_para *para)
 			clrsetbits_le32(SUNXI_DRAMC_BASE + DRAM_SCTLR,
 					0x7 << 6, i << 6);
 			set_bit_and_wait(SUNXI_DRAMC_BASE + DRAM_DDLYR, 0);
-			readpipe[i] = 0;
-			if ((((readl(SUNXI_DRAMC_BASE + DRAM_DDLYR) >> 4) & 0x3) == 0x0) &&
-			    (((readl(SUNXI_DRAMC_BASE + DRAM_DDLYR) >> 4) & 0x1) == 0x0))
-				readpipe[i] = dram_check_delay(para->bwidth);
-			if (rp_val < readpipe[i]) {
-				rp_val = readpipe[i];
+
+			if ((readl(SUNXI_DRAMC_BASE + DRAM_DDLYR) & 0x30))
+				continue;
+
+			delay = dram_check_delay(para->bwidth);
+			if (delay >= rp_val) {
+				rp_val = delay;
 				rp_best = i;
 			}
 		}
