@@ -323,6 +323,42 @@ static void mctl_set_timing_params(unsigned int clkrate)
 		rc	= ns_to_t(60);
 		wtr	= 1;
 		rrd	= ns_to_t(12);
+	} else if (clkrate == 168) {	/* fixed DDR-333 JEDEC timings */
+		/*
+		 * At exactly 166.666.. MHz, the above DDR-333 JEDEC timings
+		 * would result in those values below. The clock controller
+		 * cannot run at this frequency exactly, the closest is
+		 * 168 MHz. Most of the calculated timing values cross an
+		 * integer boundary at exactly 166.666... MHz, so due to the
+		 * round-up algorithm, the calculated values would result in
+		 * a timing delay of one *extra* cycle:
+		 * 	42 ns @ 166.66MHz = 6.99972 cycles => 7 cycles
+		 * 	42 ns @ 166.67Mhz = 7.00014 cycles => 8 cycles
+		 * 168 MHz is just 0.8% higher than the nominal frequency,
+		 * so force those fixed timings in, for optimal performance.
+		 */
+		ras	= 7;	// 42 ns @ 166.6 MHz
+		rcd	= 3;	// 18 ns @ 166.6 MHz
+		rp	= 3;	// 18 ns @ 166.6 MHz
+		wr	= 3;	// 15 ns @ 166.6 MHz
+		rfc	= 12;	// 72 ns @ 166.6 MHz
+		rc	= 10;	// 60 ns @ 166.6 MHz
+		wtr	= 1;
+		rrd	= 2;	// 12 ns @ 166.6 MHz
+	} else if (clkrate == 204) {	/* fixed DDR-400 JEDEC timings */
+		/*
+		 * Same story as above, use the cycle values calculated at
+		 * 200 MHz, when running at 204 MHz, which is the closest
+		 * we can get with the DRAM PLL.
+		 */
+		ras	= 8;	// 40 ns @ 200 MHz
+		rcd	= 3;	// 15 ns @ 200 MHz
+		rp	= 3;	// 15 ns @ 200 MHz
+		wr	= 3;	// 15 ns @ 200 MHz
+		rfc	= 14;	// 70 ns @ 200 MHz
+		rc	= 11;	// 55 ns @ 200 MHz
+		wtr	= 2;
+		rrd	= 2;	// 10 ns @ 200 MHz
 	} else {			/* DDR-400 JEDEC timings */
 		ras	= ns_to_t(40);
 		rcd	= ns_to_t(15);
