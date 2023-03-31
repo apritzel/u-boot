@@ -323,15 +323,15 @@ static void mctl_set_timing_params(unsigned int clkrate)
 		rc	= ns_to_t(60);
 		wtr	= 1;
 		rrd	= ns_to_t(12);
-	} else {			/* original legacy timings */
-		ras	= 8;
-		rcd	= 3;
-		rp	= 3;
-		wr	= 3;
-		rfc	= 13;
-		rc	= 11;
+	} else {			/* DDR-400 JEDEC timings */
+		ras	= ns_to_t(40);
+		rcd	= ns_to_t(15);
+		rp	= ns_to_t(15);
+		wr	= ns_to_t(15);
+		rfc	= ns_to_t(70);
+		rc	= ns_to_t(55);
 		wtr	= 2;
-		rrd	= 2;
+		rrd	= ns_to_t(10);
 	}
 
 	val = (cas << 0) | (ras << 3) | (rcd << 7) | (rp << 10) |
