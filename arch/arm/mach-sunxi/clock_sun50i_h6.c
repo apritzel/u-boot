@@ -4,13 +4,19 @@
 #include <asm/arch/clock.h>
 #include <asm/arch/prcm.h>
 
+#ifndef SUNXI_PRCM_BASE
+#define SUNXI_PRCM_BASE 0
+#endif
+
 #ifdef CONFIG_SPL_BUILD
-void clock_init_safe(void)
+
+static void clock_init_safe_prcm(void)
 {
-	struct sunxi_ccm_reg *const ccm =
-		(struct sunxi_ccm_reg *)SUNXI_CCM_BASE;
 	struct sunxi_prcm_reg *const prcm =
 		(struct sunxi_prcm_reg *)SUNXI_PRCM_BASE;
+
+	if (!prcm)
+		return;
 
 	if (IS_ENABLED(CONFIG_MACH_SUN50I_H616)) {
 		/* this seems to enable PLLs on H616 */
@@ -27,6 +33,14 @@ void clock_init_safe(void)
 		/* set PLL VDD LDO output to 1.14 V */
 		setbits_le32(&prcm->pll_ldo_cfg, 0x60000);
 	}
+}
+
+void clock_init_safe(void)
+{
+	struct sunxi_ccm_reg *const ccm =
+		(struct sunxi_ccm_reg *)SUNXI_CCM_BASE;
+
+	clock_init_safe_prcm();
 
 	clock_set_pll1(408000000);
 
@@ -141,6 +155,8 @@ int clock_twi_onoff(int port, int state)
 	value = BIT(GATE_SHIFT) | BIT (RESET_SHIFT);
 
 	if (port == 5) {
+		if (!prcm)
+			return -ENODEV;
 		shift = 0;
 		ptr = &prcm->twi_gate_reset;
 	} else {
