@@ -92,6 +92,15 @@ static int mmc_set_mod_clk(struct sunxi_mmc_priv *priv, unsigned int hz)
 		pll = CCM_MMC_CTRL_PLL6;
 		pll_hz = clock_get_pll6();
 #endif
+
+		/*
+		 * The A523/T527 uses PERIPH0_400M as the MMC input clock,
+		 * which is the PERIPH0 nominal rate (1200MHz) / 3.
+		 * Together with the fixed post-divider of 2 of the MMC mod
+		 * clock, that gives a divider of 6.
+		 */
+		if (IS_ENABLED(CONFIG_MACH_SUN55I_A523))
+			pll_hz /= 6;
 	}
 
 	div = pll_hz / hz;
@@ -145,6 +154,10 @@ static int mmc_set_mod_clk(struct sunxi_mmc_priv *priv, unsigned int hz)
 		val = CCM_MMC_CTRL_OCLK_DLY(oclk_dly) |
 			CCM_MMC_CTRL_SCLK_DLY(sclk_dly);
 	}
+
+	/* The A523 has a second divider, not a shift. */
+	if (IS_ENABLED(CONFIG_MACH_SUN55I_A523))
+		n = (1U << n) - 1;
 
 	writel(CCM_MMC_CTRL_ENABLE| pll | CCM_MMC_CTRL_N(n) |
 	       CCM_MMC_CTRL_M(div) | val, priv->mclkreg);
@@ -534,7 +547,8 @@ struct mmc *sunxi_mmc_init(int sdc_no)
 	cfg->host_caps = MMC_MODE_4BIT;
 
 	if ((IS_ENABLED(CONFIG_MACH_SUN50I) || IS_ENABLED(CONFIG_MACH_SUN8I) ||
-	    IS_ENABLED(CONFIG_SUN50I_GEN_H6)) && (sdc_no == 2))
+	    IS_ENABLED(CONFIG_SUN50I_GEN_H6) || IS_ENABLED(CONFIG_MACH_SUN55I_A523)) &&
+	    (sdc_no == 2))
 		cfg->host_caps = MMC_MODE_8BIT;
 
 	cfg->host_caps |= MMC_MODE_HS_52MHz | MMC_MODE_HS;
