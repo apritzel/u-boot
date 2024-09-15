@@ -142,6 +142,14 @@ config SY8106A_POWER
 
 endchoice
 
+config AXP_ALT_I2C_ADDR
+	bool "use alternative I2C address"
+	depends on AXP717_POWER || AXP707_POWER || AXP803_POWER
+	---help---
+	Some PMICs can be ordered with a different I2C address (+1), to avoid
+	address clashes or accommodate two PMICs on the same bus.
+	Select this to use the secondary I2C address for the AXP PMICs.
+
 config AXP_DCDC1_VOLT
 	int "axp pmic dcdc1 voltage"
 	depends on AXP221_POWER || AXP809_POWER || AXP818_POWER

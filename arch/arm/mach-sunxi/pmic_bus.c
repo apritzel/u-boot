@@ -31,6 +31,11 @@ static struct udevice *pmic;
 #else
 static int pmic_i2c_address(void)
 {
+	int i2c_offset = 0;
+
+	if (IS_ENABLED(CONFIG_AXP_ALT_I2C_ADDR))
+		i2c_offset = 1;
+
 	if (IS_ENABLED(CONFIG_AXP152_POWER))
 		return AXP152_I2C_ADDR;
 	if (IS_ENABLED(CONFIG_AXP305_POWER))
@@ -38,10 +43,10 @@ static int pmic_i2c_address(void)
 	if (IS_ENABLED(CONFIG_AXP313_POWER))
 		return AXP313_I2C_ADDR;
 	if (IS_ENABLED(CONFIG_AXP717_POWER))
-		return AXP717_I2C_ADDR;
+		return AXP717_I2C_ADDR + i2c_offset;
 
 	/* Other AXP2xx and AXP8xx variants */
-	return AXP209_I2C_ADDR;
+	return AXP209_I2C_ADDR + i2c_offset;
 }
 #endif
 
