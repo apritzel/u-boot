@@ -1107,9 +1107,9 @@ static const struct dram_para para = {
 	.type = SUNXI_DRAM_TYPE_LPDDR4,
 #endif
 	/* TODO: Populate from config */
-	.dx_odt = 0x3030303,
-	.dx_dri = 0xc0c0c0c,
-	.ca_dri = 0x1919,
+	.dx_odt = CONFIG_DRAM_SUN50I_DX_ODT,
+	.dx_dri = CONFIG_DRAM_SUN50I_DX_DRI,
+	.ca_dri = CONFIG_DRAM_SUN50I_CA_DRI,
 	.para0 = 0x12131615,
 	.para1 = 0x610a,
 	.para2 = 0x8000000,
@@ -1120,7 +1120,7 @@ static const struct dram_para para = {
 	.mr6 = 0x862,
 	.tpr3 = 0x80000000,
 	.tpr6 = 0xa000,
-	.tpr10 = 0x2f7777,
+	.tpr10 = CONFIG_DRAM_SUN50I_TPR10,
 	.tpr11 = 0xd0f1411,
 	.tpr12 = 0xb0b110f,
 	.tpr13 = 0x7501,
