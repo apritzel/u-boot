@@ -20,6 +20,7 @@
 
 #define AXP209_I2C_ADDR			0x34
 #define AXP717_I2C_ADDR			0x34
+#define AXP803_I2C_ADDR			0x34
 
 #define AXP305_I2C_ADDR			0x36
 #define AXP313_I2C_ADDR			0x36
@@ -39,6 +40,8 @@ static int pmic_i2c_address(void)
 		return AXP313_I2C_ADDR;
 	if (IS_ENABLED(CONFIG_AXP717_POWER))
 		return AXP717_I2C_ADDR;
+	if (IS_ENABLED(CONFIG_AXP803_POWER))
+		return AXP803_I2C_ADDR;
 
 	/* Other AXP2xx and AXP8xx variants */
 	return AXP209_I2C_ADDR;
