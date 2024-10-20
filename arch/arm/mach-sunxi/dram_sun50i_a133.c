@@ -26,7 +26,27 @@
 #include <linux/delay.h>
 #include <log.h>
 
-/* TODO: There are separate versions depending on the first dword of the chipid */
+#ifdef CONFIG_DRAM_SUN50I_PHY_ADDR_MAP_1
+static const u8 phy_init[] = {
+#ifdef CONFIG_SUNXI_DRAM_DDR3
+	0x0c, 0x08, 0x19, 0x18, 0x10, 0x06, 0x0a, 0x03, 0x0e,
+	0x00, 0x0b, 0x05, 0x09, 0x1a, 0x04, 0x13, 0x16, 0x11,
+	0x01, 0x15, 0x0d, 0x07, 0x12, 0x17, 0x14, 0x02, 0x0f
+#elif CONFIG_SUNXI_DRAM_DDR4
+	0x19, 0x1a, 0x04, 0x12, 0x09, 0x06, 0x08, 0x0a, 0x16,
+	0x17, 0x18, 0x0f, 0x0c, 0x13, 0x02, 0x05, 0x01, 0x11,
+	0x0e, 0x00, 0x0b, 0x07, 0x03, 0x14, 0x15, 0x0d, 0x10
+#elif CONFIG_SUNXI_DRAM_LPDDR3
+	0x08, 0x03, 0x02, 0x00, 0x18, 0x19, 0x09, 0x01, 0x06,
+	0x17, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11,
+	0x12, 0x13, 0x14, 0x15, 0x16, 0x04, 0x05, 0x07, 0x1a
+#elif CONFIG_SUNXI_DRAM_LPDDR4
+	0x01, 0x05, 0x02, 0x00, 0x19, 0x03, 0x06, 0x07, 0x08,
+	0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11,
+	0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x04, 0x1a
+#endif
+};
+#else
 static const u8 phy_init[] = {
 #ifdef CONFIG_SUNXI_DRAM_DDR3
 	0x03, 0x19, 0x18, 0x02, 0x10, 0x15, 0x16, 0x07, 0x06,
@@ -46,6 +66,7 @@ static const u8 phy_init[] = {
 	0x12, 0x13, 0x14, 0x15, 0x16, 0x04, 0x18, 0x05, 0x1a
 #endif
 };
+#endif
 
 static void mctl_clk_init(u32 clk)
 {
@@ -120,15 +141,19 @@ static void mctl_set_odtmap(const struct dram_para *para,
 	}
 
 	writel(val, &mctl_ctl->odtcfg);
-	writel(val, &mctl_ctl->unk_0x2240); /* Documented as ODTCFG_SHADOW */
-	writel(val,
-	       &mctl_ctl->unk_0x3240); /* Offset's interesting; additional undocumented shadows? */
+	/* Documented as ODTCFG_SHADOW */
+	writel(val, &mctl_ctl->unk_0x2240);
+	/* Offset's interesting; additional undocumented shadows? */
+	writel(val, &mctl_ctl->unk_0x3240);
 	writel(val, &mctl_ctl->unk_0x4240);
 }
 
 /*
  * Note: Unlike the H616, config->ranks is the number of rank *bits*, not the number of ranks *present*.
  * For example, if `ranks = 0`, then there is only one rank. If `ranks = 1`, there are two.
+ *
+ * If this is deemed an issue during review, fixing this off-by-one is no problem, but this matches how
+ * boot0 handles these values.
  */
 static void mctl_set_addrmap(const struct dram_config *config)
 {
@@ -148,6 +173,7 @@ static void mctl_set_addrmap(const struct dram_config *config)
 	if (!bus_full_width)
 		col_bits -= 1;
 
+	/* Ordered from LSB to MSB: */
 	/* Bank groups */
 	switch (bankgrp_bits) {
 	case 0:
@@ -480,7 +506,7 @@ static void mctl_phy_init(const struct dram_para *para,
 	if (para->type == SUNXI_DRAM_TYPE_LPDDR4)
 		clrbits_le32(SUNXI_DRAM_PHY0_BASE + 0x4, BIT(7));
 
-	/* Similar enumeration of values is used during read training */
+	/* Note: Similar enumeration of values is used during read training */
 	if (config->bus_full_width)
 		val = 0xf;
 	else
@@ -602,19 +628,29 @@ static void mctl_phy_init(const struct dram_para *para,
 	setbits_le32(&prcm->sys_pwroff_gating, BIT(4));
 }
 
-/* Helper macros for MR reads/writes */
-#define WRITE_MR(val0, val1)                                  \
-	writel((val1), &mctl_ctl->mrctrl1);                   \
-	writel(MRCTRL0_MR_WR | MRCTRL0_MR_RANKS_ALL | (val0), \
-	       &mctl_ctl->mrctrl0);                           \
-	mctl_await_completion(&mctl_ctl->mrctrl0, BIT(31), 0);
+/* Helpers for updating mode registers */
+static inline void mctl_mr_write(u32 mrctrl0, u32 mrctrl1)
+{
+	struct sunxi_mctl_ctl_reg *mctl_ctl =
+		(struct sunxi_mctl_ctl_reg *)SUNXI_DRAM_CTL0_BASE;
 
-#define WRITE_LPDDR4_MR(addr, val) \
-	WRITE_MR(0, MRCTRL1_MR_ADDR(addr) | MRCTRL1_MR_DATA(val));
+	writel(mrctrl1, &mctl_ctl->mrctrl1);
+	writel(mrctrl0 | MRCTRL0_MR_WR | MRCTRL0_MR_RANKS_ALL,
+	       &mctl_ctl->mrctrl0);
+	mctl_await_completion(&mctl_ctl->mrctrl0, MRCTRL0_MR_WR, 0);
+}
 
-/* Bit [7:6] are set by boot0, but undocumented */
-#define WRITE_LPDDR3_MR(addr, val) \
-	WRITE_MR(BIT(6) | BIT(7), MRCTRL1_MR_ADDR(addr) | MRCTRL1_MR_DATA(val));
+static inline void mctl_mr_write_lpddr4(u8 addr, u8 value)
+{
+	mctl_mr_write(0, MRCTRL1_MR_ADDR(addr) | MRCTRL1_MR_DATA(value));
+}
+
+static inline void mctl_mr_write_lpddr3(u8 addr, u8 value)
+{
+	/* Bit [7:6] are set by boot0, but undocumented */
+	mctl_mr_write(BIT(6) | BIT(7),
+		      MRCTRL1_MR_ADDR(addr) | MRCTRL1_MR_DATA(value));
+}
 
 static void mctl_dfi_init(const struct dram_para *para)
 {
@@ -658,40 +694,40 @@ static void mctl_dfi_init(const struct dram_para *para)
 	/* Write mode registers */
 	switch (para->type) {
 	case SUNXI_DRAM_TYPE_DDR3:
-		WRITE_MR(MRCTRL0_MR_ADDR(0), para->mr0);
-		WRITE_MR(MRCTRL0_MR_ADDR(1), para->mr1);
-		WRITE_MR(MRCTRL0_MR_ADDR(2), para->mr2);
-		WRITE_MR(MRCTRL0_MR_ADDR(3), para->mr3);
+		mctl_mr_write(MRCTRL0_MR_ADDR(0), para->mr0);
+		mctl_mr_write(MRCTRL0_MR_ADDR(1), para->mr1);
+		mctl_mr_write(MRCTRL0_MR_ADDR(2), para->mr2);
+		mctl_mr_write(MRCTRL0_MR_ADDR(3), para->mr3);
 		break;
 	case SUNXI_DRAM_TYPE_DDR4:
-		WRITE_MR(MRCTRL0_MR_ADDR(0), para->mr0);
-		WRITE_MR(MRCTRL0_MR_ADDR(1), para->mr1);
-		WRITE_MR(MRCTRL0_MR_ADDR(2), para->mr2);
-		WRITE_MR(MRCTRL0_MR_ADDR(3), para->mr3);
-		WRITE_MR(MRCTRL0_MR_ADDR(4), para->mr4);
-		WRITE_MR(MRCTRL0_MR_ADDR(5), para->mr5);
+		mctl_mr_write(MRCTRL0_MR_ADDR(0), para->mr0);
+		mctl_mr_write(MRCTRL0_MR_ADDR(1), para->mr1);
+		mctl_mr_write(MRCTRL0_MR_ADDR(2), para->mr2);
+		mctl_mr_write(MRCTRL0_MR_ADDR(3), para->mr3);
+		mctl_mr_write(MRCTRL0_MR_ADDR(4), para->mr4);
+		mctl_mr_write(MRCTRL0_MR_ADDR(5), para->mr5);
 
-		WRITE_MR(MRCTRL0_MR_ADDR(6), para->mr6 | BIT(7));
-		WRITE_MR(MRCTRL0_MR_ADDR(6), para->mr6 | BIT(7));
-		WRITE_MR(MRCTRL0_MR_ADDR(6), para->mr6 & (~BIT(7)));
+		mctl_mr_write(MRCTRL0_MR_ADDR(6), para->mr6 | BIT(7));
+		mctl_mr_write(MRCTRL0_MR_ADDR(6), para->mr6 | BIT(7));
+		mctl_mr_write(MRCTRL0_MR_ADDR(6), para->mr6 & (~BIT(7)));
 		break;
 	case SUNXI_DRAM_TYPE_LPDDR3:
-		WRITE_LPDDR3_MR(1, para->mr1);
-		WRITE_LPDDR3_MR(2, para->mr2);
-		WRITE_LPDDR3_MR(3, para->mr3);
-		WRITE_LPDDR3_MR(11, para->mr11);
+		mctl_mr_write_lpddr3(1, para->mr1);
+		mctl_mr_write_lpddr3(2, para->mr2);
+		mctl_mr_write_lpddr3(3, para->mr3);
+		mctl_mr_write_lpddr3(11, para->mr11);
 		break;
 	case SUNXI_DRAM_TYPE_LPDDR4:
-		WRITE_LPDDR4_MR(0, para->mr0);
-		WRITE_LPDDR4_MR(1, para->mr1);
-		WRITE_LPDDR4_MR(2, para->mr2);
-		WRITE_LPDDR4_MR(3, para->mr3);
-		WRITE_LPDDR4_MR(4, para->mr4);
-		WRITE_LPDDR4_MR(11, para->mr11);
-		WRITE_LPDDR4_MR(12, para->mr12);
-		WRITE_LPDDR4_MR(13, para->mr13);
-		WRITE_LPDDR4_MR(14, para->mr14);
-		WRITE_LPDDR4_MR(22, para->tpr1);
+		mctl_mr_write_lpddr4(0, para->mr0);
+		mctl_mr_write_lpddr4(1, para->mr1);
+		mctl_mr_write_lpddr4(2, para->mr2);
+		mctl_mr_write_lpddr4(3, para->mr3);
+		mctl_mr_write_lpddr4(4, para->mr4);
+		mctl_mr_write_lpddr4(11, para->mr11);
+		mctl_mr_write_lpddr4(12, para->mr12);
+		mctl_mr_write_lpddr4(13, para->mr13);
+		mctl_mr_write_lpddr4(14, para->mr14);
+		mctl_mr_write_lpddr4(22, para->tpr1);
 		break;
 	}
 
@@ -763,136 +799,91 @@ static bool mctl_phy_read_calibration(const struct dram_config *config)
 	return result;
 }
 
-/*
- * TODO: Reimplement; copied from aodzip's repo, not studying this code to ensure originality.
- * Notes from RE, however, A133 uses different values than the H616.
- */
-static void
-libdram_mctl_phy_dx_bit_delay_compensation(const struct dram_para *para)
+static inline void mctl_phy_dx_delay1_inner(u32 *base, u32 val1, u32 val2)
 {
-	int i;
-	uint32_t val, *ptr;
+	u32 *ptr = base;
 
-	if (para->tpr10 & 0x40000) {
+	for (int i = 0; i < 9; i++) {
+		writel(val1, ptr);
+		writel(val1, ptr + 0x30);
+		ptr += 2;
+	}
+
+	writel(val1, ptr + 1);
+	writel(val1, ptr + 49);
+	writel(val1, ptr);
+	writel(val1, ptr + 48);
+}
+
+static inline void mctl_phy_dx_delay0_inner(u32 *base1, u32 *base2, u32 val1,
+					    u32 val2)
+{
+	u32 *ptr = base1;
+	for (int i = 0; i < 9; i++) {
+		writel(val1, ptr);
+		writel(val1, ptr + 0x30);
+		ptr += 2;
+	}
+
+	writel(val2, base2);
+	writel(val2, base2 + 48);
+	writel(val2, ptr);
+	writel(val2, base2 + 44);
+}
+
+/* This might be somewhat transferable to H616; whether or not people like the design is another question */
+static void mctl_phy_dx_delay_compensation(const struct dram_para *para)
+{
+	if (para->tpr10 & TPR10_DX_BIT_DELAY1) {
 		clrbits_le32(SUNXI_DRAM_PHY0_BASE + 0x60, 1);
-		setbits_le32(SUNXI_DRAM_PHY0_BASE + 8, 8);
-		clrbits_le32(SUNXI_DRAM_PHY0_BASE + 0x190, 0x10);
+		setbits_le32(SUNXI_DRAM_PHY0_BASE + 8, BIT(3));
+		clrbits_le32(SUNXI_DRAM_PHY0_BASE + 0x190, BIT(4));
 
-		if (para->type == SUNXI_DRAM_TYPE_LPDDR4)
-			clrbits_le32(SUNXI_DRAM_PHY0_BASE + 4, 0x80);
+		if (para->type == SUNXI_DRAM_TYPE_DDR4)
+			clrbits_le32(SUNXI_DRAM_PHY0_BASE + 0x4, BIT(7));
 
-		val = para->tpr11 & 0x3F;
-		ptr = (uint32_t *)(SUNXI_DRAM_PHY0_BASE + 0x484);
-		for (i = 0; i < 9; i++) {
-			writel(val, ptr);
-			writel(val, ptr + 0x30);
-			ptr += 2;
-		}
-		val = para->para0 & 0x3F;
-		writel(val, SUNXI_DRAM_PHY0_BASE + 0x4d0);
-		writel(val, SUNXI_DRAM_PHY0_BASE + 0x590);
-		writel(val, SUNXI_DRAM_PHY0_BASE + 0x4cc);
-		writel(val, SUNXI_DRAM_PHY0_BASE + 0x58c);
+		mctl_phy_dx_delay1_inner((u32 *)(SUNXI_DRAM_PHY0_BASE + 0x484),
+					 para->tpr11 & 0x3f,
+					 para->para0 & 0x3f);
+		mctl_phy_dx_delay1_inner((u32 *)(SUNXI_DRAM_PHY0_BASE + 0x4d8),
+					 (para->tpr11 >> 8) & 0x3f,
+					 (para->para0 >> 8) & 0x3f);
+		mctl_phy_dx_delay1_inner((u32 *)(SUNXI_DRAM_PHY0_BASE + 0x604),
+					 (para->tpr11 >> 16) & 0x3f,
+					 (para->para0 >> 16) & 0x3f);
+		mctl_phy_dx_delay1_inner((u32 *)(SUNXI_DRAM_PHY0_BASE + 0x658),
+					 (para->tpr11 >> 24) & 0x3f,
+					 (para->para0 >> 24) & 0x3f);
 
-		val = (para->tpr11 >> 8) & 0x3F;
-		ptr = (uint32_t *)(SUNXI_DRAM_PHY0_BASE + 0x4d8);
-		for (i = 0; i < 9; i++) {
-			writel(val, ptr);
-			writel(val, ptr + 0x30);
-			ptr += 2;
-		}
-		val = (para->para0 >> 8) & 0x3F;
-		writel(val, SUNXI_DRAM_PHY0_BASE + 0x524);
-		writel(val, SUNXI_DRAM_PHY0_BASE + 0x5e4);
-		writel(val, SUNXI_DRAM_PHY0_BASE + 0x520);
-		writel(val, SUNXI_DRAM_PHY0_BASE + 0x5e0);
-
-		val = (para->tpr11 >> 16) & 0x3F;
-		ptr = (uint32_t *)(SUNXI_DRAM_PHY0_BASE + 0x604);
-		for (i = 0; i < 9; i++) {
-			writel(val, ptr);
-			writel(val, ptr + 0x30);
-			ptr += 2;
-		}
-		val = (para->para0 >> 16) & 0x3F;
-		writel(val, SUNXI_DRAM_PHY0_BASE + 0x650);
-		writel(val, SUNXI_DRAM_PHY0_BASE + 0x710);
-		writel(val, SUNXI_DRAM_PHY0_BASE + 0x64c);
-		writel(val, SUNXI_DRAM_PHY0_BASE + 0x70c);
-
-		val = (para->tpr11 >> 24) & 0x3F;
-		ptr = (uint32_t *)(SUNXI_DRAM_PHY0_BASE + 0x658);
-		for (i = 0; i < 9; i++) {
-			writel(val, ptr);
-			writel(val, ptr + 0x30);
-			ptr += 2;
-		}
-		val = (para->para0 >> 24) & 0x3F;
-		writel(val, SUNXI_DRAM_PHY0_BASE + 0x6a4);
-		writel(val, SUNXI_DRAM_PHY0_BASE + 0x764);
-		writel(val, SUNXI_DRAM_PHY0_BASE + 0x6a0);
-		writel(val, SUNXI_DRAM_PHY0_BASE + 0x760);
 		setbits_le32(SUNXI_DRAM_PHY0_BASE + 0x60, 1);
 	}
 
-	if (para->tpr10 & 0x20000) {
-		clrbits_le32(SUNXI_DRAM_PHY0_BASE + 0x54, 0x80);
-		clrbits_le32(SUNXI_DRAM_PHY0_BASE + 0x190, 4);
+	if (para->tpr10 & TPR10_DX_BIT_DELAY0) {
+		clrbits_le32(SUNXI_DRAM_PHY0_BASE + 0x54, BIT(7));
+		clrbits_le32(SUNXI_DRAM_PHY0_BASE + 0x190, BIT(2));
 
-		val = para->tpr12 & 0x3F;
-		ptr = (uint32_t *)(SUNXI_DRAM_PHY0_BASE + 0x480);
-		for (i = 0; i < 9; i++) {
-			writel(val, ptr);
-			writel(val, ptr + 0x30);
-			ptr += 2;
-		}
-		val = para->tpr14 & 0x3F;
-		writel(val, SUNXI_DRAM_PHY0_BASE + 0x528);
-		writel(val, SUNXI_DRAM_PHY0_BASE + 0x5e8);
-		writel(val, SUNXI_DRAM_PHY0_BASE + 0x4c8);
-		writel(val, SUNXI_DRAM_PHY0_BASE + 0x588);
+		mctl_phy_dx_delay0_inner((u32 *)(SUNXI_DRAM_PHY0_BASE + 0x480),
+					 (u32 *)(SUNXI_DRAM_PHY0_BASE + 0x528),
+					 para->tpr12 & 0x3f,
+					 para->tpr14 & 0x3f);
 
-		val = (para->tpr12 >> 8) & 0x3F;
-		ptr = (uint32_t *)(SUNXI_DRAM_PHY0_BASE + 0x4d4);
-		for (i = 0; i < 9; i++) {
-			writel(val, ptr);
-			writel(val, ptr + 0x30);
-			ptr += 2;
-		}
-		val = (para->tpr14 >> 8) & 0x3F;
-		writel(val, SUNXI_DRAM_PHY0_BASE + 0x52c);
-		writel(val, SUNXI_DRAM_PHY0_BASE + 0x5ec);
-		writel(val, SUNXI_DRAM_PHY0_BASE + 0x51c);
-		writel(val, SUNXI_DRAM_PHY0_BASE + 0x5dc);
+		mctl_phy_dx_delay0_inner((u32 *)(SUNXI_DRAM_PHY0_BASE + 0x4d4),
+					 (u32 *)(SUNXI_DRAM_PHY0_BASE + 0x52c),
+					 (para->tpr12 >> 8) & 0x3f,
+					 (para->tpr14 >> 8) & 0x3f);
 
-		val = (para->tpr12 >> 16) & 0x3F;
-		ptr = (uint32_t *)(SUNXI_DRAM_PHY0_BASE + 0x600);
-		for (i = 0; i < 9; i++) {
-			writel(val, ptr);
-			writel(val, ptr + 0x30);
-			ptr += 2;
-		}
-		val = (para->tpr14 >> 16) & 0x3F;
-		writel(val, SUNXI_DRAM_PHY0_BASE + 0x6a8);
-		writel(val, SUNXI_DRAM_PHY0_BASE + 0x768);
-		writel(val, SUNXI_DRAM_PHY0_BASE + 0x648);
-		writel(val, SUNXI_DRAM_PHY0_BASE + 0x708);
+		mctl_phy_dx_delay0_inner((u32 *)(SUNXI_DRAM_PHY0_BASE + 0x600),
+					 (u32 *)(SUNXI_DRAM_PHY0_BASE + 0x6a8),
+					 (para->tpr12 >> 16) & 0x3f,
+					 (para->tpr14 >> 16) & 0x3f);
 
-		val = (para->tpr12 >> 24) & 0x3F;
-		ptr = (uint32_t *)(SUNXI_DRAM_PHY0_BASE + 0x654);
-		for (i = 0; i < 9; i++) {
-			writel(val, ptr);
-			writel(val, ptr + 0x30);
-			ptr += 2;
-		}
-		val = (para->tpr14 >> 24) & 0x3F;
-		writel(val, SUNXI_DRAM_PHY0_BASE + 0x6ac);
-		writel(val, SUNXI_DRAM_PHY0_BASE + 0x76c);
-		writel(val, SUNXI_DRAM_PHY0_BASE + 0x69c);
-		writel(val, SUNXI_DRAM_PHY0_BASE + 0x75c);
+		mctl_phy_dx_delay0_inner((u32 *)(SUNXI_DRAM_PHY0_BASE + 0x6ac),
+					 (u32 *)(SUNXI_DRAM_PHY0_BASE + 0x528),
+					 (para->tpr12 >> 24) & 0x3f,
+					 (para->tpr14 >> 24) & 0x3f);
+
+		setbits_le32(SUNXI_DRAM_PHY0_BASE + 0x54, BIT(7));
 	}
-
-	setbits_le32(SUNXI_DRAM_PHY0_BASE + 0x54, 0x80);
 }
 
 static bool mctl_calibrate_phy(const struct dram_para *para,
@@ -909,14 +900,15 @@ static bool mctl_calibrate_phy(const struct dram_para *para,
 			if (mctl_phy_read_calibration(config))
 				break;
 		if (i == 5) {
+			debug("read calibration failed");
 			return false;
 		}
 	}
 
-	/* TODO: Implement read training levelling */
+	/* TODO: Implement read training leveling */
 	/* TODO: Implement write training */
 
-	libdram_mctl_phy_dx_bit_delay_compensation(para);
+	mctl_phy_dx_delay_compensation(para);
 	clrbits_le32(SUNXI_DRAM_PHY0_BASE + 0x60, BIT(0));
 	clrbits_le32(SUNXI_DRAM_PHY0_BASE + 0x54, 7);
 
@@ -972,6 +964,70 @@ static bool mctl_core_init(const struct dram_para *para,
 	}
 
 	debug("Found ranks = %d\n", config->ranks);
+}
+
+/* UNUSED? */
+/* static */void mctl_auto_detect_dram_size(const struct dram_para *para,
+				       struct dram_config *config)
+{
+	unsigned int shift;
+
+	/* max config for bankgrps, minimum for everything else */
+	config->bankgrps = 2;
+	config->cols = 8;
+	config->banks = 0;
+	config->rows = 14;
+	mctl_core_init(para, config);
+
+	shift = config->bus_full_width + 1;
+
+	/* detect bank group address bits */
+	for (config->bankgrps = 0; config->bankgrps < 2; config->bankgrps++) {
+		writel(config->bankgrps, CFG_SYS_SDRAM_BASE);
+		for (long i = 0; i < 0x100; i += 4) {
+			debug("[%lx] = %x\n", i, readl(CFG_SYS_SDRAM_BASE + i));
+		}
+		if (mctl_mem_matches(3ULL << (config->bankgrps + shift + 1)))
+			break;
+	}
+
+	debug("detected %u bank groups\n", config->bankgrps);
+
+	/* reconfigure to make sure all active columns are accessible */
+	config->cols = 12;
+	mctl_core_init(para, config);
+
+	/* detect column address bits */
+	shift += config->bankgrps;
+	for (config->cols = 8; config->cols < 12; config->cols++) {
+		if (mctl_mem_matches(1ULL << (config->cols + shift)))
+			break;
+	}
+	debug("detected %u columns\n", config->cols);
+
+	/* reconfigure to make sure that all active banks are accessible */
+	config->banks = 3;
+	mctl_core_init(para, config);
+	debug("detected %u banks\n", config->bankgrps);
+
+	/* detect bank bits */
+	shift += config->cols;
+	for (config->banks = 0; config->banks < 3; config->banks++) {
+		if (mctl_mem_matches(1ULL << (config->banks + shift)))
+			break;
+	}
+
+	/* reconfigure to make sure that all active rows are accessible */
+	config->rows = 18;
+	mctl_core_init(para, config);
+
+	/* detect row address bits */
+	shift += config->banks;
+	for (config->rows = 14; config->rows < 18; config->rows++) {
+		if (mctl_mem_matches(1ULL << (config->rows + shift)))
+			break;
+	}
+	debug("detected %u rows\n", config->rows);
 }
 
 /* Modified from H616 driver, UNUSED? */
@@ -1120,8 +1176,9 @@ unsigned long sunxi_dram_init(void)
 	setbits_le32(0x03000160, BIT(8));
 	clrbits_le32(0x03000168, 0x3f);
 
-	auto_detect_ranks(&para, &config);
-	auto_detect_size(&para, &config);
+	/* TODO: Figure out how to catch bank group errors. */
+	// auto_detect_ranks(&para, &config);
+	// mctl_auto_detect_dram_size(&para, &config);
 
 	if (!mctl_core_init(&para, &config))
 		return 0;
