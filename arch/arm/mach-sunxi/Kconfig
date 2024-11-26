@@ -155,6 +155,7 @@ config SUNXI_SRAM_ADDRESS
 config SUNXI_RVBAR_ADDRESS
 	hex
 	depends on ARM64
+	default 0x08000040 if MACH_SUN55I_A523
 	default 0x09010040 if SUN50I_GEN_H6
 	default 0x017000a0
 	---help---
@@ -263,7 +264,7 @@ config MACH_SUNXI_H3_H5
 # TODO: try out A80's 8GiB DRAM space
 config SUNXI_DRAM_MAX_SIZE
 	hex
-	default 0x100000000 if MACH_SUN50I_H616
+	default 0x100000000 if MACH_SUN50I_H616 || MACH_SUN55I_A523
 	default 0xC0000000 if MACH_SUN50I || MACH_SUN50I_H5 || MACH_SUN50I_H6
 	default 0x80000000
 
@@ -455,6 +456,12 @@ config MACH_SUN50I_H616
 	select DRAM_SUN50I_H616
 	select SUN50I_GEN_H6
 	imply OF_UPSTREAM
+
+config MACH_SUN55I_A523
+	bool "sun55i (Allwinner A523)"
+	select ARM64
+	select SUNXI_GEN_NCAT2
+	select SUNXI_NEW_PINCTRL
 
 endchoice
 
@@ -722,6 +729,7 @@ config SYS_CLK_FREQ
 	default 888000000 if MACH_SUN50I_H6
 	default 1008000000 if MACH_SUN50I_H616
 	default 1008000000 if MACH_SUN8I_R528
+	default 792000000 if MACH_SUN55I_A523
 
 config SYS_CONFIG_NAME
 	default "suniv" if MACH_SUNIV
@@ -735,6 +743,7 @@ config SYS_CONFIG_NAME
 	default "sun50i" if MACH_SUN50I
 	default "sun50i" if MACH_SUN50I_H6
 	default "sun50i" if MACH_SUN50I_H616
+	default "sun55i" if MACH_SUN55I_A523
 
 config SYS_BOARD
 	default "sunxi"
