@@ -26,6 +26,18 @@ struct sunxi_wdog {
 	u32 res[2];
 };
 
+#elif defined(CONFIG_MACH_SUN55I_A523)
+
+struct sunxi_wdog {
+	u32 irq_en;		/* 0x00 */
+	u32 irq_sta;		/* 0x04 */
+	u32 srst;		/* 0x08 */
+	u32 ctl;		/* 0x0c */
+	u32 cfg;		/* 0x10 */
+	u32 mode;		/* 0x14 */
+	u32 ocfg;		/* 0x18 */
+};
+
 #else
 
 #define WDT_CFG_RESET		(0x1)
