@@ -271,7 +271,7 @@ int dram_init(void)
 
 	if (spl == INVALID_SPL_HEADER)
 		gd->ram_size = get_ram_size((long *)PHYS_SDRAM_0,
-					    PHYS_SDRAM_0_SIZE);
+					    CONFIG_SUNXI_DRAM_MAX_SIZE);
 	else
 		gd->ram_size = (phys_addr_t)spl->dram_size << 20;
 
