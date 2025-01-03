@@ -745,6 +745,9 @@ dtb-$(CONFIG_MACH_SUN50I) += \
 	sun50i-a64-pinetab.dtb \
 	sun50i-a64-sopine-baseboard.dtb \
 	sun50i-a64-teres-i.dtb
+dtb-$(CONFIG_MACH_SUN55I_A523) += \
+	sun55i-h728-x96qpro+.dtb \
+	sun55i-t527-avaota-a1.dtb
 dtb-$(CONFIG_MACH_SUN9I) += \
 	sun9i-a80-optimus.dtb \
 	sun9i-a80-cubieboard4.dtb \
