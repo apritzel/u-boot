@@ -226,7 +226,6 @@ config SUN50I_GEN_H6
 config SUNXI_GEN_NCAT2
 	bool
 	select MMC_SUNXI_HAS_NEW_MODE
-	select SUPPORT_SPL
 	---help---
 	Select this for sunxi SoCs which have D1 like peripherals, clocks
 	and memory map.
@@ -394,6 +393,7 @@ config MACH_SUN8I_R528
 	select ARCH_SUPPORT_PSCI
 	select SPL_ARMV7_SET_CORTEX_SMPEN
 	select SUNXI_GEN_NCAT2
+	select SUPPORT_SPL
 	select SUNXI_NEW_PINCTRL
 	select MMC_SUNXI_HAS_NEW_MODE
 	select SUPPORT_SPL
