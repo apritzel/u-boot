@@ -581,6 +581,8 @@ void sunxi_board_init(void)
 #endif
 #ifdef CONFIG_AXP_DCDC2_VOLT
 	power_failed |= axp_set_dcdc2(CONFIG_AXP_DCDC2_VOLT);
+#endif
+#ifdef CONFIG_AXP_DCDC3_VOLT
 	power_failed |= axp_set_dcdc3(CONFIG_AXP_DCDC3_VOLT);
 #endif
 #ifdef CONFIG_AXP_DCDC4_VOLT
