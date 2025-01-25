@@ -44,10 +44,11 @@
 
 #ifdef CONFIG_MACH_SUN55I_A523
 #define SUNXI_CPUCFG_BASE		0x08815000
-#define SUNXI_CPU_PLL_CFG_BASE		0x08817000
 #else
 #define SUNXI_CPUCFG_BASE		0x09010000
 #endif
+
+#define SUNXI_CPU_PLL_CFG_BASE		0x08817000
 
 #ifndef __ASSEMBLY__
 void sunxi_board_init(void);
