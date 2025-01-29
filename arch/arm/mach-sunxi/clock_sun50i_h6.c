@@ -31,7 +31,7 @@ void clock_init_safe(void)
 	clock_set_pll1(408000000);
 
 	writel(CCM_PLL6_DEFAULT, ccm + CCU_H6_PLL6_CFG);
-	while (!(readl(ccm + CCU_H6_PLL6_CFG) & CCM_PLL6_LOCK))
+	while (!(readl(ccm + CCU_H6_PLL6_CFG) & CCM_PLL_LOCK))
 		;
 
 	clrsetbits_le32(ccm + CCU_H6_CPU_AXI_CFG,

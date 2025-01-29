@@ -163,16 +163,16 @@ static void mctl_sys_init(struct dram_para *para)
 	clrbits_le32(ccm + CCU_H6_DRAM_GATE_RESET, BIT(0));
 	udelay(5);
 	writel(0, ccm + CCU_H6_DRAM_GATE_RESET);
-	clrbits_le32(ccm + CCU_H6_PLL5_CFG, CCM_PLL5_CTRL_EN);
+	clrbits_le32(ccm + CCU_H6_PLL5_CFG, CCM_PLL_CTRL_EN);
 	clrbits_le32(ccm + CCU_H6_DRAM_CLK_CFG, DRAM_MOD_RESET);
 
 	udelay(5);
 
 	/* Set PLL5 rate to doubled DRAM clock rate */
-	writel(CCM_PLL5_CTRL_EN | CCM_PLL5_LOCK_EN |
+	writel(CCM_PLL_CTRL_EN | CCM_PLL_LOCK_EN |
 	       CCM_PLL5_CTRL_N(para->clk * 2 / 24), ccm + CCU_H6_PLL5_CFG);
 	mctl_await_completion(ccm + CCU_H6_PLL5_CFG,
-			      CCM_PLL5_LOCK, CCM_PLL5_LOCK);
+			      CCM_PLL_LOCK, CCM_PLL_LOCK);
 
 	/* Configure DRAM mod clock */
 	writel(DRAM_CLK_SRC_PLL5, ccm + CCU_H6_DRAM_CLK_CFG);
