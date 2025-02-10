@@ -38,16 +38,6 @@
 		regulator-always-on;
 	};
 
-	reg_vcc3v3: vcc3v3 {
-		/* 3.3V dummy supply for the SD card */
-		compatible = "regulator-fixed";
-		regulator-name = "vcc-3v3";
-		regulator-min-microvolt = <3300000>;
-		regulator-max-microvolt = <3300000>;
-		vin-supply = <&reg_vcc5v>;
-		regulator-always-on;
-	};
-
 	reg_usb_vbus: vbus {
 		compatible = "regulator-fixed";
 		regulator-name = "usb-vbus";
@@ -68,9 +58,20 @@
 };
 
 &mmc0 {
-	vmmc-supply = <&reg_vcc3v3>;
-	cd-gpios = <&pio 5 6 (GPIO_ACTIVE_LOW | GPIO_PULL_DOWN)>; /* PF6 */
+	vmmc-supply = <&reg_cldo3>;
+	cd-gpios = <&pio 5 6 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>; /* PF6 */
 	bus-width = <4>;
+	status = "okay";
+};
+
+&mmc2 {
+	bus-width = <8>;
+	cap-mmc-hw-reset;
+	mmc-ddr-1_8v;
+	mmc-hs200-1_8v;
+	non-removable;
+	vmmc-supply = <&reg_cldo3>;
+	vqmmc-supply = <&reg_cldo1>;
 	status = "okay";
 };
 
