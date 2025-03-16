@@ -135,8 +135,9 @@ static void mctl_set_odtmap(const struct dram_para *para,
 		val = 0x400 | (temp2 - temp1) << 16 | temp1 << 24;
 		break;
 	case SUNXI_DRAM_TYPE_DDR4:
-		val = 0x400 | (para->mr4 << 10 & 0x70000) |
-		      (((para->mr4 >> 12) & 1) + 6) << 24;
+		/* MR4: CS to CMD / ADDR Latency   and  write preamble */
+		val = 0x400 | (0x000 << 10 & 0x70000) |
+		      (((0x0000 >> 12) & 1) + 6) << 24;
 		break;
 	case SUNXI_DRAM_TYPE_LPDDR4:
 		val = 0x4000400;
@@ -695,38 +696,47 @@ static void mctl_dfi_init(const struct dram_para *para)
 	writel(1, &mctl_ctl->swctl);
 	mctl_await_completion(&mctl_ctl->swstat, BIT(0), BIT(0));
 
-	/* Write mode registers */
+	/* Write mode registers, fixed in the JEDEC spec */
 	switch (para->type) {
 	case SUNXI_DRAM_TYPE_DDR3:
-		mctl_mr_write(MRCTRL0_MR_ADDR(0), para->mr0);
-		mctl_mr_write(MRCTRL0_MR_ADDR(1), para->mr1);
-		mctl_mr_write(MRCTRL0_MR_ADDR(2), para->mr2);
-		mctl_mr_write(MRCTRL0_MR_ADDR(3), para->mr3);
+		mctl_mr_write(MRCTRL0_MR_ADDR(0), 0x1c70);	/* MR0 */
+		/*
+		 * outbuf en, TDQs dis, write leveling dis, out drv 40 Ohms,
+		 * DLL en, Rtt_nom 120 Ohms
+		 */
+		mctl_mr_write(MRCTRL0_MR_ADDR(1), 0x40);	/* MR1 */
+		/*
+		 * full array self-ref, CAS: 8 cyc, SRT w/ norm temp range,
+		 * dynamic ODT off
+		 */
+		mctl_mr_write(MRCTRL0_MR_ADDR(2), 0x18);	/* MR2 */
+		/* predef MPR pattern */
+		mctl_mr_write(MRCTRL0_MR_ADDR(3), 0);		/* MR3 */
 		break;
 	case SUNXI_DRAM_TYPE_DDR4:
-		mctl_mr_write(MRCTRL0_MR_ADDR(0), para->mr0);
-		mctl_mr_write(MRCTRL0_MR_ADDR(1), para->mr1);
-		mctl_mr_write(MRCTRL0_MR_ADDR(2), para->mr2);
-		mctl_mr_write(MRCTRL0_MR_ADDR(3), para->mr3);
-		mctl_mr_write(MRCTRL0_MR_ADDR(4), para->mr4);
-		mctl_mr_write(MRCTRL0_MR_ADDR(5), para->mr5);
+		mctl_mr_write(MRCTRL0_MR_ADDR(0), 0x840);
+		mctl_mr_write(MRCTRL0_MR_ADDR(1), 0x601);
+		mctl_mr_write(MRCTRL0_MR_ADDR(2), 0x8);
+		mctl_mr_write(MRCTRL0_MR_ADDR(3), 0);
+		mctl_mr_write(MRCTRL0_MR_ADDR(4), 0);
+		mctl_mr_write(MRCTRL0_MR_ADDR(5), 0x400);
 
-		mctl_mr_write(MRCTRL0_MR_ADDR(6), para->mr6 | BIT(7));
-		mctl_mr_write(MRCTRL0_MR_ADDR(6), para->mr6 | BIT(7));
-		mctl_mr_write(MRCTRL0_MR_ADDR(6), para->mr6 & (~BIT(7)));
+		mctl_mr_write(MRCTRL0_MR_ADDR(6), 0x862 | BIT(7));
+		mctl_mr_write(MRCTRL0_MR_ADDR(6), 0x862 | BIT(7));
+		mctl_mr_write(MRCTRL0_MR_ADDR(6), 0x862 & (~BIT(7)));
 		break;
 	case SUNXI_DRAM_TYPE_LPDDR3:
-		mctl_mr_write_lpddr3(1, para->mr1);
-		mctl_mr_write_lpddr3(2, para->mr2);
-		mctl_mr_write_lpddr3(3, para->mr3);
+		mctl_mr_write_lpddr3(1, 0xc3);	/* MR1: nWR=8, BL8 */
+		mctl_mr_write_lpddr3(2, 0xa);	/* MR2: RL=12, WL=6 */
+		mctl_mr_write_lpddr3(3, 0x2);	/* MR3: 40 0hms PD/PU */
 		mctl_mr_write_lpddr3(11, para->mr11);
 		break;
 	case SUNXI_DRAM_TYPE_LPDDR4:
-		mctl_mr_write_lpddr4(0, para->mr0);
-		mctl_mr_write_lpddr4(1, para->mr1);
-		mctl_mr_write_lpddr4(2, para->mr2);
-		mctl_mr_write_lpddr4(3, para->mr3);
-		mctl_mr_write_lpddr4(4, para->mr4);
+		mctl_mr_write_lpddr4(0, 0);	/* MR0 */
+		mctl_mr_write_lpddr4(1, 0x34);	/* MR1 */
+		mctl_mr_write_lpddr4(2, 0x1b);	/* MR2 */
+		mctl_mr_write_lpddr4(3, 0x33);	/* MR3 */
+		mctl_mr_write_lpddr4(4, 0x3);	/* MR4 */
 		mctl_mr_write_lpddr4(11, para->mr11);
 		mctl_mr_write_lpddr4(12, para->mr12);
 		mctl_mr_write_lpddr4(13, para->mr13);
@@ -1117,13 +1127,6 @@ static const struct dram_para para = {
 	.dx_dri = CONFIG_DRAM_SUNXI_DX_DRI,
 	.ca_dri = CONFIG_DRAM_SUNXI_CA_DRI,
 	.para0 = CONFIG_DRAM_SUNXI_PARA0,
-	.mr0 = CONFIG_DRAM_SUNXI_MR0,
-	.mr1 = CONFIG_DRAM_SUNXI_MR1,
-	.mr2 = CONFIG_DRAM_SUNXI_MR2,
-	.mr3 = CONFIG_DRAM_SUNXI_MR3,
-	.mr4 = CONFIG_DRAM_SUNXI_MR4,
-	.mr5 = CONFIG_DRAM_SUNXI_MR5,
-	.mr6 = CONFIG_DRAM_SUNXI_MR6,
 	.mr11 = CONFIG_DRAM_SUNXI_MR11,
 	.mr12 = CONFIG_DRAM_SUNXI_MR12,
 	.mr13 = CONFIG_DRAM_SUNXI_MR13,

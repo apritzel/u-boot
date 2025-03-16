@@ -83,8 +83,8 @@ void mctl_set_timing_params(const struct dram_para *para)
 	clrsetbits_le32(&mctl_ctl->init[2], 0xff0f, 0xd05);
 	writel(0, &mctl_ctl->dfimisc);
 
-	writel(para->mr1 << 16 | para->mr2, &mctl_ctl->init[3]);
-	writel(para->mr3 << 16, &mctl_ctl->init[4]);
+	writel(0x34 << 16 | 0x1b, &mctl_ctl->init[3]);		/* MR1/MR2 */
+	writel(0x33 << 16, &mctl_ctl->init[4]);			/* MR3 */
 	writel(para->mr11 << 16 | para->mr12, &mctl_ctl->init[6]);
 	writel(para->tpr1 << 16 | para->mr14, &mctl_ctl->init[7]);
 

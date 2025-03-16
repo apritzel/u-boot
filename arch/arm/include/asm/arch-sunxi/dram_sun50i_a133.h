@@ -140,13 +140,6 @@ struct dram_para {
 	uint32_t dx_dri;
 	uint32_t ca_dri;
 	uint32_t para0;
-	uint32_t mr0;
-	uint32_t mr1;
-	uint32_t mr2;
-	uint32_t mr3;
-	uint32_t mr4;
-	uint32_t mr5;
-	uint32_t mr6;
 	uint32_t mr11;
 	uint32_t mr12;
 	uint32_t mr13;
