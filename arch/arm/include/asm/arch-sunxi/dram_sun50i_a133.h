@@ -161,7 +161,6 @@ check_member(sunxi_mctl_ctl_reg, unk_0x4240, 0x4240);
 #define MRCTRL1_MR_ADDR(x)	(x << 8)
 #define MRCTRL1_MR_DATA(x)	(x)
 
-/* TODO: Remove unused fields */
 struct dram_para {
 	uint32_t clk;
 	enum sunxi_dram_type type;
@@ -169,8 +168,6 @@ struct dram_para {
 	uint32_t dx_dri;
 	uint32_t ca_dri;
 	uint32_t para0;
-	uint32_t para1;
-	uint32_t para2;
 	uint32_t mr0;
 	uint32_t mr1;
 	uint32_t mr2;
@@ -182,9 +179,6 @@ struct dram_para {
 	uint32_t mr12;
 	uint32_t mr13;
 	uint32_t mr14;
-	uint32_t mr16;
-	uint32_t mr17;
-	uint32_t mr22;
 	uint32_t tpr1;
 	uint32_t tpr2;
 	uint32_t tpr3;

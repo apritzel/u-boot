@@ -85,16 +85,6 @@ config DRAM_SUNXI_PARA0
 	help
 	  PARA0 value from vendor DRAM settings.
 
-config DRAM_SUNXI_PARA1
-	hex "DRAM PARA1 parameter"
-	help
-	  PARA1 value from vendor DRAM settings.
-
-config DRAM_SUNXI_PARA2
-	hex "DRAM PARA2 parameter"
-	help
-	  PARA2 value from vendor DRAM settings.
-
 config DRAM_SUNXI_MR0
 	hex "DRAM MR0 parameter"
 	depends on DRAM_SUN50I_A133
@@ -171,27 +161,6 @@ config DRAM_SUNXI_MR14
 	default 0x0
 	help
 	  MR14 value from vendor DRAM settings.
-
-config DRAM_SUNXI_MR16
-	hex "DRAM MR16 parameter"
-	depends on DRAM_SUN50I_A133
-	default 0x0
-	help
-	  MR16 value from vendor DRAM settings.
-
-config DRAM_SUNXI_MR17
-	hex "DRAM MR17 parameter"
-	depends on DRAM_SUN50I_A133
-	default 0x0
-	help
-	  MR17 value from vendor DRAM settings.
-
-config DRAM_SUNXI_MR22
-	hex "DRAM MR22 parameter"
-	depends on !DRAM_SUN50I_A133
-	default 0x0
-	help
-	  MR22 value from vendor DRAM settings.
 
 config DRAM_SUNXI_TPR0
 	hex "DRAM TPR0 parameter"
