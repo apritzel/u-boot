@@ -435,6 +435,9 @@ config MACH_SUN50I
 	select FIT
 	select SPL_LOAD_FIT if SPL
 	select SUNXI_A64_TIMER_ERRATUM
+	imply SYS_I2C_SUN8I_RSB
+	imply REGULATOR_AXP
+	imply PMIC_AXP
 
 config MACH_SUN50I_H5
 	bool "sun50i (Allwinner H5)"
