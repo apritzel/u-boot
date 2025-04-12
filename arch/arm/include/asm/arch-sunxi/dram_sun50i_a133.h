@@ -28,34 +28,9 @@ static inline int ns_to_t(int nanoseconds)
 }
 
 /* MBUS part is largely the same as in H6, except for one special register */
-struct sunxi_mctl_com_reg {
-	u32 cr; 		/* 0x000 control register */
-	u8 reserved_0x004[4]; 	/* 0x004 */
-	u32 unk_0x008; 		/* 0x008 */
-	u32 tmr; 		/* 0x00c timer register */
-	u8 reserved_0x010[4]; 	/* 0x010 */
-	u32 unk_0x014; 		/* 0x014 */
-	u8 reserved_0x018[8]; 	/* 0x018 */
-	u32 maer0; 		/* 0x020 master enable register 0 */
-				/* NOTE: This register has the same importance as mctl_ctl->clken in H616 */
-	u32 maer1; 		/* 0x024 master enable register 1 */
-	u32 maer2; 		/* 0x028 master enable register 2 */
-	u8 reserved_0x02c[468]; /* 0x02c */
-	u32 bwcr; 		/* 0x200 bandwidth control register */
-	u8 reserved_0x204[12];	/* 0x204 */
-	/*
-   	 * The last master configured by BSP libdram is at 0x49x, so the
-   	 * size of this struct array is set to 41 (0x29) now.
-   	*/
-	struct {
-		u32 cfg0; 		/* 0x0 */
-		u32 cfg1; 		/* 0x4 */
-		u8 reserved_0x8[8];	/* 0x8 */
-	} master[41]; 		/* 0x210 + index * 0x10 */
-	u8 reserved_0x4a0[96];	/* 0x4a0 */
-	u32 unk_0x500;		/* 0x500 */
-};
-check_member(sunxi_mctl_com_reg, unk_0x500, 0x500);
+#define MCTL_COM_UNK_008	0x008
+/* NOTE: This register has the same importance as mctl_ctl->clken in H616 */
+#define MCTL_COM_MAER0		0x020
 
 /*
  * Controller registers seems to be the same or at least very similar

@@ -314,16 +314,15 @@ static void mctl_set_addrmap(const struct dram_config *config)
 static void mctl_com_init(const struct dram_para *para,
 			  const struct dram_config *config)
 {
-	struct sunxi_mctl_com_reg *mctl_com =
-		(struct sunxi_mctl_com_reg *)SUNXI_DRAM_COM_BASE;
+	void *const mctl_com = (void *)SUNXI_DRAM_COM_BASE;
 	struct sunxi_mctl_ctl_reg *mctl_ctl =
 		(struct sunxi_mctl_ctl_reg *)SUNXI_DRAM_CTL0_BASE;
 
 	/* Might control power/reset of DDR-related blocks */
-	clrsetbits_le32(&mctl_com->unk_0x008, BIT(24), BIT(25) | BIT(9));
+	clrsetbits_le32(mctl_com + MCTL_COM_UNK_008, BIT(24), BIT(25) | BIT(9));
 
 	/* Unlock mctl_ctl registers */
-	setbits_le32(&mctl_com->maer0, BIT(15));
+	setbits_le32(mctl_com + MCTL_COM_MAER0, BIT(15));
 
 	if (para->type == SUNXI_DRAM_TYPE_LPDDR4)
 		setbits_le32(0x03102ea8, BIT(0));
@@ -485,8 +484,7 @@ static void mctl_phy_init(const struct dram_para *para,
 	struct sunxi_mctl_ctl_reg *mctl_ctl =
 		(struct sunxi_mctl_ctl_reg *)SUNXI_DRAM_CTL0_BASE;
 	void *const prcm = (void *)SUNXI_PRCM_BASE;
-	struct sunxi_mctl_com_reg *mctl_com =
-		(struct sunxi_mctl_com_reg *)SUNXI_DRAM_COM_BASE;
+	void *const mctl_com = (void *)SUNXI_DRAM_COM_BASE;
 
 	u32 val, val2, i;
 	u32 *ptr;
@@ -500,9 +498,9 @@ static void mctl_phy_init(const struct dram_para *para,
 	writel(0x20, &mctl_ctl->pwrctl);
 
 	/* PHY cold reset */
-	clrsetbits_le32(&mctl_com->unk_0x008, BIT(24), BIT(9));
+	clrsetbits_le32(mctl_com + MCTL_COM_UNK_008, BIT(24), BIT(9));
 	udelay(1);
-	setbits_le32(&mctl_com->unk_0x008, BIT(24));
+	setbits_le32(mctl_com + MCTL_COM_UNK_008, BIT(24));
 
 	/* Not sure what this gates the power of. */
 	clrbits_le32(prcm + CCU_PRCM_SYS_PWROFF_GATING, BIT(4));
@@ -621,7 +619,7 @@ static void mctl_phy_init(const struct dram_para *para,
 	clrsetbits_le32(SUNXI_DRAM_PHY0_BASE + 0x144, 0x80, val);
 	clrsetbits_le32(SUNXI_DRAM_PHY0_BASE + 0x14c, 0xe0, val2);
 
-	clrbits_le32(&mctl_com->unk_0x008, BIT(9));
+	clrbits_le32(mctl_com + MCTL_COM_UNK_008, BIT(9));
 	udelay(1);
 	clrbits_le32(SUNXI_DRAM_PHY0_BASE + 0x14c, BIT(3));
 
@@ -661,13 +659,12 @@ static inline void mctl_mr_write_lpddr3(u8 addr, u8 value)
 
 static void mctl_dfi_init(const struct dram_para *para)
 {
-	struct sunxi_mctl_com_reg *mctl_com =
-		(struct sunxi_mctl_com_reg *)SUNXI_DRAM_COM_BASE;
+	void *const mctl_com = (void *)SUNXI_DRAM_COM_BASE;
 	struct sunxi_mctl_ctl_reg *mctl_ctl =
 		(struct sunxi_mctl_ctl_reg *)SUNXI_DRAM_CTL0_BASE;
 
 	/* Unlock DFI registers? */
-	setbits_le32(&mctl_com->maer0, BIT(8));
+	setbits_le32(mctl_com + MCTL_COM_MAER0, BIT(8));
 
 	/* Enable dfi_init_complete signal and trigger PHY init start request */
 	writel(0, &mctl_ctl->swctl);
