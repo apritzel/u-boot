@@ -8,10 +8,7 @@
 #ifndef _SUNXI_DRAM_SUN50I_A133_H
 #define _SUNXI_DRAM_SUN50I_A133_H
 
-#include <stdbool.h>
-#ifndef __ASSEMBLY__
 #include <linux/bitops.h>
-#endif
 
 enum sunxi_dram_type {
 	SUNXI_DRAM_TYPE_DDR3 = 3,
