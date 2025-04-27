@@ -484,8 +484,7 @@ static void mctl_phy_init(const struct dram_para *para,
 {
 	struct sunxi_mctl_ctl_reg *mctl_ctl =
 		(struct sunxi_mctl_ctl_reg *)SUNXI_DRAM_CTL0_BASE;
-	const struct sunxi_prcm_reg *prcm =
-		(struct sunxi_prcm_reg *)SUNXI_PRCM_BASE;
+	void *const prcm = (void *)SUNXI_PRCM_BASE;
 	struct sunxi_mctl_com_reg *mctl_com =
 		(struct sunxi_mctl_com_reg *)SUNXI_DRAM_COM_BASE;
 
@@ -506,7 +505,7 @@ static void mctl_phy_init(const struct dram_para *para,
 	setbits_le32(&mctl_com->unk_0x008, BIT(24));
 
 	/* Not sure what this gates the power of. */
-	clrbits_le32(&prcm->sys_pwroff_gating, BIT(4));
+	clrbits_le32(prcm + CCU_PRCM_SYS_PWROFF_GATING, BIT(4));
 
 	if (para->type == SUNXI_DRAM_TYPE_LPDDR4)
 		clrbits_le32(SUNXI_DRAM_PHY0_BASE + 0x4, BIT(7));
@@ -633,7 +632,7 @@ static void mctl_phy_init(const struct dram_para *para,
 	udelay(1000);
 	writel(0x37, SUNXI_DRAM_PHY0_BASE + 0x58);
 
-	setbits_le32(&prcm->sys_pwroff_gating, BIT(4));
+	setbits_le32(prcm + CCU_PRCM_SYS_PWROFF_GATING, BIT(4));
 }
 
 /* Helpers for updating mode registers */
