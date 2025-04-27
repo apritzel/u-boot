@@ -71,37 +71,38 @@ static const u8 phy_init[] = {
 
 static void mctl_clk_init(u32 clk)
 {
-	struct sunxi_ccm_reg *ccm = (struct sunxi_ccm_reg *)SUNXI_CCM_BASE;
+	void * const ccm = (void *)SUNXI_CCM_BASE;
 
 	/* Place all DRAM blocks into reset */
-	clrbits_le32(&ccm->mbus_cfg, MBUS_ENABLE);
-	clrbits_le32(&ccm->mbus_cfg, MBUS_RESET);
-	clrbits_le32(&ccm->dram_gate_reset, BIT(GATE_SHIFT));
-	clrbits_le32(&ccm->dram_gate_reset, BIT(RESET_SHIFT));
-	clrbits_le32(&ccm->pll5_cfg, CCM_PLL5_CTRL_EN);
-	clrbits_le32(&ccm->dram_clk_cfg, DRAM_MOD_RESET);
+	clrbits_le32(ccm + CCU_H6_MBUS_CFG, MBUS_ENABLE);
+	clrbits_le32(ccm + CCU_H6_MBUS_CFG, MBUS_RESET);
+	clrbits_le32(ccm + CCU_H6_DRAM_GATE_RESET, BIT(GATE_SHIFT));
+	clrbits_le32(ccm + CCU_H6_DRAM_GATE_RESET, BIT(RESET_SHIFT));
+	clrbits_le32(ccm + CCU_H6_PLL5_CFG, CCM_PLL5_CTRL_EN);
+	clrbits_le32(ccm + CCU_H6_DRAM_CLK_CFG, DRAM_MOD_RESET);
 	udelay(5);
 
 	/* Set up PLL5 clock, used for DRAM */
-	clrsetbits_le32(&ccm->pll5_cfg, 0xff03,
+	clrsetbits_le32(ccm + CCU_H6_PLL5_CFG, 0xff03,
 			CCM_PLL5_CTRL_N((clk * 2) / 24) | CCM_PLL5_CTRL_EN);
-	setbits_le32(&ccm->pll5_cfg, BIT(24));
-	clrsetbits_le32(&ccm->pll5_cfg, 0x3,
+	setbits_le32(ccm + CCU_H6_PLL5_CFG, BIT(24));
+	clrsetbits_le32(ccm + CCU_H6_PLL5_CFG, 0x3,
 			CCM_PLL5_LOCK_EN | CCM_PLL5_CTRL_EN | BIT(30));
-	clrbits_le32(&ccm->pll5_cfg, 0x3 | BIT(30));
-	mctl_await_completion(&ccm->pll5_cfg, CCM_PLL5_LOCK, CCM_PLL5_LOCK);
+	clrbits_le32(ccm + CCU_H6_PLL5_CFG, 0x3 | BIT(30));
+	mctl_await_completion(ccm + CCU_H6_PLL5_CFG,
+			      CCM_PLL5_LOCK, CCM_PLL5_LOCK);
 
 	/* Enable DRAM clock and gate*/
-	clrbits_le32(&ccm->dram_clk_cfg, BIT(24) | BIT(25));
-	clrsetbits_le32(&ccm->dram_clk_cfg, 0x1f, BIT(1) | BIT(0));
-	setbits_le32(&ccm->dram_clk_cfg, DRAM_CLK_UPDATE);
-	setbits_le32(&ccm->dram_gate_reset, BIT(RESET_SHIFT));
-	setbits_le32(&ccm->dram_gate_reset, BIT(GATE_SHIFT));
+	clrbits_le32(ccm + CCU_H6_DRAM_CLK_CFG, BIT(24) | BIT(25));
+	clrsetbits_le32(ccm + CCU_H6_DRAM_CLK_CFG, 0x1f, BIT(1) | BIT(0));
+	setbits_le32(ccm + CCU_H6_DRAM_CLK_CFG, DRAM_CLK_UPDATE);
+	setbits_le32(ccm + CCU_H6_DRAM_GATE_RESET, BIT(RESET_SHIFT));
+	setbits_le32(ccm + CCU_H6_DRAM_GATE_RESET, BIT(GATE_SHIFT));
 
 	/* Re-enable MBUS and reset the DRAM module */
-	setbits_le32(&ccm->mbus_cfg, MBUS_RESET);
-	setbits_le32(&ccm->mbus_cfg, MBUS_ENABLE);
-	setbits_le32(&ccm->dram_clk_cfg, DRAM_MOD_RESET);
+	setbits_le32(ccm + CCU_H6_MBUS_CFG, MBUS_RESET);
+	setbits_le32(ccm + CCU_H6_MBUS_CFG, MBUS_ENABLE);
+	setbits_le32(ccm + CCU_H6_DRAM_CLK_CFG, DRAM_MOD_RESET);
 	udelay(5);
 }
 
