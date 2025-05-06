@@ -4,8 +4,9 @@
  *
  * Controller and PHY appear to be quite similar to that of the H616;
  * however certain offsets, timings, and other details are different enough that
- * the original code does not work as expected. Some device flags and calibrations
- * are not yet implemented, and configuration aside from DDR4 have not been tested.
+ * the original code does not work as expected. Some device flags and
+ * calibrations are not yet implemented, and configuration aside from DDR4
+ * have not been tested.
  *
  * (C) Copyright 2024 MasterR3C0RD <masterr3c0rd@epochal.quest>
  *
@@ -301,13 +302,12 @@ static void mctl_set_addrmap(const struct dram_config *config)
 	}
 
 	/* Ranks */
-	if (rank_bits == 0) {
+	if (rank_bits == 0)
 		writel(0x1f, &mctl_ctl->addrmap[0]);
-	} else if ((rank_bits + col_bits + row_bits) == 27) {
+	else if ((rank_bits + col_bits + row_bits) == 27)
 		writel(addrmap_row_bx + row_bits - 2, &mctl_ctl->addrmap[0]);
-	} else {
+	else
 		writel(addrmap_row_bx + row_bits, &mctl_ctl->addrmap[0]);
-	}
 }
 
 static void mctl_com_init(const struct dram_para *para,
@@ -826,6 +826,7 @@ static inline void mctl_phy_dx_delay0_inner(u32 *base1, u32 *base2, u32 val1,
 					    u32 val2)
 {
 	u32 *ptr = base1;
+
 	for (int i = 0; i < 9; i++) {
 		writel(val1, ptr);
 		writel(val1, ptr + 0x30);
@@ -993,9 +994,8 @@ static bool mctl_core_init(const struct dram_para *para,
 	/* detect bank group address bits */
 	for (config->bankgrps = 0; config->bankgrps < 2; config->bankgrps++) {
 		writel(config->bankgrps, CFG_SYS_SDRAM_BASE);
-		for (long i = 0; i < 0x100; i += 4) {
+		for (int i = 0; i < 0x100; i += 4)
 			debug("[%lx] = %x\n", i, readl(CFG_SYS_SDRAM_BASE + i));
-		}
 		if (mctl_mem_matches(3ULL << (config->bankgrps + shift + 1)))
 			break;
 	}
@@ -1152,13 +1152,14 @@ static int libdram_dramc_simple_wr_test(uint32_t dram_size, uint32_t test_range)
 	uint32_t *dram_memory = (uint32_t *)CFG_SYS_SDRAM_BASE;
 	uint32_t step = dram_size / 8;
 
-	for (unsigned i = 0; i < test_range; i++) {
+	for (unsigned int i = 0; i < test_range; i++) {
 		dram_memory[i] = i + 0x1234567;
 		dram_memory[i + step] = i - 0x1234568;
 	}
 
-	for (unsigned i = 0; i < test_range; i++) {
+	for (unsigned int i = 0; i < test_range; i++) {
 		uint32_t *ptr;
+
 		if (dram_memory[i] != i + 0x1234567) {
 			ptr = &dram_memory[i];
 			goto fail;
