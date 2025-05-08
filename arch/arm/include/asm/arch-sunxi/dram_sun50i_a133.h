@@ -133,6 +133,67 @@ check_member(sunxi_mctl_ctl_reg, unk_0x4240, 0x4240);
 #define MRCTRL1_MR_ADDR(x)	(x << 8)
 #define MRCTRL1_MR_DATA(x)	(x)
 
+/* ADDRMAP constants */
+#define ADDRMAP_DISABLED_3F_B(b)	(0x3f + b)
+#define ADDRMAP_DISABLED_1F_B(b)	(0x1f + b)
+#define ADDRMAP_DISABLED_0F_B(b)	(0x0f + b)
+
+#define _ADDRMAP_VALUE(a,x,b)		(((a) - b) << (x * 8))
+
+/*
+ * Bx = internal base
+ * The selected HIF address bit for each address bit is determined
+ * by adding the internal base to the value of each field
+ * */
+
+#define ADDRMAP0_CS0_B6(v)	_ADDRMAP_VALUE(v, 0, 6)
+
+#define ADDRMAP1_BANK0_B2(v) 	_ADDRMAP_VALUE(v, 0, 2)
+#define ADDRMAP1_BANK1_B3(v)	_ADDRMAP_VALUE(v, 1, 3)
+#define ADDRMAP1_BANK2_B4(v)	_ADDRMAP_VALUE(v, 2, 4)
+
+#define ADDRMAP2_COL2_B2(v)	_ADDRMAP_VALUE(v, 0, 2)
+#define ADDRMAP2_COL3_B3(v)	_ADDRMAP_VALUE(v, 1, 3)
+#define ADDRMAP2_COL4_B4(v)	_ADDRMAP_VALUE(v, 2, 4)
+#define ADDRMAP2_COL5_B5(v)	_ADDRMAP_VALUE(v, 3, 5)
+
+#define ADDRMAP3_COL6_B6(v)	_ADDRMAP_VALUE(v, 0, 6)
+#define ADDRMAP3_COL7_B7(v)	_ADDRMAP_VALUE(v, 1, 7)
+#define ADDRMAP3_COL8_B8(v)	_ADDRMAP_VALUE(v, 2, 8)
+#define ADDRMAP3_COL9_B9(v)	_ADDRMAP_VALUE(v, 3, 9)
+
+#define ADDRMAP4_COL10_B10(v)	_ADDRMAP_VALUE(v, 0, 10)
+#define ADDRMAP4_COL11_B11(v)	_ADDRMAP_VALUE(v, 1, 11)
+
+#define ADDRMAP5_ROW0_B6(v)	_ADDRMAP_VALUE(v, 0, 6)
+#define ADDRMAP5_ROW1_B7(v)	_ADDRMAP_VALUE(v, 1, 7)
+#define ADDRMAP5_ROW2_10_B8(v)	_ADDRMAP_VALUE(v, 2, 8)
+#define ADDRMAP5_ROW11_B17(v)	_ADDRMAP_VALUE(v, 3, 17)
+
+#define ADDRMAP6_ROW12_B18(v)	_ADDRMAP_VALUE(v, 0, 18)
+#define ADDRMAP6_ROW13_B19(v)	_ADDRMAP_VALUE(v, 1, 19)
+#define ADDRMAP6_ROW14_B20(v)	_ADDRMAP_VALUE(v, 2, 20)
+#define ADDRMAP6_ROW15_B21(v)	_ADDRMAP_VALUE(v, 3, 21)
+
+#define ADDRMAP7_ROW16_B22(v)	_ADDRMAP_VALUE(v, 0, 22)
+#define ADDRMAP7_ROW17_B23(v)	_ADDRMAP_VALUE(v, 1, 23)
+
+#define ADDRMAP8_BG0_B2(v)	_ADDRMAP_VALUE(v, 0, 2)
+#define ADDRMAP8_BG1_B3(v)	_ADDRMAP_VALUE(v, 1, 3)
+
+/* These are only used if ADDRMAP5_ROW_BITS_2_10 = ADDRMAP_DISABLED_0F */
+#define ADDRMAP9_ROW2_B8(v)	_ADDRMAP_VALUE(v, 0, 8)
+#define ADDRMAP9_ROW3_B9(v)	_ADDRMAP_VALUE(v, 1, 9)
+#define ADDRMAP9_ROW4_B10(v)	_ADDRMAP_VALUE(v, 2, 10)
+#define ADDRMAP9_ROW5_B11(v)	_ADDRMAP_VALUE(v, 3, 11)
+
+#define ADDRMAP10_ROW6_B12(v)	_ADDRMAP_VALUE(v, 0, 12)
+#define ADDRMAP10_ROW7_B13(v)	_ADDRMAP_VALUE(v, 1, 13)
+#define ADDRMAP10_ROW8_B14(v)	_ADDRMAP_VALUE(v, 2, 14)
+#define ADDRMAP10_ROW9_B15(v)	_ADDRMAP_VALUE(v, 3, 15)
+
+#define ADDRMAP11_ROW10_B16(v)	_ADDRMAP_VALUE(v, 0, 16)
+
 struct dram_para {
 	uint32_t clk;
 	enum sunxi_dram_type type;

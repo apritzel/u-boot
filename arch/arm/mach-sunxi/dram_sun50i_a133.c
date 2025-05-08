@@ -153,163 +153,187 @@ static void mctl_set_odtmap(const struct dram_para *para,
 }
 
 /*
- * Note: Unlike the H616, config->ranks is the number of rank *bits*, not the number of ranks *present*.
- * For example, if `ranks = 0`, then there is only one rank. If `ranks = 1`, there are two.
+ * This function produces address mapping parameters, used internally by the
+ * controller to map address lines to HIF addresses. HIF addresses are word
+ * addresses, not byte addresses;
+ * In other words, DDR address 0x400 maps to HIF address 0x100.
  *
- * If this is deemed an issue during review, fixing this off-by-one is no problem, but this matches how
- * boot0 handles these values.
+ * This implementation sets up a reasonable mapping where HIF address
+ * ordering (LSB->MSB) is as such:
+ * - Bank Groups
+ * - Columns
+ * - Banks
+ * - Rows
+ * - Ranks
+ *
+ * TODO: Handle 1.5GB + 3GB configurations. Info about these is stored in
+ * upper bits of TPR13 after autoscan in boot0, and then some extra logic
+ * happens in the address mapping
  */
+#define INITIAL_HIF_OFFSET 3
+
 static void mctl_set_addrmap(const struct dram_config *config)
 {
 	struct sunxi_mctl_ctl_reg *mctl_ctl =
 		(struct sunxi_mctl_ctl_reg *)SUNXI_DRAM_CTL0_BASE;
 
 	u8 bankgrp_bits = config->bankgrps;
-	u8 bank_bits = config->banks;
-	u8 rank_bits = config->ranks;
 	u8 col_bits = config->cols;
+	u8 bank_bits = config->banks;
 	u8 row_bits = config->rows;
-	bool bus_full_width = config->bus_full_width;
+	u8 rank_bits = config->ranks;
 
-	u8 addrmap_bank_bx = bankgrp_bits + col_bits - 2;
-	u8 addrmap_row_bx = (bankgrp_bits + bank_bits + col_bits) - 6;
+	unsigned int i, hif_offset, hif_bits[6];
 
-	if (!bus_full_width)
-		col_bits -= 1;
+	/*
+	 * When the bus is half width, we need to adjust address mapping,
+	 * as COL[0] will be reallocated as part of the byte address,
+	 * offsetting the column address mapping values by 1
+	 */
+	if (!config->bus_full_width)
+		col_bits--;
 
-	/* Ordered from LSB to MSB: */
-	/* Bank groups */
+	/* Match boot0's DRAM requirements */
+	if (bankgrp_bits > 2)
+		panic("invalid dram configuration (bankgrps_bits = %d)",
+		      bankgrp_bits);
+	if (col_bits < 8 || col_bits > 12)
+		panic("invalid dram configuration (col_bits = %d)", col_bits);
+
+	if (bank_bits < 2 || bank_bits > 3)
+		panic("invalid dram configuration (bank_bits = %d)", bank_bits);
+
+	if (row_bits < 14 || row_bits > 18)
+		panic("invalid dram configuration (row_bits = %d)", row_bits);
+
+	if (rank_bits > 1)
+		panic("invalid dram configuration (rank_bits = %d)", rank_bits);
+
+	/*
+	 * Col[0:1] + HIF[0:1] (hardwired), Col[2] = HIF[2] (required)
+	 * Thus, we start allocating from HIF[3] onwards
+	 */
+	hif_offset = INITIAL_HIF_OFFSET;
+
+	/* BG[bankgrp_bits:0] = HIF[3 + bankgrp_bits:3]*/
 	switch (bankgrp_bits) {
 	case 0:
-		writel(0x3f3f, &mctl_ctl->addrmap[8]);
+		writel_relaxed(ADDRMAP8_BG0_B2(ADDRMAP_DISABLED_1F_B(2)) |
+			       ADDRMAP8_BG1_B3(ADDRMAP_DISABLED_1F_B(3)),
+			&mctl_ctl->addrmap[8]);
 		break;
 	case 1:
-		writel(0x01 | 0x3f << 8, &mctl_ctl->addrmap[8]);
+		writel_relaxed(ADDRMAP8_BG0_B2(hif_offset) |
+			       ADDRMAP8_BG1_B3(ADDRMAP_DISABLED_1F_B(3)),
+			&mctl_ctl->addrmap[8]);
 		break;
 	case 2:
-		writel(0x01 | 0x01 << 8, &mctl_ctl->addrmap[8]);
+		writel_relaxed(ADDRMAP8_BG0_B2(hif_offset) |
+			       ADDRMAP8_BG1_B3(hif_offset + 1),
+			       &mctl_ctl->addrmap[8]);
 		break;
 	default:
-		panic("Unsupported dram configuration (bankgrp_bits = %d)",
+		panic("invalid dram configuration (bankgrp_bits = %d)",
 		      bankgrp_bits);
 	}
 
-	/* Columns */
-	writel(bankgrp_bits | bankgrp_bits << 8 | bankgrp_bits << 16 |
-		       bankgrp_bits << 24,
-	       &mctl_ctl->addrmap[2]);
+	hif_offset += bankgrp_bits;
 
-	switch (col_bits) {
-	case 8:
-		writel(bankgrp_bits | bankgrp_bits << 8 | 0x1f << 16 |
-			       0x1f << 24,
-		       &mctl_ctl->addrmap[3]);
-		writel(0x1f | 0x1f << 8, &mctl_ctl->addrmap[4]);
-		break;
-	case 9:
-		writel(bankgrp_bits | bankgrp_bits << 8 | bankgrp_bits << 16 |
-			       0x1f << 24,
-		       &mctl_ctl->addrmap[3]);
-		writel(0x1f | 0x1f << 8, &mctl_ctl->addrmap[4]);
-		break;
-	case 10:
-		writel(bankgrp_bits | bankgrp_bits << 8 | bankgrp_bits << 16 |
-			       bankgrp_bits << 24,
-		       &mctl_ctl->addrmap[3]);
-		writel(0x1f | 0x1f << 8, &mctl_ctl->addrmap[4]);
-		break;
-	case 11:
-		writel(bankgrp_bits | bankgrp_bits << 8 | bankgrp_bits << 16 |
-			       bankgrp_bits << 24,
-		       &mctl_ctl->addrmap[3]);
-		writel(bankgrp_bits | 0x1f << 8, &mctl_ctl->addrmap[4]);
-		break;
-	case 12:
-		writel(bankgrp_bits | bankgrp_bits << 8 | bankgrp_bits << 16 |
-			       bankgrp_bits << 24,
-		       &mctl_ctl->addrmap[3]);
-		writel(bankgrp_bits | bankgrp_bits << 8, &mctl_ctl->addrmap[4]);
-		break;
-	default:
-		panic("Unsupported dram configuration (col_bits = %d)",
-		      col_bits);
+	/* Col[2] = HIF[2], Col[5:3] = HIF[offset + 2:offset] */
+	writel_relaxed(ADDRMAP2_COL2_B2(2) | ADDRMAP2_COL3_B3(hif_offset) |
+		       ADDRMAP2_COL4_B4(hif_offset + 1) |
+		       ADDRMAP2_COL5_B5(hif_offset + 2),
+		       &mctl_ctl->addrmap[2]);
+
+	/* Col[col_bits:6] = HIF[col_bits + offset - 3:offset - 3] */
+	for (i = 6; i < 12; i++) {
+		if (i < col_bits)
+			hif_bits[i - 6] = hif_offset + (i - INITIAL_HIF_OFFSET);
+		else
+			hif_bits[i - 6] = ADDRMAP_DISABLED_1F_B(i);
 	}
 
-	/* Banks */
-	if (bank_bits == 3) {
-		writel(addrmap_bank_bx | addrmap_bank_bx << 8 |
-			       addrmap_bank_bx << 16,
-		       &mctl_ctl->addrmap[1]);
-	} else {
-		writel(addrmap_bank_bx | addrmap_bank_bx << 8 | 0x3f << 16,
-		       &mctl_ctl->addrmap[1]);
-	}
+	writel_relaxed(ADDRMAP3_COL6_B6(hif_bits[0]) |
+		       ADDRMAP3_COL7_B7(hif_bits[1]) |
+		       ADDRMAP3_COL8_B8(hif_bits[2]) |
+		       ADDRMAP3_COL9_B9(hif_bits[3]),
+		       &mctl_ctl->addrmap[3]);
 
-	/* Rows */
-	writel(addrmap_row_bx | addrmap_row_bx << 8 | addrmap_row_bx << 16 |
-		       addrmap_row_bx << 24,
-	       &mctl_ctl->addrmap[5]);
+	writel_relaxed(ADDRMAP4_COL10_B10(hif_bits[4]) |
+		       ADDRMAP4_COL11_B11(hif_bits[5]),
+		       &mctl_ctl->addrmap[4]);
 
-	switch (row_bits) {
-	case 14:
-		writel(addrmap_row_bx | addrmap_row_bx << 8 | 0x0f << 16 |
-			       0x0f << 24,
-		       &mctl_ctl->addrmap[6]);
-		writel(0x0f | 0x0f << 8, &mctl_ctl->addrmap[7]);
-		break;
-	case 15:
-		if ((rank_bits == 1 && col_bits == 11) ||
-		    (rank_bits == 2 && col_bits == 10)) {
-			writel(addrmap_row_bx | (addrmap_row_bx + 1) << 8 |
-				       (addrmap_row_bx + 1) << 16 | 0x0f << 24,
-			       &mctl_ctl->addrmap[6]);
-		} else {
-			writel(addrmap_row_bx | addrmap_row_bx << 8 |
-				       addrmap_row_bx << 16 | 0x0f << 24,
-			       &mctl_ctl->addrmap[6]);
-		}
-		writel(0x0f | 0x0f << 8, &mctl_ctl->addrmap[7]);
-		break;
-	case 16:
-		if (rank_bits == 1 && col_bits == 10) {
-			writel((addrmap_row_bx + 1) |
-				       (addrmap_row_bx + 1) << 8 |
-				       (addrmap_row_bx + 1) << 16 |
-				       (addrmap_row_bx + 1) << 24,
-			       &mctl_ctl->addrmap[6]);
-		} else {
-			writel(addrmap_row_bx | addrmap_row_bx << 8 |
-				       addrmap_row_bx << 16 |
-				       addrmap_row_bx << 24,
-			       &mctl_ctl->addrmap[6]);
-		}
-		writel(0x0f | 0x0f << 8, &mctl_ctl->addrmap[7]);
-		break;
-	case 17:
-		writel(addrmap_row_bx | addrmap_row_bx << 8 |
-			       addrmap_row_bx << 16 | addrmap_row_bx << 24,
-		       &mctl_ctl->addrmap[6]);
-		writel(addrmap_row_bx | 0x0f << 8, &mctl_ctl->addrmap[7]);
-		break;
-	case 18:
-		writel(addrmap_row_bx | addrmap_row_bx << 8 |
-			       addrmap_row_bx << 16 | addrmap_row_bx << 24,
-		       &mctl_ctl->addrmap[6]);
-		writel(addrmap_row_bx | addrmap_row_bx << 8,
-		       &mctl_ctl->addrmap[7]);
-		break;
-	default:
-		panic("Unsupported dram configuration (row_bits = %d)",
-		      row_bits);
-	}
+	hif_offset = bankgrp_bits + col_bits;
 
-	/* Ranks */
-	if (rank_bits == 0)
-		writel(0x1f, &mctl_ctl->addrmap[0]);
-	else if ((rank_bits + col_bits + row_bits) == 27)
-		writel(addrmap_row_bx + row_bits - 2, &mctl_ctl->addrmap[0]);
+	/* Bank[bank_bits:0] = HIF[bank_bits + offset:offset] */
+	if (bank_bits == 3)
+		writel_relaxed(ADDRMAP1_BANK0_B2(hif_offset) |
+			       ADDRMAP1_BANK1_B3(hif_offset + 1) |
+			       ADDRMAP1_BANK2_B4(hif_offset + 2),
+			       &mctl_ctl->addrmap[1]);
 	else
-		writel(addrmap_row_bx + row_bits, &mctl_ctl->addrmap[0]);
+		writel_relaxed(ADDRMAP1_BANK0_B2(hif_offset) |
+			       ADDRMAP1_BANK1_B3(hif_offset + 1) |
+			       ADDRMAP1_BANK2_B4(ADDRMAP_DISABLED_1F_B(4)),
+			       &mctl_ctl->addrmap[1]);
+
+	hif_offset += bank_bits;
+
+	/* Row[11:0] = HIF[11 + offset:offset] */
+	writel_relaxed(ADDRMAP5_ROW0_B6(hif_offset) |
+		       ADDRMAP5_ROW1_B7(hif_offset + 1) |
+		       ADDRMAP5_ROW2_10_B8(hif_offset + 2) |
+		       ADDRMAP5_ROW11_B17(hif_offset + 11),
+		       &mctl_ctl->addrmap[5]);
+
+	/*
+	 * There's some complexity here because of a special case
+	 * in boot0 code that appears to work around a hardware bug.
+	 * For (col_bits, row_bits, rank_bits) = (10, 16, 1), we have to
+	 * place CS[0] in the position we would normally place ROW[14],
+	 * and shift ROW[14] and ROW[15] over by one. Using the bit following
+	 * ROW[15], as would be standard here, seems to cause nonsensical
+	 * aliasing patterns.
+	 *
+	 * Aside from this case, mapping is simple:
+	 * Row[row_bits:12] = HIF[offset + row_bits:offset + 12]
+	 */
+	for (i = 12; i < 18; i++) {
+		if (i >= row_bits)
+			hif_bits[i - 12] = ADDRMAP_DISABLED_0F_B(6 + i);
+		else if (rank_bits != 1 || col_bits != 10 || row_bits != 16 ||
+			 i < 14)
+			hif_bits[i - 12] = hif_offset + i;
+		else
+			hif_bits[i - 12] = hif_offset + i + 1;
+	}
+
+	writel_relaxed(ADDRMAP6_ROW12_B18(hif_bits[0]) |
+		       ADDRMAP6_ROW13_B19(hif_bits[1]) |
+		       ADDRMAP6_ROW14_B20(hif_bits[2]) |
+		       ADDRMAP6_ROW15_B21(hif_bits[3]),
+		       &mctl_ctl->addrmap[6]);
+
+	writel_relaxed(ADDRMAP7_ROW16_B22(hif_bits[4]) |
+		       ADDRMAP7_ROW17_B23(hif_bits[5]),
+		       &mctl_ctl->addrmap[7]);
+
+	hif_offset += row_bits;
+
+	/*
+	 * Ranks
+	 * Most cases: CS[0] = HIF[offset]
+	 * Special case (see above): CS[0] = HIF[offset - 2]
+	 */
+	if (rank_bits == 0)
+		writel_relaxed(ADDRMAP0_CS0_B6(ADDRMAP_DISABLED_1F_B(6)),
+			       &mctl_ctl->addrmap[0]);
+	else if (col_bits == 10 && row_bits == 16)
+		writel_relaxed(ADDRMAP0_CS0_B6(hif_offset - 2),
+			       &mctl_ctl->addrmap[0]);
+	else
+		writel_relaxed(ADDRMAP0_CS0_B6(hif_offset),
+			       &mctl_ctl->addrmap[0]);
 }
 
 static void mctl_com_init(const struct dram_para *para,
@@ -384,9 +408,9 @@ static void mctl_com_init(const struct dram_para *para,
 	 * Data bus inversion
 	 * Controlled by a flag in boot0, enabled by default here.
 	 */
-//	if (para->type == SUNXI_DRAM_TYPE_DDR4 ||
-//	    para->type == SUNXI_DRAM_TYPE_LPDDR4)
-//		setbits_le32(&mctl_ctl->dbictl, BIT(2));
+	if (para->type == SUNXI_DRAM_TYPE_DDR4 ||
+	    para->type == SUNXI_DRAM_TYPE_LPDDR4)
+		setbits_le32(&mctl_ctl->dbictl, BIT(2));
 }
 
 static void mctl_drive_odt_config(const struct dram_para *para)
@@ -640,7 +664,10 @@ static void mctl_phy_init(const struct dram_para *para,
 	mctl_await_completion((u32 *)(SUNXI_DRAM_PHY0_BASE + 0x180), BIT(2),
 			      BIT(2));
 
-	/* This is controlled by a tpr13 flag in boot0; doesn't hurt to always do it though. */
+	/*
+	 * This delay is controlled by a tpr13 flag in boot0; doesn't hurt
+	 * to always do it though.
+	 */
 	udelay(1000);
 	writel(0x37, SUNXI_DRAM_PHY0_BASE + 0x58);
 
@@ -933,12 +960,12 @@ static bool mctl_calibrate_phy(const struct dram_para *para,
 			if (mctl_phy_read_calibration(config))
 				break;
 		if (i == 5) {
-			debug("read calibration failed");
+			debug("read calibration failed\n");
 			return false;
 		}
 	}
 
-	/* TODO: Implement read training leveling */
+	/* TODO: Implement read training */
 	/* TODO: Implement write training */
 
 	mctl_phy_dx_delay_compensation(para);
@@ -966,17 +993,16 @@ static bool mctl_core_init(const struct dram_para *para,
 	return mctl_calibrate_phy(para, config);
 }
 
-/* Heavily inspired from H616 driver. UNUSED */
-/* static */ void auto_detect_ranks(const struct dram_para *para,
-				    struct dram_config *config)
+/* Heavily inspired from H616 driver. */
+static void auto_detect_ranks(const struct dram_para *para,
+			      struct dram_config *config)
 {
 	int i;
 	bool found_config;
 
 	config->cols = 9;
 	config->rows = 14;
-	config->ranks = 0;
-	config->banks = 0;
+	config->banks = 2;
 	config->bankgrps = 0;
 
 	/* Test ranks */
@@ -997,56 +1023,50 @@ static bool mctl_core_init(const struct dram_para *para,
 			break;
 		}
 	}
-
-	debug("Found ranks = %d\n", config->ranks);
 }
 
-/* UNUSED? */
-/* static */ void mctl_auto_detect_dram_size(const struct dram_para *para,
-					     struct dram_config *config)
+static void mctl_auto_detect_dram_size(const struct dram_para *para,
+				       struct dram_config *config)
 {
 	unsigned int shift;
 
-	/* max config for bankgrps, minimum for everything else */
-	config->bankgrps = 2;
+	/* max config for bankgrps on DDR4, minimum for everything else */
 	config->cols = 8;
-	config->banks = 0;
+	config->banks = 2;
 	config->rows = 14;
-	mctl_core_init(para, config);
 
-	shift = config->bus_full_width + 1;
+	shift = 1 + config->bus_full_width;
+	if (para->type == SUNXI_DRAM_TYPE_DDR4) {
+		config->bankgrps = 2;
+		mctl_core_init(para, config);
 
-	/* detect bank group address bits */
-	for (config->bankgrps = 0; config->bankgrps < 2; config->bankgrps++) {
-		writel(config->bankgrps, CFG_SYS_SDRAM_BASE);
-		for (int i = 0; i < 0x100; i += 4)
-			debug("[%lx] = %x\n", i, readl(CFG_SYS_SDRAM_BASE + i));
-		if (mctl_mem_matches(3ULL << (config->bankgrps + shift + 1)))
-			break;
+		if (mctl_mem_matches(1ULL << (shift + 4)))
+			config->bankgrps = 1;
+	} else {
+		/* No bank groups in (LP)DDR3/LPDDR4 */
+		config->bankgrps = 0;
 	}
-
-	debug("detected %u bank groups\n", config->bankgrps);
 
 	/* reconfigure to make sure all active columns are accessible */
 	config->cols = 12;
 	mctl_core_init(para, config);
+	dsb();
 
 	/* detect column address bits */
-	shift += config->bankgrps;
+	shift = 1 + config->bus_full_width + config->bankgrps;
 	for (config->cols = 8; config->cols < 12; config->cols++) {
 		if (mctl_mem_matches(1ULL << (config->cols + shift)))
 			break;
 	}
-	debug("detected %u columns\n", config->cols);
 
 	/* reconfigure to make sure that all active banks are accessible */
 	config->banks = 3;
 	mctl_core_init(para, config);
-	debug("detected %u banks\n", config->bankgrps);
+	dsb();
 
 	/* detect bank bits */
 	shift += config->cols;
-	for (config->banks = 0; config->banks < 3; config->banks++) {
+	for (config->banks = 2; config->banks < 3; config->banks++) {
 		if (mctl_mem_matches(1ULL << (config->banks + shift)))
 			break;
 	}
@@ -1054,66 +1074,12 @@ static bool mctl_core_init(const struct dram_para *para,
 	/* reconfigure to make sure that all active rows are accessible */
 	config->rows = 18;
 	mctl_core_init(para, config);
+	dsb();
 
 	/* detect row address bits */
 	shift += config->banks;
 	for (config->rows = 14; config->rows < 18; config->rows++) {
 		if (mctl_mem_matches(1ULL << (config->rows + shift)))
-			break;
-	}
-	debug("detected %u rows\n", config->rows);
-}
-
-/* Modified from H616 driver, UNUSED? */
-/* static */ void auto_detect_size(const struct dram_para *para,
-				   struct dram_config *config)
-{
-	/* detect row address bits */
-	config->cols = 8;
-	config->rows = 18;
-	config->banks = 0;
-	config->bankgrps = 0;
-	mctl_core_init(para, config);
-
-	for (config->rows = 14; config->rows < 18; config->rows++) {
-		/* 8 banks, 8 bit per byte and 16/32 bit width */
-		if (mctl_mem_matches((1 << (config->bankgrps + config->banks +
-					    config->cols + config->rows +
-					    config->bus_full_width + 1))))
-			break;
-	}
-
-	/* detect column address bits */
-	config->cols = 12;
-	mctl_core_init(para, config);
-
-	for (config->cols = 8; config->cols < 12; config->cols++) {
-		/* 8 bits per byte and 16/32 bit width */
-		if (mctl_mem_matches(1 << (config->bankgrps + config->banks +
-					   config->cols +
-					   config->bus_full_width + 1)))
-			break;
-	}
-
-	/* detect bank address bits */
-	config->banks = 3;
-	mctl_core_init(para, config);
-
-	for (config->banks = 0; config->banks < 3; config->banks++) {
-		if (mctl_mem_matches(1 << (config->banks + config->bankgrps +
-					   config->cols +
-					   config->bus_full_width + 1)))
-			break;
-	}
-
-	/* TODO: This needs further testing on devices with different numbers of banks! */
-	/* detect bank group address bits */
-	config->bankgrps = 2;
-	mctl_core_init(para, config);
-	for (config->bankgrps = 0; config->bankgrps < 2; config->bankgrps++) {
-		if (mctl_mem_matches_base(3 << (config->bankgrps + 2 +
-						config->bus_full_width),
-					  CFG_SYS_SDRAM_BASE + 0x10))
 			break;
 	}
 }
@@ -1161,31 +1127,46 @@ static const struct dram_para para = {
 };
 
 /* TODO: Remove, copied and modified slightly from aodzip repo as temporary sanity check */
-static int libdram_dramc_simple_wr_test(uint32_t dram_size, uint32_t test_range)
+static int libdram_dramc_simple_wr_test(unsigned long dram_size,
+					uint32_t test_range)
 {
-	uint32_t *dram_memory = (uint32_t *)CFG_SYS_SDRAM_BASE;
-	uint32_t step = dram_size / 8;
+	uint64_t *dram_memory = (uint64_t *)CFG_SYS_SDRAM_BASE;
+	unsigned long step = dram_size / 16;
+	int64_t error_value;
 
 	for (unsigned int i = 0; i < test_range; i++) {
-		dram_memory[i] = i + 0x1234567;
-		dram_memory[i + step] = i - 0x1234568;
+		dram_memory[i] = i + 0x123456789ABCDEF;
+		dram_memory[i + step] = i - 0xFEDCBA987654321;
 	}
 
-	for (unsigned int i = 0; i < test_range; i++) {
-		uint32_t *ptr;
+	dmb();
 
-		if (dram_memory[i] != i + 0x1234567) {
+	for (unsigned int i = 0; i < test_range; i++) {
+		uint64_t *ptr;
+
+		if (dram_memory[i] != i + 0x123456789ABCDEF) {
 			ptr = &dram_memory[i];
 			goto fail;
 		}
-		if (dram_memory[i + step] != i - 0x1234568) {
+		if (dram_memory[i + step] != i - 0xFEDCBA987654321) {
 			ptr = &dram_memory[i + step];
 			goto fail;
 		}
 		continue;
 fail:
-		debug("DRAM simple test FAIL----- address %p = %d\n", ptr,
-		      readl(ptr));
+		error_value = (int64_t)readq(ptr);
+		debug("DRAM simple test FAIL----- address %p = %llx\n", ptr,
+		      error_value);
+
+		if (error_value < 0)
+			debug("Potentially aliased with %llx\n",
+			      CFG_SYS_SDRAM_BASE +
+				      (step + error_value + 0xFEDCBA987654321) *
+					      8);
+		else
+			debug("Potentially aliased with %llx\n",
+			      CFG_SYS_SDRAM_BASE +
+				      (error_value - 0x123456789ABCDEF) * 8);
 		return 1;
 	}
 
@@ -1197,35 +1178,27 @@ unsigned long sunxi_dram_init(void)
 {
 	unsigned long size;
 
-	/* Keeping for now as documentation of where different parameters come from */
-	struct dram_config config = {
-		.cols = (para.para1 & 0xF),
-		.rows = (para.para1 >> 4) & 0xFF,
-		.banks = (para.para1 >> 12) & 0x3,
-		.bankgrps = (para.para1 >> 14) & 0x3,
-		.ranks = ((para.tpr13 >> 16) & 3),
-		.bus_full_width = !((para.para2 >> 3) & 1),
-	};
+	struct dram_config config;
 
 	/* Writing to undocumented SYS_CFG area, according to user manual. */
 	setbits_le32(0x03000160, BIT(8));
 	clrbits_le32(0x03000168, 0x3f);
 
-	/* TODO: Figure out how to catch bank group errors. */
-	// auto_detect_ranks(&para, &config);
-	// mctl_auto_detect_dram_size(&para, &config);
+	auto_detect_ranks(&para, &config);
+	mctl_auto_detect_dram_size(&para, &config);
 
 	if (!mctl_core_init(&para, &config))
 		return 0;
 
-	debug("cols = %d, rows = %d, banks = %d, bankgrps = %d, ranks = %d, full_width = %d\n",
+	debug("cols = %d, rows = %d, banks = %d, bank groups = %d, ranks = %d, full width = %d\n",
 	      config.cols, config.rows, config.banks, config.bankgrps,
 	      config.ranks, config.bus_full_width);
 
 	size = calculate_dram_size(&config);
+	debug("expected size: %lu MB\n", size >> 20);
 
 	/* TODO: This is just a sanity check for now. */
-	if (libdram_dramc_simple_wr_test(size, 4096))
+	if (libdram_dramc_simple_wr_test(size, 16384))
 		return 0;
 
 	return size;
