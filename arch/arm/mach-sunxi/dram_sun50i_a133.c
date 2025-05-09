@@ -998,7 +998,6 @@ static void auto_detect_ranks(const struct dram_para *para,
 			      struct dram_config *config)
 {
 	int i;
-	bool found_config;
 
 	config->cols = 9;
 	config->rows = 14;
@@ -1006,23 +1005,25 @@ static void auto_detect_ranks(const struct dram_para *para,
 	config->bankgrps = 0;
 
 	/* Test ranks */
-	found_config = false;
 	for (i = 1; i >= 0; i--) {
 		config->ranks = i;
 		config->bus_full_width = true;
-		debug("Testing ranks = %d, 32-bit bus\n", i);
+		debug("Testing ranks = %d, 32-bit bus: ", i);
 		if (mctl_core_init(para, config)) {
-			found_config = true;
+			debug("OK\n");
 			break;
 		}
 
 		config->bus_full_width = false;
-		debug("Testing ranks = %d, 16-bit bus\n", i);
+		debug("Testing ranks = %d, 16-bit bus: ", i);
 		if (mctl_core_init(para, config)) {
-			found_config = true;
+			debug("OK\n");
 			break;
 		}
 	}
+
+	if (i < 0)
+		debug("rank testing failed\n");
 }
 
 static void mctl_auto_detect_dram_size(const struct dram_para *para,
