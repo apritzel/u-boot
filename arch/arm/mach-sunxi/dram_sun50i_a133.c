@@ -1183,8 +1183,6 @@ static const struct dram_para para = {
 
 unsigned long sunxi_dram_init(void)
 {
-	unsigned long size;
-
 	struct dram_config config;
 
 	/* Writing to undocumented SYS_CFG area, according to user manual. */
@@ -1197,12 +1195,10 @@ unsigned long sunxi_dram_init(void)
 	if (!mctl_core_init(&para, &config))
 		return 0;
 
-	debug("cols = %d, rows = %d, banks = %d, bank groups = %d, ranks = %d, full width = %d\n",
-	      config.cols, config.rows, config.banks, config.bankgrps,
-	      config.ranks, config.bus_full_width);
+	debug("cols = 2^%d, rows = 2^%d, banks = %d, bank groups = %d, ranks = %d, width = %d\n",
+	      config.cols, config.rows, 1U << config.banks,
+	      1U << config.bankgrps, 1U << config.ranks,
+	      16U << config.bus_full_width);
 
-	size = calculate_dram_size(&config);
-	debug("expected size: %lu MB\n", size >> 20);
-
-	return size;
+	return calculate_dram_size(&config);
 }
