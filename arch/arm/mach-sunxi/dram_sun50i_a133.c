@@ -15,7 +15,7 @@
  *
  */
 
-#define DEBUG
+//#define DEBUG
 
 #include <asm/arch/clock.h>
 #include <asm/arch/cpu.h>
