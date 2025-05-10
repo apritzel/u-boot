@@ -116,9 +116,9 @@ static void mctl_set_odtmap(const struct dram_para *para,
 
 	/* Set ODT/rank mappings*/
 	if (config->bus_full_width)
-		writel(0x0201, &mctl_ctl->odtmap);
+		writel_relaxed(0x0201, &mctl_ctl->odtmap);
 	else
-		writel(0x0303, &mctl_ctl->odtmap);
+		writel_relaxed(0x0303, &mctl_ctl->odtmap);
 
 	switch (para->type) {
 	case SUNXI_DRAM_TYPE_DDR3:
@@ -144,12 +144,12 @@ static void mctl_set_odtmap(const struct dram_para *para,
 		break;
 	}
 
-	writel(val, &mctl_ctl->odtcfg);
+	writel_relaxed(val, &mctl_ctl->odtcfg);
 	/* Documented as ODTCFG_SHADOW */
-	writel(val, &mctl_ctl->unk_0x2240);
+	writel_relaxed(val, &mctl_ctl->unk_0x2240);
 	/* Offset's interesting; additional undocumented shadows? */
-	writel(val, &mctl_ctl->unk_0x3240);
-	writel(val, &mctl_ctl->unk_0x4240);
+	writel_relaxed(val, &mctl_ctl->unk_0x3240);
+	writel_relaxed(val, &mctl_ctl->unk_0x4240);
 }
 
 /*
@@ -332,7 +332,7 @@ static void mctl_com_init(const struct dram_para *para,
 	if (!(para->tpr13 & BIT(28)))
 		clrsetbits_le32(&mctl_ctl->sched[0], 0xf, BIT(0));
 
-	writel(0, &mctl_ctl->hwlpctl);
+	writel_relaxed(0, &mctl_ctl->hwlpctl);
 
 	/* Master settings */
 	u32 mstr_value = MSTR_DEVICECONFIG_X32 |
@@ -364,12 +364,13 @@ static void mctl_com_init(const struct dram_para *para,
 		break;
 	}
 
-	writel(mstr_value, &mctl_ctl->mstr);
+	writel_relaxed(mstr_value, &mctl_ctl->mstr);
 
 	mctl_set_odtmap(para, config);
 	mctl_set_addrmap(config);
 	mctl_set_timing_params(para);
 
+	dsb();
 	writel(0, &mctl_ctl->pwrctl);
 
 	/* Disable automatic controller updates + automatic controller update requests */
@@ -399,14 +400,14 @@ static void mctl_drive_odt_config(const struct dram_para *para)
 		base = SUNXI_DRAM_PHY0_BASE + 0x388 + 0x40 * i;
 		val = (para->dx_dri >> (i * 8)) & 0x1f;
 
-		writel(val, base);
+		writel_relaxed(val, base);
 		if (para->type == SUNXI_DRAM_TYPE_LPDDR4) {
 			if (para->tpr3 & 0x1f1f1f1f)
 				val = (para->tpr3 >> (i * 8)) & 0x1f;
 			else
 				val = 4;
 		}
-		writel(val, base + 4);
+		writel_relaxed(val, base + 4);
 	}
 
 	/* CA drive */
@@ -414,8 +415,8 @@ static void mctl_drive_odt_config(const struct dram_para *para)
 		base = SUNXI_DRAM_PHY0_BASE + 0x340 + 0x8 * i;
 		val = (para->ca_dri >> (i * 8)) & 0x1f;
 
-		writel(val, base);
-		writel(val, base + 4);
+		writel_relaxed(val, base);
+		writel_relaxed(val, base + 4);
 	}
 
 	/* DX ODT */
@@ -425,15 +426,16 @@ static void mctl_drive_odt_config(const struct dram_para *para)
 
 		if (para->type == SUNXI_DRAM_TYPE_DDR4 ||
 		    para->type == SUNXI_DRAM_TYPE_LPDDR3)
-			writel(0, base);
+			writel_relaxed(0, base);
 		else
-			writel(val, base);
+			writel_relaxed(val, base);
 
 		if (para->type == SUNXI_DRAM_TYPE_LPDDR4)
-			writel(0, base + 4);
+			writel_relaxed(0, base + 4);
 		else
-			writel(val, base + 4);
+			writel_relaxed(val, base + 4);
 	}
+	dsb();
 }
 
 static void mctl_phy_ca_bit_delay_compensation(const struct dram_para *para)
@@ -455,28 +457,37 @@ static void mctl_phy_ca_bit_delay_compensation(const struct dram_para *para)
 
 	ptr = (u32 *)(SUNXI_DRAM_PHY0_BASE + 0x780);
 	for (i = 0; i < 32; i++)
-		writel((val >> 8) & 0x3f, &ptr[i]);
+		writel_relaxed((val >> 8) & 0x3f, &ptr[i]);
 
-	writel(val & 0x3f, SUNXI_DRAM_PHY0_BASE + 0x7dc);
-	writel(val & 0x3f, SUNXI_DRAM_PHY0_BASE + 0x7e0);
+	writel_relaxed(val & 0x3f, SUNXI_DRAM_PHY0_BASE + 0x7dc);
+	writel_relaxed(val & 0x3f, SUNXI_DRAM_PHY0_BASE + 0x7e0);
 
 	switch (para->type) {
 	case SUNXI_DRAM_TYPE_DDR3:
-		writel((val >> 16) & 0x3f, SUNXI_DRAM_PHY0_BASE + 0x7b8);
-		writel((val >> 24) & 0x3f, SUNXI_DRAM_PHY0_BASE + 0x784);
+		writel_relaxed((val >> 16) & 0x3f,
+			       SUNXI_DRAM_PHY0_BASE + 0x7b8);
+		writel_relaxed((val >> 24) & 0x3f,
+			       SUNXI_DRAM_PHY0_BASE + 0x784);
 		break;
 	case SUNXI_DRAM_TYPE_DDR4:
-		writel((val >> 16) & 0x3f, SUNXI_DRAM_PHY0_BASE + 0x784);
+		writel_relaxed((val >> 16) & 0x3f,
+			       SUNXI_DRAM_PHY0_BASE + 0x784);
 		break;
 	case SUNXI_DRAM_TYPE_LPDDR3:
-		writel((val >> 16) & 0x3f, SUNXI_DRAM_PHY0_BASE + 0x788);
-		writel((val >> 24) & 0x3f, SUNXI_DRAM_PHY0_BASE + 0x790);
+		writel_relaxed((val >> 16) & 0x3f,
+			       SUNXI_DRAM_PHY0_BASE + 0x788);
+		writel_relaxed((val >> 24) & 0x3f,
+			       SUNXI_DRAM_PHY0_BASE + 0x790);
 		break;
 	case SUNXI_DRAM_TYPE_LPDDR4:
-		writel((val >> 16) & 0x3f, SUNXI_DRAM_PHY0_BASE + 0x790);
-		writel((val >> 24) & 0x3f, SUNXI_DRAM_PHY0_BASE + 0x78c);
+		writel_relaxed((val >> 16) & 0x3f,
+			       SUNXI_DRAM_PHY0_BASE + 0x790);
+		writel_relaxed((val >> 24) & 0x3f,
+			       SUNXI_DRAM_PHY0_BASE + 0x78c);
 		break;
 	}
+
+	dsb();
 }
 
 static void mctl_phy_init(const struct dram_para *para,
@@ -494,9 +505,9 @@ static void mctl_phy_init(const struct dram_para *para,
 	setbits_le32(&mctl_ctl->rfshctl3, BIT(0));
 
 	/* Set "phy_dbi_mode" to mark the DFI as implementing DBI functionality */
-	writel(0, &mctl_ctl->pwrctl);
+	writel_relaxed(0, &mctl_ctl->pwrctl);
 	clrbits_le32(&mctl_ctl->dfimisc, 1);
-	writel(0x20, &mctl_ctl->pwrctl);
+	writel_relaxed(0x20, &mctl_ctl->pwrctl);
 
 	/* PHY cold reset */
 	clrsetbits_le32(mctl_com + MCTL_COM_UNK_008, BIT(24), BIT(9));
@@ -535,27 +546,28 @@ static void mctl_phy_init(const struct dram_para *para,
 			val = 22;
 		else
 			val = 20;
+
 		val2 = 10;
 		break;
 	}
 
-	writel(val, SUNXI_DRAM_PHY0_BASE + 0x14);
-	writel(val, SUNXI_DRAM_PHY0_BASE + 0x35c);
-	writel(val, SUNXI_DRAM_PHY0_BASE + 0x368);
-	writel(val, SUNXI_DRAM_PHY0_BASE + 0x374);
-	writel(0, SUNXI_DRAM_PHY0_BASE + 0x18);
-	writel(0, SUNXI_DRAM_PHY0_BASE + 0x360);
-	writel(0, SUNXI_DRAM_PHY0_BASE + 0x36c);
-	writel(0, SUNXI_DRAM_PHY0_BASE + 0x378);
-	writel(val2, SUNXI_DRAM_PHY0_BASE + 0x1c);
-	writel(val2, SUNXI_DRAM_PHY0_BASE + 0x364);
-	writel(val2, SUNXI_DRAM_PHY0_BASE + 0x370);
-	writel(val2, SUNXI_DRAM_PHY0_BASE + 0x37c);
+	writel_relaxed(val, SUNXI_DRAM_PHY0_BASE + 0x14);
+	writel_relaxed(val, SUNXI_DRAM_PHY0_BASE + 0x35c);
+	writel_relaxed(val, SUNXI_DRAM_PHY0_BASE + 0x368);
+	writel_relaxed(val, SUNXI_DRAM_PHY0_BASE + 0x374);
+	writel_relaxed(0, SUNXI_DRAM_PHY0_BASE + 0x18);
+	writel_relaxed(0, SUNXI_DRAM_PHY0_BASE + 0x360);
+	writel_relaxed(0, SUNXI_DRAM_PHY0_BASE + 0x36c);
+	writel_relaxed(0, SUNXI_DRAM_PHY0_BASE + 0x378);
+	writel_relaxed(val2, SUNXI_DRAM_PHY0_BASE + 0x1c);
+	writel_relaxed(val2, SUNXI_DRAM_PHY0_BASE + 0x364);
+	writel_relaxed(val2, SUNXI_DRAM_PHY0_BASE + 0x370);
+	writel_relaxed(val2, SUNXI_DRAM_PHY0_BASE + 0x37c);
 
-	/* boot0 does this in "phy_set_address_remapping". Seems odd for an address map table, though. */
+	/* Set up SDQ swizzle */
 	ptr = (u32 *)(SUNXI_DRAM_PHY0_BASE + 0xc0);
 	for (i = 0; i < ARRAY_SIZE(phy_init); i++)
-		writel(phy_init[i], &ptr[i]);
+		writel_relaxed(phy_init[i], &ptr[i]);
 
 	/* Set VREF */
 	val = 0;
@@ -581,8 +593,8 @@ static void mctl_phy_init(const struct dram_para *para,
 			val = 0x33;
 		break;
 	}
-	writel(val, SUNXI_DRAM_PHY0_BASE + 0x3dc);
-	writel(val, SUNXI_DRAM_PHY0_BASE + 0x45c);
+	writel_relaxed(val, SUNXI_DRAM_PHY0_BASE + 0x3dc);
+	writel_relaxed(val, SUNXI_DRAM_PHY0_BASE + 0x45c);
 
 	mctl_drive_odt_config(para);
 
@@ -607,7 +619,7 @@ static void mctl_phy_init(const struct dram_para *para,
 	clrsetbits_le32(SUNXI_DRAM_PHY0_BASE + 0x4, 0x7, val | 8);
 
 	if (para->clk <= 672)
-		writel(0xf, SUNXI_DRAM_PHY0_BASE + 0x20);
+		writel_relaxed(0xf, SUNXI_DRAM_PHY0_BASE + 0x20);
 
 	if (para->clk > 500) {
 		val = 0;
@@ -620,6 +632,7 @@ static void mctl_phy_init(const struct dram_para *para,
 	clrsetbits_le32(SUNXI_DRAM_PHY0_BASE + 0x144, 0x80, val);
 	clrsetbits_le32(SUNXI_DRAM_PHY0_BASE + 0x14c, 0xe0, val2);
 
+	dsb();
 	clrbits_le32(mctl_com + MCTL_COM_UNK_008, BIT(9));
 	udelay(1);
 	clrbits_le32(SUNXI_DRAM_PHY0_BASE + 0x14c, BIT(3));
@@ -668,32 +681,32 @@ static void mctl_dfi_init(const struct dram_para *para)
 	setbits_le32(mctl_com + MCTL_COM_MAER0, BIT(8));
 
 	/* Enable dfi_init_complete signal and trigger PHY init start request */
-	writel(0, &mctl_ctl->swctl);
+	writel_relaxed(0, &mctl_ctl->swctl);
 	setbits_le32(&mctl_ctl->dfimisc, BIT(0));
 	setbits_le32(&mctl_ctl->dfimisc, BIT(5));
-	writel(1, &mctl_ctl->swctl);
+	writel_relaxed(1, &mctl_ctl->swctl);
 	mctl_await_completion(&mctl_ctl->swstat, BIT(0), BIT(0));
 
 	/* Stop sending init request and wait for DFI initialization to complete. */
-	writel(0, &mctl_ctl->swctl);
+	writel_relaxed(0, &mctl_ctl->swctl);
 	clrbits_le32(&mctl_ctl->dfimisc, BIT(5));
-	writel(1, &mctl_ctl->swctl);
+	writel_relaxed(1, &mctl_ctl->swctl);
 	mctl_await_completion(&mctl_ctl->swstat, BIT(0), BIT(0));
 	mctl_await_completion(&mctl_ctl->dfistat, BIT(0), BIT(0));
 
 	/* Enter Software Exit from Self Refresh */
-	writel(0, &mctl_ctl->swctl);
+	writel_relaxed(0, &mctl_ctl->swctl);
 	clrbits_le32(&mctl_ctl->pwrctl, BIT(5));
-	writel(1, &mctl_ctl->swctl);
+	writel_relaxed(1, &mctl_ctl->swctl);
 	mctl_await_completion(&mctl_ctl->swstat, BIT(0), BIT(0));
 	mctl_await_completion(&mctl_ctl->statr, 0x3, 1);
 
 	udelay(200);
 
 	/* Disable dfi_init_complete signal */
-	writel(0, &mctl_ctl->swctl);
+	writel_relaxed(0, &mctl_ctl->swctl);
 	clrbits_le32(&mctl_ctl->dfimisc, BIT(0));
-	writel(1, &mctl_ctl->swctl);
+	writel_relaxed(1, &mctl_ctl->swctl);
 	mctl_await_completion(&mctl_ctl->swstat, BIT(0), BIT(0));
 
 	/* Write mode registers, fixed in the JEDEC spec */
@@ -768,8 +781,8 @@ static bool mctl_phy_read_calibration(const struct dram_config *config)
 	else
 		val = 3;
 
-	while ((readl(SUNXI_DRAM_PHY0_BASE + 0x184) & val) != val) {
-		if (readl(SUNXI_DRAM_PHY0_BASE + 0x184) & 0x20) {
+	while ((readl_relaxed(SUNXI_DRAM_PHY0_BASE + 0x184) & val) != val) {
+		if (readl_relaxed(SUNXI_DRAM_PHY0_BASE + 0x184) & 0x20) {
 			result = false;
 			break;
 		}
@@ -784,8 +797,10 @@ static bool mctl_phy_read_calibration(const struct dram_config *config)
 
 		setbits_le32(SUNXI_DRAM_PHY0_BASE + 8, 1);
 
-		while ((readl(SUNXI_DRAM_PHY0_BASE + 0x184) & val) != val) {
-			if (readl(SUNXI_DRAM_PHY0_BASE + 0x184) & 0x20) {
+		while ((readl_relaxed(SUNXI_DRAM_PHY0_BASE + 0x184) & val) !=
+		       val) {
+			if (readl_relaxed(SUNXI_DRAM_PHY0_BASE + 0x184) &
+			    0x20) {
 				result = false;
 				break;
 			}
@@ -796,14 +811,14 @@ static bool mctl_phy_read_calibration(const struct dram_config *config)
 
 	clrbits_le32(SUNXI_DRAM_PHY0_BASE + 8, 0x30);
 
-	val = readl(SUNXI_DRAM_PHY0_BASE + 0x274) & 7;
-	tmp = readl(SUNXI_DRAM_PHY0_BASE + 0x26c) & 7;
+	val = readl_relaxed(SUNXI_DRAM_PHY0_BASE + 0x274) & 7;
+	tmp = readl_relaxed(SUNXI_DRAM_PHY0_BASE + 0x26c) & 7;
 	if (val < tmp)
 		val = tmp;
-	tmp = readl(SUNXI_DRAM_PHY0_BASE + 0x32c) & 7;
+	tmp = readl_relaxed(SUNXI_DRAM_PHY0_BASE + 0x32c) & 7;
 	if (val < tmp)
 		val = tmp;
-	tmp = readl(SUNXI_DRAM_PHY0_BASE + 0x334) & 7;
+	tmp = readl_relaxed(SUNXI_DRAM_PHY0_BASE + 0x334) & 7;
 	if (val < tmp)
 		val = tmp;
 	clrsetbits_le32(SUNXI_DRAM_PHY0_BASE + 0x38, 0x7, (val + 2) & 7);
@@ -818,15 +833,15 @@ static inline void mctl_phy_dx_delay1_inner(u32 *base, u32 val1, u32 val2)
 	u32 *ptr = base;
 
 	for (int i = 0; i < 9; i++) {
-		writel(val1, ptr);
-		writel(val1, ptr + 0x30);
+		writel_relaxed(val1, ptr);
+		writel_relaxed(val1, ptr + 0x30);
 		ptr += 2;
 	}
 
-	writel(val2, ptr + 1);
-	writel(val2, ptr + 49);
-	writel(val2, ptr);
-	writel(val2, ptr + 48);
+	writel_relaxed(val2, ptr + 1);
+	writel_relaxed(val2, ptr + 49);
+	writel_relaxed(val2, ptr);
+	writel_relaxed(val2, ptr + 48);
 }
 
 static inline void mctl_phy_dx_delay0_inner(u32 *base1, u32 *base2, u32 val1,
@@ -835,18 +850,21 @@ static inline void mctl_phy_dx_delay0_inner(u32 *base1, u32 *base2, u32 val1,
 	u32 *ptr = base1;
 
 	for (int i = 0; i < 9; i++) {
-		writel(val1, ptr);
-		writel(val1, ptr + 0x30);
+		writel_relaxed(val1, ptr);
+		writel_relaxed(val1, ptr + 0x30);
 		ptr += 2;
 	}
 
-	writel(val2, base2);
-	writel(val2, base2 + 48);
-	writel(val2, ptr);
-	writel(val2, base2 + 44);
+	writel_relaxed(val2, base2);
+	writel_relaxed(val2, base2 + 48);
+	writel_relaxed(val2, ptr);
+	writel_relaxed(val2, base2 + 44);
 }
 
-/* This might be somewhat transferable to H616; whether or not people like the design is another question */
+/*
+ * This might be somewhat transferable to H616; whether or not people like
+ * the design is another question
+ */
 static void mctl_phy_dx_delay_compensation(const struct dram_para *para)
 {
 	if (para->tpr10 & TPR10_DX_BIT_DELAY1) {
@@ -929,9 +947,9 @@ static bool mctl_calibrate_phy(const struct dram_para *para,
 	clrbits_le32(SUNXI_DRAM_PHY0_BASE + 0x54, 7);
 
 	/* Q: Does self-refresh get disabled by a calibration? */
-	writel(0, &mctl_ctl->swctl);
+	writel_relaxed(0, &mctl_ctl->swctl);
 	clrbits_le32(&mctl_ctl->rfshctl3, BIT(1));
-	writel(1, &mctl_ctl->swctl);
+	writel_relaxed(1, &mctl_ctl->swctl);
 	mctl_await_completion(&mctl_ctl->swstat, BIT(0), BIT(0));
 
 	return true;
