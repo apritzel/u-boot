@@ -1026,10 +1026,44 @@ static void auto_detect_ranks(const struct dram_para *para,
 		debug("rank testing failed\n");
 }
 
+static void mctl_write_pattern(void)
+{
+	unsigned int i;
+	u32 *ptr, val;
+
+	ptr = (u32 *)CFG_SYS_SDRAM_BASE;
+	for (i = 0; i < 16; ptr++, i++) {
+		if (i & 1)
+			val = ~(ulong)ptr;
+		else
+			val = (ulong)ptr;
+		writel(val, ptr);
+	}
+}
+
+static bool mctl_check_pattern(ulong offset)
+{
+	unsigned int i;
+	u32 *ptr, val;
+
+	ptr = (u32 *)CFG_SYS_SDRAM_BASE;
+	for (i = 0; i < 16; ptr++, i++) {
+		if (i & 1)
+			val = ~(ulong)ptr;
+		else
+			val = (ulong)ptr;
+		if (val != *(ptr + offset / 4))
+			return false;
+	}
+
+	return true;
+}
+
 static void mctl_auto_detect_dram_size(const struct dram_para *para,
 				       struct dram_config *config)
 {
 	unsigned int shift;
+	u32 buffer[16];
 
 	/* max config for bankgrps on DDR4, minimum for everything else */
 	config->cols = 8;
@@ -1041,8 +1075,15 @@ static void mctl_auto_detect_dram_size(const struct dram_para *para,
 		config->bankgrps = 2;
 		mctl_core_init(para, config);
 
-		if (mctl_mem_matches(1ULL << (shift + 4)))
+		/* store content so it can be restored later. */
+		memcpy(buffer, (u32 *)CFG_SYS_SDRAM_BASE, sizeof(buffer));
+		mctl_write_pattern();
+
+		if (mctl_check_pattern(1ULL << (shift + 4)))
 			config->bankgrps = 1;
+
+		/* restore data */
+		memcpy((u32 *)CFG_SYS_SDRAM_BASE, buffer, sizeof(buffer));
 	} else {
 		/* No bank groups in (LP)DDR3/LPDDR4 */
 		config->bankgrps = 0;
@@ -1051,38 +1092,51 @@ static void mctl_auto_detect_dram_size(const struct dram_para *para,
 	/* reconfigure to make sure all active columns are accessible */
 	config->cols = 12;
 	mctl_core_init(para, config);
-	dsb();
 
-	/* detect column address bits */
+	/* store data again as it might be moved */
+	memcpy(buffer, (u32 *)CFG_SYS_SDRAM_BASE, sizeof(buffer));
+	mctl_write_pattern();
+
+	/*
+	 * Detect column address bits. The last number of columns checked
+	 * is 11, if that doesn't match, is must be 12, no more checks needed.
+	 */
 	shift = 1 + config->bus_full_width + config->bankgrps;
 	for (config->cols = 8; config->cols < 12; config->cols++) {
-		if (mctl_mem_matches(1ULL << (config->cols + shift)))
+		if (mctl_check_pattern(1ULL << (config->cols + shift)))
 			break;
 	}
+	memcpy((u32 *)CFG_SYS_SDRAM_BASE, buffer, sizeof(buffer));
 
 	/* reconfigure to make sure that all active banks are accessible */
 	config->banks = 3;
 	mctl_core_init(para, config);
-	dsb();
+
+	memcpy(buffer, (u32 *)CFG_SYS_SDRAM_BASE, sizeof(buffer));
+	mctl_write_pattern();
 
 	/* detect bank bits */
 	shift += config->cols;
 	for (config->banks = 2; config->banks < 3; config->banks++) {
-		if (mctl_mem_matches(1ULL << (config->banks + shift)))
+		if (mctl_check_pattern(1ULL << (config->banks + shift)))
 			break;
 	}
+	memcpy((u32 *)CFG_SYS_SDRAM_BASE, buffer, sizeof(buffer));
 
 	/* reconfigure to make sure that all active rows are accessible */
 	config->rows = 18;
 	mctl_core_init(para, config);
-	dsb();
+
+	memcpy(buffer, (u32 *)CFG_SYS_SDRAM_BASE, sizeof(buffer));
+	mctl_write_pattern();
 
 	/* detect row address bits */
 	shift += config->banks;
 	for (config->rows = 14; config->rows < 18; config->rows++) {
-		if (mctl_mem_matches(1ULL << (config->rows + shift)))
+		if (mctl_check_pattern(1ULL << (config->rows + shift)))
 			break;
 	}
+	memcpy((u32 *)CFG_SYS_SDRAM_BASE, buffer, sizeof(buffer));
 }
 
 /* Modified from H616 driver to add banks and bank groups */
