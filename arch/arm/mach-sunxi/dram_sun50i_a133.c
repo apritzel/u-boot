@@ -1181,54 +1181,6 @@ static const struct dram_para para = {
 	.tpr14 = CONFIG_DRAM_SUNXI_TPR14,
 };
 
-/* TODO: Remove, copied and modified slightly from aodzip repo as temporary sanity check */
-static int libdram_dramc_simple_wr_test(unsigned long dram_size,
-					uint32_t test_range)
-{
-	uint64_t *dram_memory = (uint64_t *)CFG_SYS_SDRAM_BASE;
-	unsigned long step = dram_size / 16;
-	int64_t error_value;
-
-	for (unsigned int i = 0; i < test_range; i++) {
-		dram_memory[i] = i + 0x123456789ABCDEF;
-		dram_memory[i + step] = i - 0xFEDCBA987654321;
-	}
-
-	dmb();
-
-	for (unsigned int i = 0; i < test_range; i++) {
-		uint64_t *ptr;
-
-		if (dram_memory[i] != i + 0x123456789ABCDEF) {
-			ptr = &dram_memory[i];
-			goto fail;
-		}
-		if (dram_memory[i + step] != i - 0xFEDCBA987654321) {
-			ptr = &dram_memory[i + step];
-			goto fail;
-		}
-		continue;
-fail:
-		error_value = (int64_t)readq(ptr);
-		debug("DRAM simple test FAIL----- address %p = %llx\n", ptr,
-		      error_value);
-
-		if (error_value < 0)
-			debug("Potentially aliased with %llx\n",
-			      CFG_SYS_SDRAM_BASE +
-				      (step + error_value + 0xFEDCBA987654321) *
-					      8);
-		else
-			debug("Potentially aliased with %llx\n",
-			      CFG_SYS_SDRAM_BASE +
-				      (error_value - 0x123456789ABCDEF) * 8);
-		return 1;
-	}
-
-	debug("DRAM simple test OK.\n");
-	return 0;
-}
-
 unsigned long sunxi_dram_init(void)
 {
 	unsigned long size;
@@ -1251,10 +1203,6 @@ unsigned long sunxi_dram_init(void)
 
 	size = calculate_dram_size(&config);
 	debug("expected size: %lu MB\n", size >> 20);
-
-	/* TODO: This is just a sanity check for now. */
-	if (libdram_dramc_simple_wr_test(size, 16384))
-		return 0;
 
 	return size;
 }
