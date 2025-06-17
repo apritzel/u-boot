@@ -774,6 +774,31 @@ static const struct sunxi_pinctrl_desc __maybe_unused sun50i_h616_r_pinctrl_desc
 	.num_banks	= 1,
 };
 
+static const struct sunxi_pinctrl_function sun8i_b288_pinctrl_functions[] = {
+	{ "gpio_in",	0 },
+	{ "gpio_out",	1 },
+	{ "i2c0",	2 },	/* PB6-PB7 */
+	{ "i2c1",	4 },	/* PB */
+	{ "mmc0",	2 },	/* PF0-PF5 */
+	{ "mmc1",	5 },	/* PG0-PG5 */
+	{ "mmc2",	3 },	/* PC1-PC14 */
+	{ "mmc3",	5 },	/* PC1-PC14 */
+	{ "spi0",	4 },	/* PC0-PC3 */
+#if IS_ENABLED(CONFIG_UART0_PORT_F)
+	{ "uart0",	4 },	/* PF2-PF4 */
+#else
+	{ "uart0",	2 },	/* PB4-PB5 */
+#endif
+	{ "uart2",	2 },	/* PB0-PB3 */
+};
+
+static const struct sunxi_pinctrl_desc __maybe_unused sun8i_b288_pinctrl_desc = {
+	.functions	= sun8i_b288_pinctrl_functions,
+	.num_functions	= ARRAY_SIZE(sun8i_b288_pinctrl_functions),
+	.first_bank	= SUNXI_GPIO_A,
+	.num_banks	= 7,
+};
+
 static const struct udevice_id sunxi_pinctrl_ids[] = {
 #ifdef CONFIG_PINCTRL_SUNIV_F1C100S
 	{
@@ -935,6 +960,12 @@ static const struct udevice_id sunxi_pinctrl_ids[] = {
 	{
 		.compatible = "allwinner,sun50i-h616-r-pinctrl",
 		.data = (ulong)&sun50i_h616_r_pinctrl_desc,
+	},
+#endif
+#ifdef CONFIG_PINCTRL_SUN8I_B288
+	{
+		.compatible = "allwinner,sun8i-b288-pinctrl",
+		.data = (ulong)&sun8i_b288_pinctrl_desc,
 	},
 #endif
 	{}
