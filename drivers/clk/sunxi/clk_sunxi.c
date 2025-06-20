@@ -125,6 +125,7 @@ extern const struct ccu_desc h616_ccu_desc;
 extern const struct ccu_desc h6_r_ccu_desc;
 extern const struct ccu_desc r40_ccu_desc;
 extern const struct ccu_desc v3s_ccu_desc;
+extern const struct ccu_desc b288_ccu_desc;
 
 static const struct udevice_id sunxi_clk_ids[] = {
 #ifdef CONFIG_CLK_SUN4I_A10
@@ -176,6 +177,10 @@ static const struct udevice_id sunxi_clk_ids[] = {
 	  .data = (ulong)&v3s_ccu_desc },
 	{ .compatible = "allwinner,sun8i-v3s-ccu",
 	  .data = (ulong)&v3s_ccu_desc },
+#endif
+#ifdef CONFIG_CLK_SUN8I_B288
+	{ .compatible = "allwinner,sun8i-b288-ccu",
+	  .data = (ulong)&b288_ccu_desc },
 #endif
 #ifdef CONFIG_CLK_SUN9I_A80
 	{ .compatible = "allwinner,sun9i-a80-ccu",
