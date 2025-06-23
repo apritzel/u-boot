@@ -387,6 +387,13 @@ config MACH_SUN8I_R40
 	select SUNXI_DRAM_DW_32BIT
 	imply SPL_SYS_I2C_LEGACY
 
+config MACH_SUN8I_B288
+	bool "sun8i (Allwinner B288)"
+	select CPU_V7A
+	select SUNXI_GEN_SUN6I
+	select MMC_SUNXI_HAS_NEW_MODE
+	imply SPL_SYS_I2C_LEGACY
+
 config MACH_SUN8I_R528
 	bool "sun8i (Allwinner R528)"
 	select CPU_V7A
@@ -470,6 +477,7 @@ config MACH_SUN8I
 	default y if MACH_SUNXI_H3_H5
 	default y if MACH_SUN8I_R40
 	default y if MACH_SUN8I_V3S
+	default y if MACH_SUN8I_B288
 
 config RESERVE_ALLWINNER_BOOT0_HEADER
 	bool "reserve space for Allwinner boot0 header"
