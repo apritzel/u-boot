@@ -26,6 +26,7 @@
 };
 #endif
 
+#ifdef CONFIG_SUPPORT_SPL
 &binman {
 	u-boot-sunxi-with-spl {
 		filename = "u-boot-sunxi-with-spl.bin";
@@ -127,3 +128,4 @@
 #endif
 	};
 };
+#endif		/* SUPPORT_SPL */
